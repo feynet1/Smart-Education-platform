@@ -1,20 +1,21 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { createContext, useState } from 'react';
 import PropTypes from 'prop-types';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Check localStorage on mount
+    const [user, setUser] = useState(() => {
+        // Check localStorage on mount (Lazy initialization)
         const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+
+    // Since we read from localStorage synchronously, we are not initially loading.
+    // If we had an async check (e.g., API call), we would start as true.
+    const loading = false;
+
+    // No longer need immediate useEffect for synchronous localStorage read
 
     const login = async (email, password) => {
         return new Promise((resolve, reject) => {
