@@ -8,10 +8,18 @@ import { TeacherProvider } from './contexts/TeacherContext';
 // Layouts
 import TeacherLayout from './layouts/TeacherLayout';
 
-// Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import StudentDashboard from './pages/dashboard/StudentDashboard';
+
+// Student imports
+import { StudentProvider } from './contexts/StudentContext';
+import StudentLayout from './layouts/StudentLayout';
+import StudentDashboardHome from './pages/student/Dashboard';
+import StudentCoursesList from './pages/student/Courses';
+import CourseDetails from './pages/student/Courses/CourseDetails';
+import StudentGrades from './pages/student/Grades';
+import StudentEvents from './pages/student/Events';
+import StudentProfile from './pages/student/Profile';
 
 // Teacher Pages
 import TeacherDashboardHome from './pages/teacher/Dashboard';
@@ -36,15 +44,25 @@ function App() {
             {/* Default Redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />
 
-            {/* Protected Routes */}
+            {/* Student Routes */}
             <Route
-              path="/student/dashboard"
+              path="/student"
               element={
                 <ProtectedRoute allowedRoles={['Student']}>
-                  <StudentDashboard />
+                  <StudentProvider>
+                    <StudentLayout />
+                  </StudentProvider>
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<StudentDashboardHome />} />
+              <Route path="courses" element={<StudentCoursesList />} />
+              <Route path="courses/:id" element={<CourseDetails />} />
+              <Route path="grades" element={<StudentGrades />} />
+              <Route path="events" element={<StudentEvents />} />
+              <Route path="profile" element={<StudentProfile />} />
+            </Route>
 
             {/* Teacher Routes */}
             <Route
