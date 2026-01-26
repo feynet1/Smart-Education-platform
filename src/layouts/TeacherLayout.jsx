@@ -68,9 +68,9 @@ const TeacherLayout = () => {
         { text: 'My Courses', icon: <SchoolIcon />, path: '/teacher/courses' },
         // For these item, linking to courses for now as they require a course selection
         // In a real app, these might be aggregated views or a course picker
-        { text: 'Classroom', icon: <ClassIcon />, path: '/teacher/courses' },
-        { text: 'Attendance', icon: <AttendanceIcon />, path: '/teacher/courses' },
-        { text: 'Notes', icon: <NoteIcon />, path: '/teacher/courses' },
+        { text: 'Classroom', icon: <ClassIcon />, path: '/teacher/classroom' },
+        { text: 'Attendance', icon: <AttendanceIcon />, path: '/teacher/attendance' },
+        { text: 'Notes', icon: <NoteIcon />, path: '/teacher/notes' },
         { text: 'Settings', icon: <SettingsIcon />, path: '/teacher/settings' },
     ];
 

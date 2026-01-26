@@ -19,6 +19,8 @@ import CourseList from './pages/teacher/Courses';
 import ClassroomHelper from './pages/teacher/Classroom';
 import AttendanceHelper from './pages/teacher/Attendance';
 import NotesHelper from './pages/teacher/Notes';
+import CourseSelector from './pages/teacher/CourseSelector';
+import Settings from './pages/teacher/Settings';
 
 function App() {
   return (
@@ -58,9 +60,13 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<TeacherDashboardHome />} />
               <Route path="courses" element={<CourseList />} />
+              <Route path="classroom" element={<CourseSelector basePath="/teacher/classroom" title="Classroom" />} />
               <Route path="classroom/:id" element={<ClassroomHelper />} />
+              <Route path="attendance" element={<CourseSelector basePath="/teacher/attendance" title="Attendance" />} />
               <Route path="attendance/:id" element={<AttendanceHelper />} />
+              <Route path="notes" element={<CourseSelector basePath="/teacher/notes" title="Notes" />} />
               <Route path="notes/:id" element={<NotesHelper />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* Catch all */}

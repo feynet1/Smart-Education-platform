@@ -55,6 +55,8 @@ const CreateCourse = ({ open, onClose }) => {
                                 {...register('grade', { required: true })}
                                 error={!!errors.grade}
                             >
+
+                                <MenuItem value="9">Grade 9</MenuItem>
                                 <MenuItem value="10">Grade 10</MenuItem>
                                 <MenuItem value="11">Grade 11</MenuItem>
                                 <MenuItem value="12">Grade 12</MenuItem>

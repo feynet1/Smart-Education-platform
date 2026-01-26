@@ -58,6 +58,7 @@ const EditCourse = ({ open, onClose, course }) => {
                                 defaultValue={course?.grade || ""}
                                 {...register('grade', { required: true })}
                             >
+                                <MenuItem value="9">Grade 9</MenuItem>
                                 <MenuItem value="10">Grade 10</MenuItem>
                                 <MenuItem value="11">Grade 11</MenuItem>
                                 <MenuItem value="12">Grade 12</MenuItem>
