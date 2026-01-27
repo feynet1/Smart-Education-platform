@@ -40,7 +40,9 @@ const Login = () => {
         try {
             const user = await login(data.email, data.password);
             // specific dashboard redirect based on role
-            const target = user.role === 'Teacher' ? '/teacher/dashboard' : '/student/dashboard';
+            let target = '/student/dashboard';
+            if (user.role === 'Teacher') target = '/teacher/dashboard';
+            else if (user.role === 'Admin') target = '/admin/dashboard';
             navigate(target, { replace: true });
         } catch (error) {
             setServerError(error || 'Failed to login');

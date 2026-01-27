@@ -30,6 +30,18 @@ import NotesHelper from './pages/teacher/Notes';
 import CourseSelector from './pages/teacher/CourseSelector';
 import Settings from './pages/teacher/Settings';
 
+// Admin imports
+import { AdminProvider } from './contexts/AdminContext';
+import AdminLayout from './layouts/AdminLayout';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminCourses from './pages/admin/Courses';
+import AdminAttendance from './pages/admin/Attendance';
+import AdminGrades from './pages/admin/Grades';
+import AdminEvents from './pages/admin/Events';
+import AdminReports from './pages/admin/Reports';
+import AdminSettings from './pages/admin/Settings';
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -85,6 +97,28 @@ function App() {
               <Route path="notes" element={<CourseSelector basePath="/teacher/notes" title="Notes" />} />
               <Route path="notes/:id" element={<NotesHelper />} />
               <Route path="settings" element={<Settings />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminProvider>
+                    <AdminLayout />
+                  </AdminProvider>
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="courses" element={<AdminCourses />} />
+              <Route path="attendance" element={<AdminAttendance />} />
+              <Route path="grades" element={<AdminGrades />} />
+              <Route path="events" element={<AdminEvents />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
 
             {/* Catch all */}

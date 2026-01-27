@@ -31,6 +31,11 @@ export const AuthProvider = ({ children }) => {
                     setUser(userData);
                     localStorage.setItem('user', JSON.stringify(userData));
                     resolve(userData);
+                } else if (email === 'admin@test.com' && password === 'Password123!') {
+                    const userData = { name: 'Admin User', email, role: 'Admin' };
+                    setUser(userData);
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    resolve(userData);
                 } else {
                     reject('Invalid email or password');
                 }
