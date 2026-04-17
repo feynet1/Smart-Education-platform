@@ -4,10 +4,11 @@ import useAuth from '../hooks/useAuth';
 import { CircularProgress, Box } from '@mui/material';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-    const { user, isAuthenticated, loading } = useAuth();
+    const { user, profile, isAuthenticated, loading } = useAuth();
     const location = useLocation();
 
-    if (loading) {
+    // Wait until loading is done and we have the profile if authenticated
+    if (loading || (isAuthenticated && !profile)) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                 <CircularProgress />
@@ -19,9 +20,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
         // Redirect to their appropriate dashboard if unauthorized for this route
-        const dashboard = user.role === 'Student' ? '/student/dashboard' : '/teacher/dashboard';
+        let dashboard = '/student/dashboard';
+        if (profile.role === 'Teacher') dashboard = '/teacher/dashboard';
+        else if (profile.role === 'Admin') dashboard = '/admin/dashboard';
         return <Navigate to={dashboard} replace />;
     }
 

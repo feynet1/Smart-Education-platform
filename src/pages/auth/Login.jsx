@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -15,15 +15,27 @@ import {
     Typography,
     Alert,
     CircularProgress,
+    Divider,
 } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
 import { loginSchema } from '../../utils/validationSchemas';
 import useAuth from '../../hooks/useAuth';
 
 const Login = () => {
-    const { login } = useAuth();
+    const { login, loginWithGoogle, profile, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [serverError, setServerError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // If suddenly authenticated and profile is loaded (e.g. after Google OAuth redirect)
+    useEffect(() => {
+        if (isAuthenticated && profile) {
+            let target = '/student/dashboard';
+            if (profile.role === 'Teacher') target = '/teacher/dashboard';
+            else if (profile.role === 'Admin') target = '/admin/dashboard';
+            navigate(target, { replace: true });
+        }
+    }, [isAuthenticated, profile, navigate]);
 
     const {
         register,
@@ -38,16 +50,20 @@ const Login = () => {
         setIsSubmitting(true);
         setServerError('');
         try {
-            const user = await login(data.email, data.password);
-            // specific dashboard redirect based on role
-            let target = '/student/dashboard';
-            if (user.role === 'Teacher') target = '/teacher/dashboard';
-            else if (user.role === 'Admin') target = '/admin/dashboard';
-            navigate(target, { replace: true });
+            await login(data.email, data.password);
+            // Redirection is handled by the useEffect above once the profile is loaded.
         } catch (error) {
             setServerError(error || 'Failed to login');
-        } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setServerError('');
+        try {
+            await loginWithGoogle();
+        } catch (error) {
+            setServerError(error || 'Failed to login with Google');
         }
     };
 
@@ -116,6 +132,19 @@ const Login = () => {
                         >
                             {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
                         </Button>
+                        
+                        <Divider sx={{ my: 2 }}>or</Divider>
+
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<GoogleIcon />}
+                            onClick={handleGoogleLogin}
+                            sx={{ mb: 3, height: 48 }}
+                        >
+                            Sign In with Google
+                        </Button>
+
                         <Box display="flex" justifyContent="center">
                             <Link component={RouterLink} to="/register" variant="body2">
                                 {"Don't have an account? Sign Up"}

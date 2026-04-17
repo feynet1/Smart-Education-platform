@@ -22,6 +22,7 @@ const Register = () => {
     const { register: registerUser } = useAuth();
     const navigate = useNavigate();
     const [serverError, setServerError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const {
@@ -36,11 +37,14 @@ const Register = () => {
     const onSubmit = async (data) => {
         setIsSubmitting(true);
         setServerError('');
+        setSuccessMessage('');
         try {
-            const user = await registerUser(data);
-            // specific dashboard redirect based on role
-            const target = user.role === 'Teacher' ? '/teacher/dashboard' : '/student/dashboard';
-            navigate(target, { replace: true });
+            await registerUser(data);
+            setSuccessMessage('Registration successful! Please check your email to verify your account.');
+            // Optionally redirect after a few seconds or let them click to login
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
         } catch (error) {
             setServerError(error || 'Failed to register');
         } finally {
@@ -72,6 +76,12 @@ const Register = () => {
                     {serverError && (
                         <Alert severity="error" sx={{ mb: 2 }}>
                             {serverError}
+                        </Alert>
+                    )}
+                    
+                    {successMessage && (
+                        <Alert severity="success" sx={{ mb: 2 }}>
+                            {successMessage}
                         </Alert>
                     )}
 

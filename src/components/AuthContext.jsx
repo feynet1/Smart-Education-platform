@@ -1,70 +1,112 @@
-import { createContext, useState } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { supabase } from '../supabaseClient';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(() => {
-        // Check localStorage on mount (Lazy initialization)
-        const storedUser = localStorage.getItem('user');
-        return storedUser ? JSON.parse(storedUser) : null;
-    });
+    const [user, setUser] = useState(null);
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Since we read from localStorage synchronously, we are not initially loading.
-    // If we had an async check (e.g., API call), we would start as true.
-    const loading = false;
+    useEffect(() => {
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+            if (session?.user) {
+                fetchProfile(session.user.id);
+            } else {
+                setLoading(false);
+            }
+        });
 
-    // No longer need immediate useEffect for synchronous localStorage read
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            if (session?.user) {
+                fetchProfile(session.user.id);
+            } else {
+                setProfile(null);
+                setLoading(false);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const fetchProfile = async (userId) => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error) {
+                console.error('Error fetching profile:', error);
+            } else {
+                setProfile(data);
+            }
+        } catch (error) {
+            console.error('Error in fetchProfile:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const login = async (email, password) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Mock Login Logic
-                if (email === 'student@test.com' && password === 'Password123!') {
-                    const userData = { name: 'Test Student', email, role: 'Student' };
-                    setUser(userData);
-                    localStorage.setItem('user', JSON.stringify(userData));
-                    resolve(userData);
-                } else if (email === 'teacher@test.com' && password === 'Password123!') {
-                    const userData = { name: 'Test Teacher', email, role: 'Teacher' };
-                    setUser(userData);
-                    localStorage.setItem('user', JSON.stringify(userData));
-                    resolve(userData);
-                } else if (email === 'admin@test.com' && password === 'Password123!') {
-                    const userData = { name: 'Admin User', email, role: 'Admin' };
-                    setUser(userData);
-                    localStorage.setItem('user', JSON.stringify(userData));
-                    resolve(userData);
-                } else {
-                    reject('Invalid email or password');
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error.message;
+        
+        // Return fetching profile promise or assume state will catch up
+        return data.user;
+    };
+
+    const loginWithGoogle = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/`,
+            }
+        });
+
+        if (error) throw error.message;
+    };
+
+    const register = async (userData) => {
+        // Note: The profile row creation will be handled by Supabase trigger or we pass metadata
+        const { data, error } = await supabase.auth.signUp({
+            email: userData.email,
+            password: userData.password,
+            options: {
+                data: {
+                    name: userData.name,
+                    role: userData.role,
                 }
-            }, 1000); // Simulate network delay
+            }
         });
+
+        if (error) throw error.message;
+        return data.user;
     };
 
-    const register = async (data) => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Mock Register Logic - automatically logs in
-                const userData = { name: data.name, email: data.email, role: data.role };
-                setUser(userData);
-                localStorage.setItem('user', JSON.stringify(userData));
-                resolve(userData);
-            }, 1000);
-        });
-    };
-
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('user');
+    const logout = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error.message;
     };
 
     const value = {
         user,
+        profile,
         isAuthenticated: !!user,
         loading,
         login,
+        loginWithGoogle,
         register,
         logout,
     };
