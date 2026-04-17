@@ -4,7 +4,7 @@ import useAuth from '../hooks/useAuth';
 import { CircularProgress, Box } from '@mui/material';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-    const { user, profile, isAuthenticated, loading } = useAuth();
+    const { profile, isAuthenticated, loading } = useAuth();
     const location = useLocation();
 
     // Wait until loading is done and we have the profile if authenticated
