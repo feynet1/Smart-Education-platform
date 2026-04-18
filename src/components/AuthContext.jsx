@@ -5,13 +5,18 @@ import { supabase } from '../supabaseClient';
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
 
+const getErrorMessage = (error) => {
+    if (!error) return 'Unknown error';
+    if (typeof error === 'string') return error;
+    return error.message ?? JSON.stringify(error);
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             if (session?.user) {
@@ -21,7 +26,6 @@ export const AuthProvider = ({ children }) => {
             }
         });
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
             if (session?.user) {
@@ -56,59 +60,41 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = async (email, password) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) throw error.message;
-        
-        // Return fetching profile promise or assume state will catch up
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw getErrorMessage(error);
         return data.user;
     };
 
     const loginWithGoogle = async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/`,
-            }
+            options: { redirectTo: `${window.location.origin}/` }
         });
-
-        if (error) throw error.message;
+        if (error) throw getErrorMessage(error);
     };
 
     const register = async (userData) => {
-        // Note: The profile row creation will be handled by Supabase trigger or we pass metadata
         const { data, error } = await supabase.auth.signUp({
             email: userData.email,
             password: userData.password,
             options: {
-                data: {
-                    name: userData.name,
-                    role: userData.role,
-                }
+                data: { name: userData.name, role: userData.role }
             }
         });
-
-        if (error) throw error.message;
+        if (error) throw getErrorMessage(error);
         return data.user;
     };
 
     const logout = async () => {
         const { error } = await supabase.auth.signOut();
-        if (error) throw error.message;
+        if (error) throw getErrorMessage(error);
     };
 
     const value = {
-        user,
-        profile,
+        user, profile,
         isAuthenticated: !!user,
         loading,
-        login,
-        loginWithGoogle,
-        register,
-        logout,
+        login, loginWithGoogle, register, logout,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
