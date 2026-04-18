@@ -84,6 +84,39 @@ export const AdminProvider = ({ children }) => {
     });
 
     // --- Persistence ---
+    // Fetch real users from Supabase on load
+    useEffect(() => {
+        const fetchRealUsers = async () => {
+            try {
+                const { data, error } = await supabase.functions.invoke('admin-user-manager', {
+                    body: { action: 'list' }
+                });
+                
+                if (error) throw error;
+                
+                if (data && data.users) {
+                    const mappedUsers = data.users.map(u => ({
+                        id: u.id,
+                        name: u.user_metadata?.name || 'Unknown',
+                        email: u.email,
+                        role: u.user_metadata?.role || 'Student',
+                        status: 'active',
+                        createdAt: new Date(u.created_at).toISOString().split('T')[0]
+                    }));
+                    
+                    setUsers((prevUsers) => {
+                        // Merge arrays: Keep Mock users if their email isn't in Real users
+                        const newEmails = new Set(mappedUsers.map(u => u.email));
+                        const filteredMock = prevUsers.filter(u => !newEmails.has(u.email));
+                        return [...filteredMock, ...mappedUsers];
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch real users from backend:", err);
+            }
+        };
+        fetchRealUsers();
+    }, []);
     useEffect(() => {
         localStorage.setItem('admin_users', JSON.stringify(users));
     }, [users]);
