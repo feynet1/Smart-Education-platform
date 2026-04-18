@@ -118,6 +118,25 @@ export const AdminProvider = ({ children }) => {
         addLog('Toggled user status', 'Admin');
     };
 
+    const addUser = (userData) => {
+        const newUser = {
+            id: Date.now(),
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            status: 'active',
+            createdAt: new Date().toISOString().split('T')[0]
+        };
+        setUsers([newUser, ...users]);
+        addLog(`Added new user: ${userData.name}`, 'Admin');
+    };
+
+    const deleteUser = (userId) => {
+        const user = users.find(u => u.id === userId);
+        setUsers(users.filter(u => u.id !== userId));
+        addLog(`Deleted user: ${user ? user.name : userId}`, 'Admin');
+    };
+
     const addEvent = (event) => {
         setEvents((prevEvents) => {
             const newEvent = { ...event, id: Date.now() };
@@ -162,6 +181,8 @@ export const AdminProvider = ({ children }) => {
         // Actions
         updateUserRole,
         toggleUserStatus,
+        addUser,
+        deleteUser,
         addEvent,
         deleteEvent,
         updateSettings,

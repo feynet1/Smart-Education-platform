@@ -28,15 +28,18 @@ import {
     Tooltip
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Search, Edit, Block, CheckCircle, PersonAdd } from '@mui/icons-material';
+import { Search, Edit, Block, CheckCircle, PersonAdd, Delete } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 
 const UsersManagement = () => {
-    const { users, updateUserRole, toggleUserStatus } = useAdmin();
+    const { users, updateUserRole, toggleUserStatus, addUser, deleteUser } = useAdmin();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [editDialog, setEditDialog] = useState({ open: false, user: null });
+    const [addDialog, setAddDialog] = useState(false);
+    const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null });
+    const [addFormData, setAddFormData] = useState({ name: '', email: '', role: 'Student' });
     const [selectedRole, setSelectedRole] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -61,6 +64,23 @@ const UsersManagement = () => {
     const handleToggleStatus = (userId) => {
         toggleUserStatus(userId);
         setSnackbar({ open: true, message: 'User status updated', severity: 'success' });
+    };
+
+    const handleAddUser = () => {
+        if (addFormData.name && addFormData.email && addFormData.role) {
+            addUser(addFormData);
+            setSnackbar({ open: true, message: 'User added successfully', severity: 'success' });
+            setAddDialog(false);
+            setAddFormData({ name: '', email: '', role: 'Student' });
+        }
+    };
+
+    const handleDeleteUser = () => {
+        if (deleteDialog.userId) {
+            deleteUser(deleteDialog.userId);
+            setSnackbar({ open: true, message: 'User deleted successfully', severity: 'success' });
+            setDeleteDialog({ open: false, userId: null });
+        }
     };
 
     // DataGrid columns
@@ -131,6 +151,15 @@ const UsersManagement = () => {
                             {params.row.status === 'active' ? <Block fontSize="small" /> : <CheckCircle fontSize="small" />}
                         </IconButton>
                     </Tooltip>
+                    <Tooltip title="Delete">
+                        <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setDeleteDialog({ open: true, userId: params.row.id })}
+                        >
+                            <Delete fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             ),
         },
@@ -148,7 +177,7 @@ const UsersManagement = () => {
                         Manage all platform users, roles, and permissions
                     </Typography>
                 </Box>
-                <Button variant="contained" startIcon={<PersonAdd />}>
+                <Button variant="contained" startIcon={<PersonAdd />} onClick={() => setAddDialog(true)}>
                     Add User
                 </Button>
             </Box>
@@ -229,6 +258,57 @@ const UsersManagement = () => {
                 <DialogActions>
                     <Button onClick={() => setEditDialog({ open: false, user: null })}>Cancel</Button>
                     <Button onClick={handleRoleChange} variant="contained">Save</Button>
+                </DialogActions>
+            </Dialog>
+            {/* Add User Dialog */}
+            <Dialog open={addDialog} onClose={() => setAddDialog(false)}>
+                <DialogTitle>Add New User</DialogTitle>
+                <DialogContent sx={{ minWidth: 400 }}>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                        <TextField
+                            label="Name"
+                            fullWidth
+                            value={addFormData.name}
+                            onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })}
+                        />
+                        <TextField
+                            label="Email"
+                            fullWidth
+                            type="email"
+                            value={addFormData.email}
+                            onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Role</InputLabel>
+                            <Select
+                                value={addFormData.role}
+                                label="Role"
+                                onChange={(e) => setAddFormData({ ...addFormData, role: e.target.value })}
+                            >
+                                <MenuItem value="Admin">Admin</MenuItem>
+                                <MenuItem value="Teacher">Teacher</MenuItem>
+                                <MenuItem value="Student">Student</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAddDialog(false)}>Cancel</Button>
+                    <Button onClick={handleAddUser} variant="contained" disabled={!addFormData.name || !addFormData.email}>Add User</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, userId: null })}>
+                <DialogTitle>Delete User</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete this user? This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialog({ open: false, userId: null })}>Cancel</Button>
+                    <Button onClick={handleDeleteUser} variant="contained" color="error">Delete</Button>
                 </DialogActions>
             </Dialog>
 
