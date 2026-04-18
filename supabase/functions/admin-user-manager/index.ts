@@ -30,13 +30,11 @@ serve(async (req: Request) => {
       })
     }
 
-    // Create User
-    if (action === 'create') {
-      const { data, error } = await supabaseAdmin.auth.admin.createUser({
-        email: payload.email,
-        password: payload.password,
-        email_confirm: true,
-        user_metadata: { name: payload.name, role: payload.role }
+    // Invite User — sends invite email, user sets their own password
+    if (action === 'invite') {
+      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(payload.email, {
+        redirectTo: payload.redirectTo,
+        data: { name: payload.name, role: payload.role }
       })
       if (error) throw error
       return new Response(JSON.stringify({ user: data.user }), {
@@ -78,7 +76,9 @@ serve(async (req: Request) => {
 
     throw new Error('Unknown action command')
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    const msg = (error as Error).message ?? 'Unknown error'
+    console.error('[admin-user-manager] Error:', msg)
+    return new Response(JSON.stringify({ error: msg }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

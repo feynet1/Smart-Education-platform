@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -24,7 +24,9 @@ import useAuth from '../../hooks/useAuth';
 const Login = () => {
     const { login, loginWithGoogle, profile, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [serverError, setServerError] = useState('');
+    const [successMessage] = useState(location.state?.message || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // If suddenly authenticated and profile is loaded (e.g. after Google OAuth redirect)
@@ -90,6 +92,12 @@ const Login = () => {
                     {serverError && (
                         <Alert severity="error" sx={{ mb: 2 }}>
                             {serverError}
+                        </Alert>
+                    )}
+
+                    {successMessage && (
+                        <Alert severity="success" sx={{ mb: 2 }}>
+                            {successMessage}
                         </Alert>
                     )}
 

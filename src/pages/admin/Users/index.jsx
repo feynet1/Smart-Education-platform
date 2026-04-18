@@ -25,7 +25,7 @@ const UsersManagement = () => {
     const [editDialog, setEditDialog]   = useState({ open: false, user: null });
     const [addDialog, setAddDialog]     = useState(false);
     const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null });
-    const [addFormData, setAddFormData] = useState({ name: '', email: '', role: 'Student', password: '' });
+    const [addFormData, setAddFormData] = useState({ name: '', email: '', role: 'Student' });
     const [selectedRole, setSelectedRole] = useState('');
     const [snackbar, setSnackbar]       = useState({ open: false, message: '', severity: 'success' });
 
@@ -65,9 +65,9 @@ const UsersManagement = () => {
         if (!addFormData.name || !addFormData.email) return;
         const result = await addUser(addFormData);
         if (result?.success) {
-            showSuccess('User added successfully');
+            showSuccess('Invitation sent successfully');
             setAddDialog(false);
-            setAddFormData({ name: '', email: '', role: 'Student', password: '' });
+            setAddFormData({ name: '', email: '', role: 'Student' });
         } else if (result?.error) {
             showError(result.error);
         }
@@ -109,7 +109,7 @@ const UsersManagement = () => {
             field: 'status', headerName: 'Status', width: 110,
             renderCell: (params) => (
                 <Chip label={params.value} size="small" variant="outlined"
-                    color={params.value === 'active' ? 'success' : 'default'} />
+                    color={params.value === 'active' ? 'success' : params.value === 'invited' ? 'warning' : 'default'} />
             ),
         },
         { field: 'createdAt', headerName: 'Joined', width: 120 },
@@ -157,7 +157,7 @@ const UsersManagement = () => {
                     </Typography>
                 </Box>
                 <Button variant="contained" startIcon={<PersonAdd />} onClick={() => setAddDialog(true)}>
-                    Add User
+                    Invite User
                 </Button>
             </Box>
 
@@ -216,21 +216,17 @@ const UsersManagement = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Add User Dialog */}
             <Dialog open={addDialog} onClose={() => setAddDialog(false)}>
-                <DialogTitle>Add New User</DialogTitle>
+                <DialogTitle>Invite New User</DialogTitle>
                 <DialogContent sx={{ minWidth: 400 }}>
+                    <Typography variant="body2" color="text.secondary" mb={2}>
+                        An invitation email will be sent. The user sets their own password.
+                    </Typography>
                     <Box display="flex" flexDirection="column" gap={2} mt={1}>
-                        <TextField label="Name" fullWidth value={addFormData.name}
+                        <TextField label="Full Name" fullWidth value={addFormData.name}
                             onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })} />
                         <TextField label="Email" fullWidth type="email" value={addFormData.email}
                             onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })} />
-                        <TextField
-                            label="Temporary Password" fullWidth type="password"
-                            value={addFormData.password}
-                            onChange={(e) => setAddFormData({ ...addFormData, password: e.target.value })}
-                            helperText="User should change this on first login"
-                        />
                         <FormControl fullWidth>
                             <InputLabel>Role</InputLabel>
                             <Select value={addFormData.role} label="Role"
@@ -245,8 +241,8 @@ const UsersManagement = () => {
                 <DialogActions>
                     <Button onClick={() => setAddDialog(false)}>Cancel</Button>
                     <Button onClick={handleAddUser} variant="contained"
-                        disabled={!addFormData.name || !addFormData.email || !addFormData.password}>
-                        Add User
+                        disabled={!addFormData.name || !addFormData.email}>
+                        Send Invite
                     </Button>
                 </DialogActions>
             </Dialog>

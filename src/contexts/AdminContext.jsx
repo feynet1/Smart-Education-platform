@@ -173,30 +173,40 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    // Add user — creates in Supabase, falls back to local if it fails
+    // Add user — sends invite email, user sets their own password via the invite link
     const addUser = async (userData) => {
         try {
+            const redirectTo = `${window.location.origin}/accept-invite`;
             const { data, error } = await supabase.functions.invoke('admin-user-manager', {
                 body: {
-                    action: 'create',
-                    payload: { ...userData, password: userData.password || 'TemporaryPassword123!' }
+                    action: 'invite',
+                    payload: { email: userData.email, name: userData.name, role: userData.role, redirectTo }
                 }
             });
-            if (error) throw error;
+            if (error) {
+                // Extract real error message from edge function response body
+                let msg = error.message || 'Unknown error';
+                try {
+                    const context = await error.context?.json?.();
+                    if (context?.error) msg = context.error;
+                } catch (_) { /* ignore */ }
+                throw new Error(msg);
+            }
 
             const newUser = {
                 id: data.user.id,
                 name: userData.name,
                 email: userData.email,
                 role: userData.role,
-                status: 'active',
+                status: 'invited',
                 createdAt: new Date().toISOString().split('T')[0]
             };
             setUsers(prev => [newUser, ...prev]);
-            addLog(`Added new user: ${userData.name}`, 'Admin');
+            addLog(`Invited new user: ${userData.name}`, 'Admin');
             return { success: true };
         } catch (err) {
             const msg = err.message || 'Unknown error';
+            console.error('[addUser] invite failed:', msg);
             return { success: false, error: msg };
         }
     };
