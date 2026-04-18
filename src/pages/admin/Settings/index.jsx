@@ -4,7 +4,7 @@
  * Configure platform-wide settings including
  * academic year, registration, and notifications.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -28,19 +28,29 @@ const PlatformSettings = () => {
 
     const [formData, setFormData] = useState(settings);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [initialized, setInitialized] = useState(false);
 
-    // Handle input change
+    // Only sync formData from Supabase on first load, not on every settings change
+    useEffect(() => {
+        if (!initialized && (settings.academicYear || settings.registrationEnabled !== undefined)) {
+            setFormData(settings);
+            setInitialized(true);
+        }
+    }, [settings, initialized]);
+
     const handleChange = (field, value) => {
-        setFormData({ ...formData, [field]: value });
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    // Handle save
-    const handleSave = () => {
-        updateSettings(formData);
-        setSnackbar({ open: true, message: 'Settings saved successfully', severity: 'success' });
+    const handleSave = async () => {
+        const result = await updateSettings(formData);
+        if (result?.success === false) {
+            setSnackbar({ open: true, message: `Failed to save: ${result.error}`, severity: 'error' });
+        } else {
+            setSnackbar({ open: true, message: 'Settings saved successfully', severity: 'success' });
+        }
     };
 
-    // Handle reset
     const handleReset = () => {
         setFormData(settings);
         setSnackbar({ open: true, message: 'Settings reset to saved values', severity: 'info' });

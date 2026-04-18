@@ -42,10 +42,15 @@ serve(async (req: Request) => {
       })
     }
 
-    // Update Role
+    // Update Role & Name — preserves existing user_metadata, updates role and optionally name
     if (action === 'update-role') {
+      const { data: existing, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(payload.userId)
+      if (fetchError) throw fetchError
+      const currentMeta = existing.user?.user_metadata ?? {}
+      const updatedMeta: Record<string, string> = { ...currentMeta, role: payload.role }
+      if (payload.name) updatedMeta.name = payload.name
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(payload.userId, {
-        user_metadata: { role: payload.role }
+        user_metadata: updatedMeta
       })
       if (error) throw error
       return new Response(JSON.stringify({ user: data.user }), {

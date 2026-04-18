@@ -16,17 +16,17 @@ on conflict (key) do nothing;
 -- Enable RLS
 alter table platform_settings enable row level security;
 
--- Drop old policies if they exist
+-- Drop all old policies first to avoid conflicts
 drop policy if exists "Public can read settings" on platform_settings;
 drop policy if exists "Admins can update settings" on platform_settings;
 drop policy if exists "Authenticated users can update settings" on platform_settings;
 
--- Anyone can read settings (needed for /register page check)
+-- Anyone can read (needed for /register page before login)
 create policy "Public can read settings"
   on platform_settings for select
   using (true);
 
--- Only authenticated users (admins) can insert/update/delete
+-- Only logged-in users (admins) can write
 create policy "Authenticated users can update settings"
   on platform_settings for all
   using (auth.role() = 'authenticated')

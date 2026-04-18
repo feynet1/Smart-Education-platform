@@ -16,9 +16,16 @@ const AcceptInvite = () => {
     const [invitedEmail, setInvitedEmail] = useState('');
 
     useEffect(() => {
+        // Check if already signed in (e.g. redirected from ProtectedRoute with pendingInvite)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                setInvitedEmail(session.user.email ?? '');
+                setSessionReady(true);
+            }
+        });
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
-                // Lock the email from the invite token — user cannot change it
                 setInvitedEmail(session.user.email ?? '');
                 setSessionReady(true);
             }

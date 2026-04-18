@@ -28,17 +28,13 @@ export const AdminProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : [];
     };
 
-    const [users, setUsers] = useState(() => {
-        const saved = localStorage.getItem('admin_users');
-        return saved ? JSON.parse(saved) : [
-            { id: 1, name: 'Admin User',     email: 'admin@test.com',    role: 'Admin',   status: 'active',   createdAt: '2025-01-01' },
-            { id: 2, name: 'Test Teacher',   email: 'teacher@test.com',  role: 'Teacher', status: 'active',   createdAt: '2025-06-15' },
-            { id: 3, name: 'Test Student',   email: 'student@test.com',  role: 'Student', status: 'active',   createdAt: '2025-09-01' },
-            { id: 4, name: 'Alice Johnson',  email: 'alice@test.com',    role: 'Student', status: 'active',   createdAt: '2025-09-10' },
-            { id: 5, name: 'Bob Smith',      email: 'bob@test.com',      role: 'Student', status: 'inactive', createdAt: '2025-08-20' },
-            { id: 6, name: 'Prof. Williams', email: 'williams@test.com', role: 'Teacher', status: 'active',   createdAt: '2025-03-12' },
-        ];
-    });
+    // Start empty — will be populated from Supabase only
+    const [users, setUsers] = useState([]);
+
+    // Clear any stale mock user data from localStorage
+    useEffect(() => {
+        localStorage.removeItem('admin_users');
+    }, []);
 
     const [events, setEvents] = useState(() => {
         const saved = localStorage.getItem('admin_events');
@@ -88,9 +84,7 @@ export const AdminProvider = ({ children }) => {
         fetchSettings();
     }, []);
 
-    // Shared error state so UI can show snackbar instead of alert()
-
-    // Fetch real users from Supabase on load
+    // Fetch real users from Supabase — replaces list entirely
     useEffect(() => {
         const fetchRealUsers = async () => {
             try {
@@ -101,17 +95,15 @@ export const AdminProvider = ({ children }) => {
                 if (data?.users) {
                     const mappedUsers = data.users.map(u => ({
                         id: u.id,
-                        name: u.user_metadata?.name || 'Unknown',
+                        name: u.user_metadata?.name || u.email?.split('@')[0] || 'Unknown',
                         email: u.email,
                         role: u.user_metadata?.role || 'Student',
-                        status: u.banned_until ? 'inactive' : 'active',
+                        status: u.banned_until ? 'inactive'
+                              : u.invited_at && !u.last_sign_in_at ? 'invited'
+                              : 'active',
                         createdAt: new Date(u.created_at).toISOString().split('T')[0]
                     }));
-                    setUsers(prevUsers => {
-                        const newEmails = new Set(mappedUsers.map(u => u.email));
-                        const filteredMock = prevUsers.filter(u => !newEmails.has(u.email));
-                        return [...filteredMock, ...mappedUsers];
-                    });
+                    setUsers(mappedUsers);
                 }
             } catch (err) {
                 console.error('Failed to fetch real users:', err);
@@ -120,7 +112,6 @@ export const AdminProvider = ({ children }) => {
         fetchRealUsers();
     }, []);
 
-    useEffect(() => { localStorage.setItem('admin_users',    JSON.stringify(users));       }, [users]);
     useEffect(() => { localStorage.setItem('admin_events',   JSON.stringify(events));      }, [events]);
     useEffect(() => { localStorage.setItem('admin_logs',     JSON.stringify(systemLogs));  }, [systemLogs]);
 
@@ -141,28 +132,32 @@ export const AdminProvider = ({ children }) => {
         setSystemLogs(prev => [newLog, ...prev].slice(0, 50));
     };
 
-    // Update role — syncs to Supabase for real users, local-only for mock users
-    const updateUserRole = async (userId, newRole) => {
+    // Update role & name — syncs to Supabase for real users
+    const updateUserRole = async (userId, newRole, newName) => {
         const user = users.find(u => u.id === userId);
         const prevRole = user?.role;
+        const prevName = user?.name;
 
         // Optimistic update
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-        addLog(`Changed user role to ${newRole}`, 'Admin');
+        setUsers(prev => prev.map(u => u.id === userId
+            ? { ...u, role: newRole, name: newName || u.name }
+            : u
+        ));
+        addLog(`Updated user: role=${newRole}${newName ? `, name=${newName}` : ''}`, 'Admin');
 
         const isRealUser = String(userId).includes('-');
         if (!isRealUser) return { success: true };
 
         try {
             const { error } = await supabase.functions.invoke('admin-user-manager', {
-                body: { action: 'update-role', payload: { userId, role: newRole } }
+                body: { action: 'update-role', payload: { userId, role: newRole, name: newName || prevName } }
             });
             if (error) throw error;
             return { success: true };
         } catch (err) {
-            // Rollback to previous role
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: prevRole } : u));
-            return { success: false, error: `Failed to update role: ${err.message}` };
+            // Rollback
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: prevRole, name: prevName } : u));
+            return { success: false, error: `Failed to update user: ${err.message}` };
         }
     };
 
@@ -272,8 +267,7 @@ export const AdminProvider = ({ children }) => {
         try {
             const upserts = Object.entries(newSettings).map(([key, value]) => ({
                 key,
-                // Store booleans as JSON booleans, strings as JSON strings
-                value: value,
+                value,
                 updated_at: new Date().toISOString()
             }));
             const { error } = await supabase
@@ -284,8 +278,10 @@ export const AdminProvider = ({ children }) => {
                 throw error;
             }
             console.log('[settings] saved to Supabase:', newSettings);
+            return { success: true };
         } catch (err) {
             console.error('Failed to save settings to Supabase:', err.message);
+            return { success: false, error: err.message };
         }
     };
 

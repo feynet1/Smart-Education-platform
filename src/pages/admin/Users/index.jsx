@@ -27,6 +27,7 @@ const UsersManagement = () => {
     const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null });
     const [addFormData, setAddFormData] = useState({ name: '', email: '', role: 'Student' });
     const [selectedRole, setSelectedRole] = useState('');
+    const [selectedName, setSelectedName] = useState('');
     const [snackbar, setSnackbar]       = useState({ open: false, message: '', severity: 'success' });
 
     const showSuccess = (message) => setSnackbar({ open: true, message, severity: 'success' });
@@ -42,9 +43,9 @@ const UsersManagement = () => {
 
     const handleRoleChange = async () => {
         if (editDialog.user && selectedRole) {
-            const result = await updateUserRole(editDialog.user.id, selectedRole);
+            const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName);
             if (result?.success !== false) {
-                showSuccess(`Role updated to ${selectedRole}`);
+                showSuccess('User updated successfully');
             } else {
                 showError(result.error);
             }
@@ -117,10 +118,11 @@ const UsersManagement = () => {
             field: 'actions', headerName: 'Actions', width: 130, sortable: false,
             renderCell: (params) => (
                 <Box display="flex" gap={1}>
-                    <Tooltip title="Edit Role">
+                    <Tooltip title="Edit User">
                         <IconButton size="small" onClick={() => {
                             setEditDialog({ open: true, user: params.row });
                             setSelectedRole(params.row.role);
+                            setSelectedName(params.row.name);
                         }}>
                             <Edit fontSize="small" />
                         </IconButton>
@@ -194,25 +196,30 @@ const UsersManagement = () => {
                 />
             </Paper>
 
-            {/* Edit Role Dialog */}
+            {/* Edit User Dialog */}
             <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, user: null })}>
-                <DialogTitle>Edit User Role</DialogTitle>
-                <DialogContent sx={{ minWidth: 300 }}>
-                    <Typography variant="body2" color="text.secondary" mb={2}>
-                        Change role for: <strong>{editDialog.user?.name}</strong>
-                    </Typography>
-                    <FormControl fullWidth>
-                        <InputLabel>Role</InputLabel>
-                        <Select value={selectedRole} label="Role" onChange={(e) => setSelectedRole(e.target.value)}>
-                            <MenuItem value="Admin">Admin</MenuItem>
-                            <MenuItem value="Teacher">Teacher</MenuItem>
-                            <MenuItem value="Student">Student</MenuItem>
-                        </Select>
-                    </FormControl>
+                <DialogTitle>Edit User</DialogTitle>
+                <DialogContent sx={{ minWidth: 320 }}>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                        <TextField
+                            label="Full Name" fullWidth
+                            value={selectedName}
+                            onChange={(e) => setSelectedName(e.target.value)}
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Role</InputLabel>
+                            <Select value={selectedRole} label="Role" onChange={(e) => setSelectedRole(e.target.value)}>
+                                <MenuItem value="Admin">Admin</MenuItem>
+                                <MenuItem value="Teacher">Teacher</MenuItem>
+                                <MenuItem value="Student">Student</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setEditDialog({ open: false, user: null })}>Cancel</Button>
-                    <Button onClick={handleRoleChange} variant="contained">Save</Button>
+                    <Button onClick={handleRoleChange} variant="contained"
+                        disabled={!selectedName || !selectedRole}>Save</Button>
                 </DialogActions>
             </Dialog>
 
