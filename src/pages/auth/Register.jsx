@@ -116,7 +116,9 @@ const Register = () => {
                     .eq('key', 'registrationEnabled')
                     .single();
                 if (error) throw error;
-                setRegistrationEnabled(data?.value === true);
+                // jsonb column returns the value as a JS value directly
+                const val = data?.value;
+                setRegistrationEnabled(val === true || val === 'true');
             } catch {
                 // If table doesn't exist or fetch fails, default to invite-only
                 setRegistrationEnabled(false);

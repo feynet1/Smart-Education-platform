@@ -75,7 +75,10 @@ export const AdminProvider = ({ children }) => {
                 if (error) throw error;
                 if (data?.length) {
                     const merged = {};
-                    data.forEach(row => { merged[row.key] = row.value; });
+                    data.forEach(row => {
+                        // jsonb returns values as JS types directly
+                        merged[row.key] = row.value;
+                    });
                     setSettings(prev => ({ ...prev, ...merged }));
                 }
             } catch (err) {
@@ -266,19 +269,23 @@ export const AdminProvider = ({ children }) => {
     const updateSettings = async (newSettings) => {
         setSettings(prev => ({ ...prev, ...newSettings }));
         addLog('Updated platform settings', 'Admin');
-        // Persist each changed key to Supabase
         try {
             const upserts = Object.entries(newSettings).map(([key, value]) => ({
                 key,
-                value,
+                // Store booleans as JSON booleans, strings as JSON strings
+                value: value,
                 updated_at: new Date().toISOString()
             }));
             const { error } = await supabase
                 .from('platform_settings')
                 .upsert(upserts, { onConflict: 'key' });
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase settings upsert error:', error);
+                throw error;
+            }
+            console.log('[settings] saved to Supabase:', newSettings);
         } catch (err) {
-            console.error('Failed to save settings to Supabase:', err);
+            console.error('Failed to save settings to Supabase:', err.message);
         }
     };
 
