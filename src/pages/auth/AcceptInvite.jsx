@@ -8,17 +8,18 @@ import { supabase } from '../../supabaseClient';
 
 const AcceptInvite = () => {
     const navigate = useNavigate();
-    const [password, setPassword] = useState('');
-    const [confirm, setConfirm] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [password, setPassword]   = useState('');
+    const [confirm, setConfirm]     = useState('');
+    const [error, setError]         = useState('');
+    const [loading, setLoading]     = useState(false);
     const [sessionReady, setSessionReady] = useState(false);
+    const [invitedEmail, setInvitedEmail] = useState('');
 
-    // Supabase puts the token in the URL hash on invite links.
-    // The JS client picks it up automatically via onAuthStateChange.
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
+                // Lock the email from the invite token — user cannot change it
+                setInvitedEmail(session.user.email ?? '');
                 setSessionReady(true);
             }
         });
@@ -40,12 +41,15 @@ const AcceptInvite = () => {
 
         setLoading(true);
         try {
+            // Only update password — never allow email change here
             const { error: updateError } = await supabase.auth.updateUser({ password });
             if (updateError) throw updateError;
 
-            // Redirect to login after password is set
             await supabase.auth.signOut();
-            navigate('/login', { replace: true, state: { message: 'Password set successfully. Please log in.' } });
+            navigate('/login', {
+                replace: true,
+                state: { message: 'Account activated! Please log in with your new password.' }
+            });
         } catch (err) {
             setError(err.message ?? 'Failed to set password. The invite link may have expired.');
         } finally {
@@ -61,7 +65,7 @@ const AcceptInvite = () => {
                         <CircularProgress sx={{ mb: 2 }} />
                         <Typography variant="body1">Verifying your invite link...</Typography>
                         <Typography variant="body2" color="text.secondary" mt={1}>
-                            If this takes too long, the link may have expired. Request a new invite from your admin.
+                            If this takes too long, the link may have expired. Ask your admin to resend the invite.
                         </Typography>
                     </CardContent>
                 </Card>
@@ -74,15 +78,22 @@ const AcceptInvite = () => {
             <Card sx={{ p: 2 }}>
                 <CardContent>
                     <Typography component="h1" variant="h5" align="center" gutterBottom>
-                        Set Your Password
+                        Activate Your Account
                     </Typography>
                     <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-                        Welcome! Choose a password to activate your account.
+                        Set a password for your account.
                     </Typography>
 
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
                     <Box component="form" onSubmit={handleSubmit} noValidate>
+                        {/* Read-only email — locked to the invited address */}
+                        <TextField
+                            margin="normal" fullWidth
+                            label="Email" value={invitedEmail}
+                            disabled
+                            helperText="This is the email your account is tied to"
+                        />
                         <TextField
                             margin="normal" required fullWidth
                             label="New Password" type="password"

@@ -58,15 +58,32 @@ export const AdminProvider = ({ children }) => {
         ];
     });
 
-    const [settings, setSettings] = useState(() => {
-        const saved = localStorage.getItem('admin_settings');
-        return saved ? JSON.parse(saved) : {
-            registrationEnabled: true,
-            academicYear: '2025-2026',
-            semesterName: 'Spring 2026',
-            maintenanceMode: false,
-        };
+    const [settings, setSettings] = useState({
+        registrationEnabled: false,
+        academicYear: '2025-2026',
+        semesterName: 'Spring 2026',
+        maintenanceMode: false,
     });
+
+    // Load settings from Supabase on mount
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('platform_settings')
+                    .select('key, value');
+                if (error) throw error;
+                if (data?.length) {
+                    const merged = {};
+                    data.forEach(row => { merged[row.key] = row.value; });
+                    setSettings(prev => ({ ...prev, ...merged }));
+                }
+            } catch (err) {
+                console.error('Failed to fetch platform settings:', err);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     // Shared error state so UI can show snackbar instead of alert()
 
@@ -103,7 +120,6 @@ export const AdminProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('admin_users',    JSON.stringify(users));       }, [users]);
     useEffect(() => { localStorage.setItem('admin_events',   JSON.stringify(events));      }, [events]);
     useEffect(() => { localStorage.setItem('admin_logs',     JSON.stringify(systemLogs));  }, [systemLogs]);
-    useEffect(() => { localStorage.setItem('admin_settings', JSON.stringify(settings));    }, [settings]);
 
     const stats = {
         totalStudents: users.filter(u => u.role === 'Student').length,
@@ -247,9 +263,23 @@ export const AdminProvider = ({ children }) => {
         addLog('Deleted event', 'Admin');
     };
 
-    const updateSettings = (newSettings) => {
+    const updateSettings = async (newSettings) => {
         setSettings(prev => ({ ...prev, ...newSettings }));
         addLog('Updated platform settings', 'Admin');
+        // Persist each changed key to Supabase
+        try {
+            const upserts = Object.entries(newSettings).map(([key, value]) => ({
+                key,
+                value,
+                updated_at: new Date().toISOString()
+            }));
+            const { error } = await supabase
+                .from('platform_settings')
+                .upsert(upserts, { onConflict: 'key' });
+            if (error) throw error;
+        } catch (err) {
+            console.error('Failed to save settings to Supabase:', err);
+        }
     };
 
     const value = {
