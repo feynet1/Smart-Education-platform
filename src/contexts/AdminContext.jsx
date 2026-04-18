@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
 const AdminContext = createContext();
 
@@ -118,23 +119,59 @@ export const AdminProvider = ({ children }) => {
         addLog('Toggled user status', 'Admin');
     };
 
-    const addUser = (userData) => {
-        const newUser = {
-            id: Date.now(),
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            status: 'active',
-            createdAt: new Date().toISOString().split('T')[0]
-        };
-        setUsers([newUser, ...users]);
-        addLog(`Added new user: ${userData.name}`, 'Admin');
+    const addUser = async (userData) => {
+        try {
+            const { data, error } = await supabase.functions.invoke('admin-user-manager', {
+                body: { 
+                    action: 'create', 
+                    payload: { ...userData, password: 'TemporaryPassword123!' } 
+                }
+            });
+            
+            if (error) throw error;
+            
+            const newUser = {
+                id: data.user.id,
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                status: 'active',
+                createdAt: new Date().toISOString().split('T')[0]
+            };
+            setUsers([newUser, ...users]);
+            addLog(`Added new Supabase user: ${userData.name}`, 'Admin');
+        } catch (err) {
+            console.error("Failed to add user:", err);
+            // Show the actual error message from Supabase or network:
+            const errorMsg = err.message || err.error?.message || "Unknown error";
+            alert(`Failed to create user in Supabase: ${errorMsg}`);
+        }
     };
 
-    const deleteUser = (userId) => {
-        const user = users.find(u => u.id === userId);
-        setUsers(users.filter(u => u.id !== userId));
-        addLog(`Deleted user: ${user ? user.name : userId}`, 'Admin');
+    const deleteUser = async (userId) => {
+        try {
+            // Check if it's a test/mock user without a real Supabase UUID
+            if (!String(userId).includes('-')) {
+                const user = users.find(u => u.id === userId);
+                setUsers(users.filter(u => u.id !== userId));
+                addLog(`Deleted local mock user: ${user ? user.name : userId}`, 'Admin');
+                return;
+            }
+
+            const { error } = await supabase.functions.invoke('admin-user-manager', {
+                body: { action: 'delete', payload: { userId } }
+            });
+            
+            if (error) throw error;
+            
+            const user = users.find(u => u.id === userId);
+            setUsers(users.filter(u => u.id !== userId));
+            addLog(`Deleted Supabase user: ${user ? user.name : userId}`, 'Admin');
+        } catch (err) {
+            console.error("Failed to delete user:", err);
+            const errorMsg = err.message || err.error?.message || "Unknown error";
+            alert(`Failed to delete user in Supabase: ${errorMsg}`);
+        }
     };
 
     const addEvent = (event) => {
