@@ -203,7 +203,7 @@ export const AdminProvider = ({ children }) => {
                 try {
                     const context = await error.context?.json?.();
                     if (context?.error) msg = context.error;
-                } catch (_) { /* ignore */ }
+                } catch { /* ignore */ }
                 throw new Error(msg);
             }
 

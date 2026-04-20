@@ -11,6 +11,7 @@ import TeacherLayout from './layouts/TeacherLayout';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import AcceptInvite from './pages/auth/AcceptInvite';
+import Landing from './pages/Landing';
 
 // Student imports
 import { StudentProvider } from './contexts/StudentContext';
@@ -51,12 +52,10 @@ function App() {
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/accept-invite" element={<AcceptInvite />} />
-
-            {/* Default Redirect */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
 
             {/* Student Routes */}
             <Route
