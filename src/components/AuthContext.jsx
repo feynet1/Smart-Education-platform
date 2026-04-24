@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser]       = useState(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [noProfile, setNoProfile] = useState(false); // true when user exists but has no profile row
     // True when the session came from an invite link — user must set password first
     const [pendingInvite, setPendingInvite] = useState(false);
 
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }) => {
             } else {
                 setProfile(null);
                 setPendingInvite(false);
+                setNoProfile(false);
                 setLoading(false);
             }
         });
@@ -73,13 +75,18 @@ export const AuthProvider = ({ children }) => {
                 .select('*')
                 .eq('id', userId)
                 .single();
-            if (error) {
-                console.error('Error fetching profile:', error);
+            if (error || !data) {
+                // No profile row — user signed in via Google without being invited
+                console.warn('No profile found for user:', userId);
+                setNoProfile(true);
+                setProfile(null);
             } else {
+                setNoProfile(false);
                 setProfile(data);
             }
         } catch (error) {
             console.error('Error in fetchProfile:', error);
+            setNoProfile(true);
         } finally {
             setLoading(false);
         }
@@ -113,6 +120,7 @@ export const AuthProvider = ({ children }) => {
         const { error } = await supabase.auth.signOut();
         if (error) throw getErrorMessage(error);
         setPendingInvite(false);
+        setNoProfile(false);
         window.location.href = '/';
     };
 
@@ -120,6 +128,7 @@ export const AuthProvider = ({ children }) => {
         user, profile,
         isAuthenticated: !!user,
         pendingInvite,
+        noProfile,
         loading,
         login, loginWithGoogle, register, logout,
     };

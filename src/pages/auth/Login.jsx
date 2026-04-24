@@ -22,12 +22,21 @@ import { loginSchema } from '../../utils/validationSchemas';
 import useAuth from '../../hooks/useAuth';
 
 const Login = () => {
-    const { login, loginWithGoogle, profile, isAuthenticated } = useAuth();
+    const { login, loginWithGoogle, logout, profile, isAuthenticated, noProfile } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [serverError, setServerError] = useState('');
     const [successMessage] = useState(location.state?.message || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // If authenticated but no profile — user signed in via Google without an invite
+    // Sign them out immediately and show an error
+    useEffect(() => {
+        if (isAuthenticated && noProfile) {
+            logout();
+            setServerError('No account found. Please ask your administrator to invite you.');
+        }
+    }, [isAuthenticated, noProfile, logout]);
 
     // If suddenly authenticated and profile is loaded (e.g. after Google OAuth redirect)
     useEffect(() => {
