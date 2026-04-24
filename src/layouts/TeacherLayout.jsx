@@ -60,7 +60,6 @@ const TeacherLayout = () => {
     const handleLogout = () => {
         handleClose();
         logout();
-        navigate('/login');
     };
 
     const menuItems = [

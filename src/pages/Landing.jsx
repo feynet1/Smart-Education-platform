@@ -7,10 +7,15 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import EventIcon from '@mui/icons-material/Event';
 import SecurityIcon from '@mui/icons-material/Security';
 
-import img1 from '../images/images.jpg';
-import img2 from '../images/images (1).jpg';
-import img3 from '../images/images (2).jpg';
-import img4 from '../images/images (3).jpg';
+import img1 from '../images/imag_LE_upscale_prime.jpg';
+import img2 from '../images/imag1_LE_upscale_prime.jpg';
+import img3 from '../images/imag2_LE_upscale_prime.jpg';
+import img4 from '../images/imag4_LE_upscale_prime.jpg';
+import img5 from '../images/imag5_LE_upscale_prime.jpg';
+import img6 from '../images/imag6_LE_upscale_prime.jpg';
+import img7 from '../images/imag7_LE_upscale_prime.jpg';
+import img8 from '../images/imag8_LE_upscale_prime.jpg';
+import img9 from '../images/imag9_LE_upscale_prime.jpg';
 
 const features = [
     {
@@ -52,7 +57,7 @@ const stats = [
     { value: 'Secure', label: 'Auth System' },
 ];
 
-const gallery = [img1, img2, img3, img4];
+const gallery = [img1, img2, img3, img4, img5, img6, img7, img8, img9];
 
 const Landing = () => {
     return (
@@ -94,8 +99,8 @@ const Landing = () => {
                             </Box>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <Box sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-                                <img src={img1} alt="Education platform" style={{ width: '100%', height: 340, objectFit: 'cover', display: 'block' }} />
+                            <Box sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', height: 360 }}>
+                                <img src={img9} alt="Education platform" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                             </Box>
                         </Grid>
                     </Grid>
@@ -121,10 +126,10 @@ const Landing = () => {
                 <Grid container spacing={6} alignItems="center">
                     <Grid item xs={12} md={6}>
                         <Grid container spacing={2}>
-                            {[img2, img3].map((img, i) => (
+                            {[img1, img2, img3, img4].map((img, i) => (
                                 <Grid item xs={6} key={i}>
-                                    <Box sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: 3 }}>
-                                        <img src={img} alt={`education ${i}`} style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+                                    <Box sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: 3, height: 180 }}>
+                                        <img src={img} alt={`education ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                     </Box>
                                 </Grid>
                             ))}
@@ -184,9 +189,9 @@ const Landing = () => {
                 </Box>
                 <Grid container spacing={2}>
                     {gallery.map((img, i) => (
-                        <Grid item xs={12} sm={6} md={3} key={i}>
-                            <Box sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: 2 }}>
-                                <img src={img} alt={`gallery ${i}`} style={{ width: '100%', height: 200, objectFit: 'cover', display: 'block' }} />
+                        <Grid item xs={12} sm={6} md={4} key={i}>
+                            <Box sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: 2, height: 220, transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.03)', boxShadow: 6 } }}>
+                                <img src={img} alt={`gallery ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                             </Box>
                         </Grid>
                     ))}

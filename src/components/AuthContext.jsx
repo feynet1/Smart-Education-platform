@@ -113,6 +113,7 @@ export const AuthProvider = ({ children }) => {
         const { error } = await supabase.auth.signOut();
         if (error) throw getErrorMessage(error);
         setPendingInvite(false);
+        window.location.href = '/';
     };
 
     const value = {

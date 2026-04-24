@@ -1,8 +1,7 @@
 /**
  * Admin Reports & Logs
- * 
- * View system activity logs and generate reports.
- * Provides audit trail for administrative actions.
+ *
+ * Fetches activity logs from Supabase and provides search, filter, and CSV export.
  */
 import { useState } from 'react';
 import {
@@ -25,13 +24,14 @@ import {
     TableRow,
     TablePagination,
     Snackbar,
-    Alert
+    Alert,
+    CircularProgress,
 } from '@mui/material';
 import { Search, Download, Refresh, History } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 
 const ReportsAndLogs = () => {
-    const { systemLogs } = useAdmin();
+    const { systemLogs, logsLoading, fetchLogs } = useAdmin();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
@@ -39,22 +39,31 @@ const ReportsAndLogs = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    // Get unique action types
+    // Get unique action type prefixes for the filter dropdown
     const actionTypes = [...new Set(systemLogs.map(log => log.action.split(' ')[0]))];
 
     // Filter logs
     const filteredLogs = systemLogs.filter(log => {
-        const matchesSearch = log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch =
+            log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.user.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesAction = actionFilter === 'all' || log.action.startsWith(actionFilter);
         return matchesSearch && matchesAction;
     });
 
-    // Handle export
+    // Handle refresh
+    const handleRefresh = async () => {
+        await fetchLogs();
+        setSnackbar({ open: true, message: 'Logs refreshed', severity: 'info' });
+    };
+
+    // Handle CSV export
     const handleExport = () => {
         const csvContent = [
             ['ID', 'Action', 'User', 'Timestamp'].join(','),
-            ...filteredLogs.map(log => [log.id, `"${log.action}"`, log.user, log.timestamp].join(','))
+            ...filteredLogs.map(log =>
+                [log.id, `"${log.action}"`, log.user, log.timestamp].join(',')
+            ),
         ].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -63,15 +72,16 @@ const ReportsAndLogs = () => {
         a.href = url;
         a.download = `activity_logs_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
+        window.URL.revokeObjectURL(url);
 
         setSnackbar({ open: true, message: 'Logs exported successfully', severity: 'success' });
     };
 
-    // Action type colors
+    // Chip color based on action keyword
     const getActionColor = (action) => {
-        if (action.includes('Created') || action.includes('logged in')) return 'success';
+        if (action.includes('Created') || action.includes('logged in') || action.includes('Invited')) return 'success';
         if (action.includes('Deleted') || action.includes('removed')) return 'error';
-        if (action.includes('Updated') || action.includes('Changed')) return 'warning';
+        if (action.includes('Updated') || action.includes('Changed') || action.includes('Toggled')) return 'warning';
         return 'default';
     };
 
@@ -84,11 +94,16 @@ const ReportsAndLogs = () => {
                         Reports & Activity Logs
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        View system activity and audit trail ({systemLogs.length} total entries)
+                        Live system activity from Supabase ({systemLogs.length} total entries)
                     </Typography>
                 </Box>
                 <Box display="flex" gap={1}>
-                    <Button variant="outlined" startIcon={<Refresh />}>
+                    <Button
+                        variant="outlined"
+                        startIcon={logsLoading ? <CircularProgress size={16} /> : <Refresh />}
+                        onClick={handleRefresh}
+                        disabled={logsLoading}
+                    >
                         Refresh
                     </Button>
                     <Button variant="contained" startIcon={<Download />} onClick={handleExport}>
@@ -108,13 +123,21 @@ const ReportsAndLogs = () => {
                     </Box>
                     <Box textAlign="center">
                         <Typography variant="h4" fontWeight="bold" color="success.main">
-                            {systemLogs.filter(l => l.action.includes('Created') || l.action.includes('logged')).length}
+                            {systemLogs.filter(l =>
+                                l.action.includes('Created') ||
+                                l.action.includes('logged') ||
+                                l.action.includes('Invited')
+                            ).length}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">Create Actions</Typography>
+                        <Typography variant="body2" color="text.secondary">Create / Login</Typography>
                     </Box>
                     <Box textAlign="center">
                         <Typography variant="h4" fontWeight="bold" color="warning.main">
-                            {systemLogs.filter(l => l.action.includes('Updated') || l.action.includes('Changed')).length}
+                            {systemLogs.filter(l =>
+                                l.action.includes('Updated') ||
+                                l.action.includes('Changed') ||
+                                l.action.includes('Toggled')
+                            ).length}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">Update Actions</Typography>
                     </Box>
@@ -132,10 +155,10 @@ const ReportsAndLogs = () => {
                 <Box display="flex" gap={2} flexWrap="wrap">
                     <TextField
                         size="small"
-                        placeholder="Search logs..."
+                        placeholder="Search by action or user..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        sx={{ minWidth: 250 }}
+                        onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+                        sx={{ minWidth: 260 }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -144,12 +167,12 @@ const ReportsAndLogs = () => {
                             ),
                         }}
                     />
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
                         <InputLabel>Action Type</InputLabel>
                         <Select
                             value={actionFilter}
                             label="Action Type"
-                            onChange={(e) => setActionFilter(e.target.value)}
+                            onChange={(e) => { setActionFilter(e.target.value); setPage(0); }}
                         >
                             <MenuItem value="all">All Actions</MenuItem>
                             {actionTypes.map(type => (
@@ -173,35 +196,46 @@ const ReportsAndLogs = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredLogs.length > 0 ? filteredLogs
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((log) => (
-                                    <TableRow key={log.id} hover>
-                                        <TableCell>
-                                            <Typography variant="caption" color="text.secondary">
-                                                #{log.id}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box display="flex" alignItems="center" gap={1}>
-                                                <History fontSize="small" color="action" />
-                                                <Typography variant="body2">{log.action}</Typography>
-                                                <Chip
-                                                    label={log.action.split(' ')[0]}
-                                                    size="small"
-                                                    color={getActionColor(log.action)}
-                                                    variant="outlined"
-                                                />
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>{log.user}</TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {log.timestamp}
-                                            </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
+                            {logsLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                                        <CircularProgress size={32} />
+                                        <Typography variant="body2" color="text.secondary" mt={1}>
+                                            Loading logs from Supabase…
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredLogs.length > 0 ? (
+                                filteredLogs
+                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                    .map((log) => (
+                                        <TableRow key={log.id} hover>
+                                            <TableCell>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    #{log.id}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box display="flex" alignItems="center" gap={1}>
+                                                    <History fontSize="small" color="action" />
+                                                    <Typography variant="body2">{log.action}</Typography>
+                                                    <Chip
+                                                        label={log.action.split(' ')[0]}
+                                                        size="small"
+                                                        color={getActionColor(log.action)}
+                                                        variant="outlined"
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>{log.user}</TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {log.timestamp}
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                            ) : (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                                         <Typography color="text.secondary">No logs found</Typography>

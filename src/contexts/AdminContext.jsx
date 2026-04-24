@@ -45,14 +45,34 @@ export const AdminProvider = ({ children }) => {
         ];
     });
 
-    const [systemLogs, setSystemLogs] = useState(() => {
-        const saved = localStorage.getItem('admin_logs');
-        return saved ? JSON.parse(saved) : [
-            { id: 1, action: 'Admin logged in',                user: 'admin@test.com',   timestamp: '2026-01-27 10:00:00' },
-            { id: 2, action: 'Teacher created course "Math 101"', user: 'teacher@test.com', timestamp: '2026-01-26 15:30:00' },
-            { id: 3, action: 'Student joined course',          user: 'student@test.com', timestamp: '2026-01-26 16:00:00' },
-        ];
-    });
+    const [systemLogs, setSystemLogs] = useState([]);
+    const [logsLoading, setLogsLoading] = useState(false);
+
+    // Fetch activity logs from Supabase
+    const fetchLogs = async () => {
+        setLogsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('activity_logs')
+                .select('id, action, user, created_at')
+                .order('created_at', { ascending: false })
+                .limit(200);
+            if (error) throw error;
+            const mapped = (data || []).map(row => ({
+                id: row.id,
+                action: row.action,
+                user: row.user,
+                timestamp: new Date(row.created_at).toISOString().replace('T', ' ').substring(0, 19),
+            }));
+            setSystemLogs(mapped);
+        } catch (err) {
+            console.error('Failed to fetch activity logs:', err);
+        } finally {
+            setLogsLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchLogs(); }, []);
 
     const [settings, setSettings] = useState({
         registrationEnabled: false,
@@ -113,7 +133,6 @@ export const AdminProvider = ({ children }) => {
     }, []);
 
     useEffect(() => { localStorage.setItem('admin_events',   JSON.stringify(events));      }, [events]);
-    useEffect(() => { localStorage.setItem('admin_logs',     JSON.stringify(systemLogs));  }, [systemLogs]);
 
     const stats = {
         totalStudents: users.filter(u => u.role === 'Student').length,
@@ -122,14 +141,15 @@ export const AdminProvider = ({ children }) => {
         activeClasses: getTeacherCourses().length,
     };
 
-    const addLog = (action, user) => {
-        const newLog = {
-            id: Date.now(),
-            action,
-            user,
-            timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
-        };
-        setSystemLogs(prev => [newLog, ...prev].slice(0, 50));
+    const addLog = async (action, user) => {
+        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        const optimistic = { id: Date.now(), action, user, timestamp };
+        setSystemLogs(prev => [optimistic, ...prev].slice(0, 200));
+        try {
+            await supabase.from('activity_logs').insert({ action, user });
+        } catch (err) {
+            console.error('Failed to persist log:', err);
+        }
     };
 
     // Update role & name — syncs to Supabase for real users
@@ -286,14 +306,14 @@ export const AdminProvider = ({ children }) => {
     };
 
     const value = {
-        users, events, systemLogs, settings, stats,
+        users, events, systemLogs, logsLoading, settings, stats,
         courses: getTeacherCourses(),
         attendance: getTeacherAttendance(),
         notes: getTeacherNotes(),
         grades: getStudentGrades(),
         enrollments: getStudentEnrollments(),
         updateUserRole, toggleUserStatus, addUser, deleteUser,
-        addEvent, deleteEvent, updateSettings, addLog,
+        addEvent, deleteEvent, updateSettings, addLog, fetchLogs,
     };
 
     return (
