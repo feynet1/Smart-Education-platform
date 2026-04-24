@@ -281,6 +281,80 @@ export const AdminProvider = ({ children }) => {
         addLog('Deleted event', 'Admin');
     };
 
+    // ── Danger Zone ──────────────────────────────────────────
+
+    // Clear all activity logs from Supabase
+    const clearAllLogs = async () => {
+        try {
+            const { error } = await supabase.from('activity_logs').delete().neq('id', 0);
+            if (error) throw error;
+            setSystemLogs([]);
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to clear logs:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Reset all platform data: logs, events (localStorage), courses, attendance, notes, grades, enrollments
+    const resetAllData = async () => {
+        try {
+            // Clear Supabase logs
+            const { error } = await supabase.from('activity_logs').delete().neq('id', 0);
+            if (error) throw error;
+
+            // Clear all localStorage data
+            const keys = [
+                'admin_events', 'teacher_courses', 'teacher_attendance',
+                'teacher_notes', 'student_grades', 'student_enrollments',
+            ];
+            keys.forEach(k => localStorage.removeItem(k));
+
+            // Reset state
+            setSystemLogs([]);
+            setEvents([]);
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to reset data:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Export all logs as a downloadable JSON
+    const exportDatabase = async () => {
+        try {
+            const { data: logs, error: logsErr } = await supabase
+                .from('activity_logs')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (logsErr) throw logsErr;
+
+            const { data: settings, error: settingsErr } = await supabase
+                .from('platform_settings')
+                .select('*');
+            if (settingsErr) throw settingsErr;
+
+            const exportData = {
+                exported_at: new Date().toISOString(),
+                platform_settings: settings,
+                activity_logs: logs,
+                events: JSON.parse(localStorage.getItem('admin_events') || '[]'),
+                courses: JSON.parse(localStorage.getItem('teacher_courses') || '[]'),
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `eduplatform_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to export database:', err);
+            return { success: false, error: err.message };
+        }
+    };
     const updateSettings = async (newSettings) => {
         setSettings(prev => ({ ...prev, ...newSettings }));
         addLog('Updated platform settings', 'Admin');
@@ -314,6 +388,7 @@ export const AdminProvider = ({ children }) => {
         enrollments: getStudentEnrollments(),
         updateUserRole, toggleUserStatus, addUser, deleteUser,
         addEvent, deleteEvent, updateSettings, addLog, fetchLogs,
+        clearAllLogs, resetAllData, exportDatabase,
     };
 
     return (

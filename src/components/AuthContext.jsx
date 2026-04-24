@@ -76,8 +76,7 @@ export const AuthProvider = ({ children }) => {
                 .eq('id', userId)
                 .single();
             if (error || !data) {
-                // No profile row — uninvited user tried to sign in via Google.
-                // Kill the session immediately and redirect to login with an error message.
+                // No profile row — uninvited user. Kill session and redirect.
                 console.warn('No profile found for user — signing out:', userId);
                 await supabase.auth.signOut();
                 setUser(null);
