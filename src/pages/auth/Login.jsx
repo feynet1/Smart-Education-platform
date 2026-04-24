@@ -22,23 +22,21 @@ import { loginSchema } from '../../utils/validationSchemas';
 import useAuth from '../../hooks/useAuth';
 
 const Login = () => {
-    const { login, loginWithGoogle, logout, profile, isAuthenticated, noProfile } = useAuth();
+    const { login, loginWithGoogle, profile, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [serverError, setServerError] = useState('');
+
+    // Read ?error=no_account from URL (set by AuthContext after killing an uninvited Google session)
+    const searchParams = new URLSearchParams(location.search);
+    const urlError = searchParams.get('error') === 'no_account'
+        ? 'No account found for this Google address. Contact your administrator to get invited.'
+        : '';
+
+    const [serverError, setServerError] = useState(urlError);
     const [successMessage] = useState(location.state?.message || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // If authenticated but no profile — user signed in via Google without an invite
-    // Sign them out immediately and show an error
-    useEffect(() => {
-        if (isAuthenticated && noProfile) {
-            logout();
-            setServerError('No account found. Please ask your administrator to invite you.');
-        }
-    }, [isAuthenticated, noProfile, logout]);
-
-    // If suddenly authenticated and profile is loaded (e.g. after Google OAuth redirect)
+    // Redirect to correct dashboard once authenticated with a valid profile
     useEffect(() => {
         if (isAuthenticated && profile) {
             let target = '/student/dashboard';

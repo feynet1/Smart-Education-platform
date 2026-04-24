@@ -76,17 +76,27 @@ export const AuthProvider = ({ children }) => {
                 .eq('id', userId)
                 .single();
             if (error || !data) {
-                // No profile row — user signed in via Google without being invited
-                console.warn('No profile found for user:', userId);
-                setNoProfile(true);
+                // No profile row — uninvited user tried to sign in via Google.
+                // Kill the session immediately and redirect to login with an error message.
+                console.warn('No profile found for user — signing out:', userId);
+                await supabase.auth.signOut();
+                setUser(null);
                 setProfile(null);
-            } else {
                 setNoProfile(false);
-                setProfile(data);
+                setLoading(false);
+                window.location.href = '/login?error=no_account';
+                return;
             }
-        } catch (error) {
-            console.error('Error in fetchProfile:', error);
-            setNoProfile(true);
+            setNoProfile(false);
+            setProfile(data);
+        } catch (err) {
+            console.error('Error in fetchProfile:', err);
+            await supabase.auth.signOut();
+            setUser(null);
+            setProfile(null);
+            setNoProfile(false);
+            setLoading(false);
+            window.location.href = '/login?error=no_account';
         } finally {
             setLoading(false);
         }
@@ -101,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     const loginWithGoogle = async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: `${window.location.origin}/` }
+            options: { redirectTo: `${window.location.origin}/login` }
         });
         if (error) throw getErrorMessage(error);
     };
