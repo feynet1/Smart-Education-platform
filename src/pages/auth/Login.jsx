@@ -15,24 +15,16 @@ import {
     Typography,
     Alert,
     CircularProgress,
-    Divider,
 } from '@mui/material';
-import GoogleIcon from '@mui/icons-material/Google';
 import { loginSchema } from '../../utils/validationSchemas';
 import useAuth from '../../hooks/useAuth';
 
 const Login = () => {
-    const { login, loginWithGoogle, profile, isAuthenticated } = useAuth();
+    const { login, profile, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Read ?error=no_account from URL (set by AuthContext after killing an uninvited Google session)
-    const searchParams = new URLSearchParams(location.search);
-    const urlError = searchParams.get('error') === 'no_account'
-        ? 'No account found for this Google address. Contact your administrator to get invited.'
-        : '';
-
-    const [serverError, setServerError] = useState(urlError);
+    const [serverError, setServerError] = useState(location.state?.error || '');
     const [successMessage] = useState(location.state?.message || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -60,19 +52,9 @@ const Login = () => {
         setServerError('');
         try {
             await login(data.email, data.password);
-            // Redirection is handled by the useEffect above once the profile is loaded.
         } catch (error) {
             setServerError(error || 'Failed to login');
             setIsSubmitting(false);
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        setServerError('');
-        try {
-            await loginWithGoogle();
-        } catch (error) {
-            setServerError(error || 'Failed to login with Google');
         }
     };
 
@@ -80,12 +62,7 @@ const Login = () => {
         <Container
             component="main"
             maxWidth="xs"
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                minHeight: '100vh',
-            }}
+            sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}
         >
             <Card sx={{ p: 2 }}>
                 <CardContent>
@@ -97,15 +74,10 @@ const Login = () => {
                     </Typography>
 
                     {serverError && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {serverError}
-                        </Alert>
+                        <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>
                     )}
-
                     {successMessage && (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                            {successMessage}
-                        </Alert>
+                        <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>
                     )}
 
                     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -146,18 +118,6 @@ const Login = () => {
                             disabled={isSubmitting || !isValid}
                         >
                             {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
-                        </Button>
-                        
-                        <Divider sx={{ my: 2 }}>or</Divider>
-
-                        <Button
-                            fullWidth
-                            variant="outlined"
-                            startIcon={<GoogleIcon />}
-                            onClick={handleGoogleLogin}
-                            sx={{ mb: 3, height: 48 }}
-                        >
-                            Sign In with Google
                         </Button>
 
                         <Box display="flex" justifyContent="center">

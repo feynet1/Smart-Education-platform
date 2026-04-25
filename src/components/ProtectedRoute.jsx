@@ -4,10 +4,10 @@ import useAuth from '../hooks/useAuth';
 import { CircularProgress, Box } from '@mui/material';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-    const { profile, isAuthenticated, loading, pendingInvite, noProfile } = useAuth();
+    const { profile, isAuthenticated, loading, pendingInvite } = useAuth();
     const location = useLocation();
 
-    if (loading || (isAuthenticated && !profile && !pendingInvite && !noProfile)) {
+    if (loading || (isAuthenticated && !profile && !pendingInvite)) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                 <CircularProgress />
@@ -15,14 +15,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         );
     }
 
-    // User clicked invite link — must set password before accessing dashboard
     if (pendingInvite) {
         return <Navigate to="/accept-invite" replace />;
-    }
-
-    // Authenticated but no profile row — block access, send to login
-    if (isAuthenticated && noProfile) {
-        return <Navigate to="/login" replace />;
     }
 
     if (!isAuthenticated) {
