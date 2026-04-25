@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { useTeacher } from '../../../contexts/TeacherContext';
+import { supabase } from '../../../supabaseClient';
 
 const getIcon = (type = '') => {
     if (type.includes('pdf')) return <PictureAsPdf color="error" />;
@@ -49,9 +50,29 @@ const NotesHelper = () => {
         multiple: true,
     });
 
-    const handleDownload = (note) => {
-        const url = getNoteUrl(note.file_path);
-        window.open(url, '_blank', 'noopener,noreferrer');
+    const handleDownload = async (note) => {
+        try {
+            // Download the file as a blob from Supabase Storage
+            const { data, error } = await supabase.storage
+                .from('course-notes')
+                .download(note.file_path);
+            if (error) throw error;
+
+            // Create a blob URL and trigger download
+            const url = URL.createObjectURL(data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = note.file_name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Download failed:', err);
+            // Fallback: open public URL in new tab
+            const url = getNoteUrl(note.file_path);
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
     };
 
     if (!course) return <Typography p={3}>Course not found</Typography>;
