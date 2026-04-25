@@ -2,9 +2,13 @@ import {
     Box, Typography, Paper, Grid, List, ListItem,
     ListItemText, Chip, CircularProgress, Divider, Alert,
 } from '@mui/material';
-import { Event, Announcement, CalendarMonth, School, Groups, BeachAccess } from '@mui/icons-material';
+import { Event, Announcement, CalendarMonth, School, Groups, BeachAccess, Assignment as AssignmentIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import useEvents from '../../../hooks/useEvents';
+import { useStudent } from '../../../contexts/StudentContext';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../../supabaseClient';
+import useAuth from '../../../hooks/useAuth';
 
 const TYPE_CONFIG = {
     academic: { color: 'primary',   icon: <School fontSize="small" />,      label: 'Academic' },
@@ -15,6 +19,33 @@ const TYPE_CONFIG = {
 
 const StudentEvents = () => {
     const { events, loading } = useEvents('students');
+    const { enrollments } = useStudent();
+    const { user } = useAuth();
+    const [assignments, setAssignments] = useState([]);
+    const [loadingAssignments, setLoadingAssignments] = useState(false);
+
+    // Fetch upcoming assignments for enrolled courses
+    useEffect(() => {
+        if (!enrollments.length || !user?.id) return;
+        const load = async () => {
+            setLoadingAssignments(true);
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await supabase
+                    .from('assignments')
+                    .select('*, courses(name)')
+                    .in('course_id', enrollments)
+                    .gte('due_date', today)
+                    .order('due_date', { ascending: true });
+                setAssignments(data || []);
+            } catch (err) {
+                console.error('Failed to load assignments:', err);
+            } finally {
+                setLoadingAssignments(false);
+            }
+        };
+        load();
+    }, [enrollments, user?.id]);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -90,6 +121,42 @@ const StudentEvents = () => {
                                             />
                                             <Chip label="Exam" size="small" color="error" variant="outlined" />
                                         </ListItem>
+                                    ))}
+                                </List>
+                            )}
+                        </Paper>
+                    </Grid>
+
+                    {/* Upcoming Assignments from Teachers */}
+                    <Grid item xs={12}>
+                        <Paper elevation={2} sx={{ p: 3 }}>
+                            <Box display="flex" alignItems="center" gap={1} mb={2}>
+                                <AssignmentIcon color="primary" />
+                                <Typography variant="h6" fontWeight="bold">
+                                    Upcoming Assignments ({assignments.length})
+                                </Typography>
+                            </Box>
+                            {loadingAssignments ? (
+                                <Box display="flex" justifyContent="center" py={2}><CircularProgress size={24} /></Box>
+                            ) : assignments.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">No upcoming assignments.</Typography>
+                            ) : (
+                                <List disablePadding>
+                                    {assignments.map((item, i) => (
+                                        <Box key={item.id}>
+                                            <ListItem sx={{ px: 0 }}>
+                                                <ListItemText
+                                                    primary={
+                                                        <Box display="flex" alignItems="center" gap={1}>
+                                                            <Typography variant="body2" fontWeight="medium">{item.title}</Typography>
+                                                            <Chip label={item.type} size="small" color="primary" variant="outlined" />
+                                                        </Box>
+                                                    }
+                                                    secondary={`${item.courses?.name} • Due: ${format(new Date(item.due_date + 'T00:00:00'), 'MMM dd, yyyy')}`}
+                                                />
+                                            </ListItem>
+                                            {i < assignments.length - 1 && <Divider />}
+                                        </Box>
                                     ))}
                                 </List>
                             )}

@@ -63,14 +63,13 @@ const TeacherLayout = () => {
     };
 
     const menuItems = [
-        { text: 'Dashboard', icon: <DashboardIcon />, path: '/teacher/dashboard' },
-        { text: 'My Courses', icon: <SchoolIcon />, path: '/teacher/courses' },
-        // For these item, linking to courses for now as they require a course selection
-        // In a real app, these might be aggregated views or a course picker
-        { text: 'Classroom', icon: <ClassIcon />, path: '/teacher/classroom' },
-        { text: 'Attendance', icon: <AttendanceIcon />, path: '/teacher/attendance' },
-        { text: 'Notes', icon: <NoteIcon />, path: '/teacher/notes' },
-        { text: 'Settings', icon: <SettingsIcon />, path: '/teacher/settings' },
+        { text: 'Dashboard',   icon: <DashboardIcon />,  path: '/teacher/dashboard' },
+        { text: 'My Courses',  icon: <SchoolIcon />,     path: '/teacher/courses' },
+        { text: 'Classroom',   icon: <ClassIcon />,      path: '/teacher/classroom' },
+        { text: 'Attendance',  icon: <AttendanceIcon />, path: '/teacher/attendance' },
+        { text: 'Assignments', icon: <NoteIcon />,       path: '/teacher/assignments' },
+        { text: 'Notes',       icon: <NoteIcon />,       path: '/teacher/notes' },
+        { text: 'Settings',    icon: <SettingsIcon />,   path: '/teacher/settings' },
     ];
 
     const drawer = (
