@@ -53,8 +53,12 @@ export const TeacherProvider = ({ children }) => {
     }, [user?.id]);
 
     const addCourse = async (courseData) => {
-        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        if (!user?.id) {
+            console.error('[addCourse] No user id — not authenticated');
+            return { success: false, error: 'Not authenticated' };
+        }
         const joinCode = generateJoinCode();
+        console.log('[addCourse] inserting with teacher_id:', user.id);
         try {
             const { data, error } = await supabase
                 .from('courses')
@@ -68,7 +72,11 @@ export const TeacherProvider = ({ children }) => {
                 })
                 .select()
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error('[addCourse] Supabase error:', error);
+                throw error;
+            }
+            console.log('[addCourse] success:', data);
             const mapped = {
                 id: data.id,
                 name: data.name,
@@ -83,7 +91,7 @@ export const TeacherProvider = ({ children }) => {
             setCourses(prev => [mapped, ...prev]);
             return { success: true, course: mapped };
         } catch (err) {
-            console.error('Failed to create course:', err);
+            console.error('[addCourse] Failed:', err);
             return { success: false, error: err.message };
         }
     };
