@@ -377,28 +377,92 @@ export const TeacherProvider = ({ children }) => {
         }
     };
 
-    // ── Notes (localStorage for now) ─────────────────────────
-    const [notes, setNotes] = useState(() => {
-        const saved = localStorage.getItem('teacher_notes');
-        return saved ? JSON.parse(saved) : {};
-    });
+    // ── Notes (Supabase Storage) ──────────────────────────────
+    const [notes, setNotes] = useState({});
+    const [notesLoading, setNotesLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState({});
 
-    useEffect(() => {
-        localStorage.setItem('teacher_notes', JSON.stringify(notes));
-    }, [notes]);
-
-    const addNote = (courseId, file) => {
-        setNotes(prev => {
-            const courseNotes = prev[courseId] || [];
-            return { ...prev, [courseId]: [...courseNotes, { ...file, id: Date.now() }] };
-        });
+    const fetchNotes = async (courseId) => {
+        setNotesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('course_notes')
+                .select('*')
+                .eq('course_id', courseId)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setNotes(prev => ({ ...prev, [courseId]: data || [] }));
+        } catch (err) {
+            console.error('Failed to fetch notes:', err);
+        } finally {
+            setNotesLoading(false);
+        }
     };
 
-    const deleteNote = (courseId, noteId) => {
-        setNotes(prev => {
-            const courseNotes = prev[courseId] || [];
-            return { ...prev, [courseId]: courseNotes.filter(n => n.id !== noteId) };
-        });
+    const addNote = async (courseId, file) => {
+        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        const filePath = `${courseId}/${Date.now()}_${file.name}`;
+        setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+        try {
+            // Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('course-notes')
+                .upload(filePath, file, { upsert: false });
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+                .from('course-notes')
+                .getPublicUrl(filePath);
+
+            // Save metadata to DB
+            const { data, error: dbError } = await supabase
+                .from('course_notes')
+                .insert({
+                    course_id: courseId,
+                    teacher_id: user.id,
+                    file_name: file.name,
+                    file_path: filePath,
+                    file_size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                    file_type: file.type,
+                })
+                .select()
+                .single();
+            if (dbError) throw dbError;
+
+            setNotes(prev => ({
+                ...prev,
+                [courseId]: [{ ...data, publicUrl: urlData.publicUrl }, ...(prev[courseId] || [])],
+            }));
+            setUploadProgress(prev => { const n = { ...prev }; delete n[file.name]; return n; });
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to upload note:', err);
+            setUploadProgress(prev => { const n = { ...prev }; delete n[file.name]; return n; });
+            return { success: false, error: err.message };
+        }
+    };
+
+    const deleteNote = async (courseId, noteId) => {
+        const note = (notes[courseId] || []).find(n => n.id === noteId);
+        if (!note) return;
+        // Optimistic remove
+        setNotes(prev => ({ ...prev, [courseId]: (prev[courseId] || []).filter(n => n.id !== noteId) }));
+        try {
+            // Delete from storage
+            await supabase.storage.from('course-notes').remove([note.file_path]);
+            // Delete metadata
+            await supabase.from('course_notes').delete().eq('id', noteId);
+        } catch (err) {
+            console.error('Failed to delete note:', err);
+            // Rollback
+            setNotes(prev => ({ ...prev, [courseId]: [...(prev[courseId] || []), note] }));
+        }
+    };
+
+    const getNoteUrl = (filePath) => {
+        const { data } = supabase.storage.from('course-notes').getPublicUrl(filePath);
+        return data.publicUrl;
     };
 
     const value = {
@@ -408,7 +472,7 @@ export const TeacherProvider = ({ children }) => {
         attendance, attendanceLoading, fetchAttendance, saveAttendance,
         activeSession, sessionAttendance,
         fetchActiveSession, startSession, endSession, updateAttendanceStatus,
-        notes, addNote, deleteNote,
+        notes, notesLoading, uploadProgress, fetchNotes, addNote, deleteNote, getNoteUrl,
     };
 
     return (

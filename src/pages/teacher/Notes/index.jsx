@@ -1,119 +1,193 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Paper, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Button, Grid } from '@mui/material';
-import { CloudUpload, InsertDriveFile, Delete, Download, PictureAsPdf, Image as ImageIcon } from '@mui/icons-material';
+import {
+    Box, Typography, Paper, List, ListItem, ListItemIcon,
+    ListItemText, ListItemSecondaryAction, IconButton, Grid,
+    CircularProgress, Chip, Tooltip, LinearProgress,
+} from '@mui/material';
+import {
+    CloudUpload, InsertDriveFile, Delete, Download,
+    PictureAsPdf, Image as ImageIcon,
+} from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { useTeacher } from '../../../contexts/TeacherContext';
 
-const NotesHelper = () => {
-    const { id } = useParams();
-    const { courses, notes, addNote, deleteNote } = useTeacher();
-    const course = courses.find(c => c.id === id);
-    const courseNotes = notes[id] || [];
+const getIcon = (type = '') => {
+    if (type.includes('pdf')) return <PictureAsPdf color="error" />;
+    if (type.includes('image')) return <ImageIcon color="primary" />;
+    return <InsertDriveFile color="action" />;
+};
 
-    const onDrop = useCallback((acceptedFiles) => {
-        acceptedFiles.forEach(file => {
-            // Mock file object for state, in real app upload to server
-            const newFile = {
-                name: file.name,
-                size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-                type: file.type,
-                preview: URL.createObjectURL(file)
-            };
-            addNote(id, newFile);
-        });
-    }, [id, addNote]);
+const NotesHelper = () => {
+    const { id: courseId } = useParams();
+    const { courses, notes, notesLoading, uploadProgress, fetchNotes, addNote, deleteNote, getNoteUrl } = useTeacher();
+    const course = courses.find(c => c.id === courseId);
+    const courseNotes = notes[courseId] || [];
+    const uploading = Object.keys(uploadProgress || {});
+
+    // Fetch notes when course loads
+    useEffect(() => {
+        if (courseId) fetchNotes(courseId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId]);
+
+    const onDrop = useCallback(async (acceptedFiles) => {
+        for (const file of acceptedFiles) {
+            await addNote(courseId, file);
+        }
+    }, [courseId, addNote]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
             'application/pdf': [],
             'image/*': [],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': []
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [],
+            'application/msword': [],
         },
-        maxSize: 10485760 // 10MB
+        maxSize: 10 * 1024 * 1024, // 10MB
+        multiple: true,
     });
 
-    const getIcon = (type) => {
-        if (type.includes('pdf')) return <PictureAsPdf color="error" />;
-        if (type.includes('image')) return <ImageIcon color="primary" />;
-        return <InsertDriveFile color="action" />;
+    const handleDownload = (note) => {
+        const url = getNoteUrl(note.file_path);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = note.file_name;
+        a.target = '_blank';
+        a.click();
     };
 
-    if (!course) return <Typography>Course not found</Typography>;
+    if (!course) return <Typography p={3}>Course not found</Typography>;
 
     return (
         <Box>
             <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">
-                    Course Notes
-                </Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                    {course.name}
-                </Typography>
+                <Typography variant="h4" fontWeight="bold">Course Notes</Typography>
+                <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
             </Box>
 
             <Grid container spacing={3}>
                 <Grid item xs={12} md={8}>
-                    {/* Upload Area */}
+                    {/* Drop Zone */}
                     <Paper
                         {...getRootProps()}
                         variant="outlined"
                         sx={{
-                            p: 5,
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            bgcolor: isDragActive ? 'action.hover' : 'background.paper',
-                            borderStyle: 'dashed',
-                            borderWidth: 2,
+                            p: 5, textAlign: 'center', cursor: 'pointer', mb: 3,
+                            borderStyle: 'dashed', borderWidth: 2,
                             borderColor: isDragActive ? 'primary.main' : 'divider',
-                            mb: 4
+                            bgcolor: isDragActive ? 'primary.50' : 'background.paper',
+                            transition: 'all 0.2s',
+                            '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
                         }}
                     >
                         <input {...getInputProps()} />
-                        <CloudUpload sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                        <CloudUpload sx={{ fontSize: 56, color: isDragActive ? 'primary.main' : 'text.secondary', mb: 2 }} />
                         <Typography variant="h6" gutterBottom>
-                            {isDragActive ? "Drop files here..." : "Drag & drop notes here, or click to select"}
+                            {isDragActive ? 'Drop files here…' : 'Drag & drop files, or click to select'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Supported: PDF, DOCX, Images (Max 10MB)
+                            PDF, DOCX, Images — max 10MB each
                         </Typography>
                     </Paper>
 
+                    {/* Upload progress */}
+                    {uploading.length > 0 && (
+                        <Box mb={2}>
+                            {uploading.map(name => (
+                                <Box key={name} mb={1}>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Uploading {name}…
+                                    </Typography>
+                                    <LinearProgress sx={{ mt: 0.5, borderRadius: 1 }} />
+                                </Box>
+                            ))}
+                        </Box>
+                    )}
+
                     {/* File List */}
                     <Paper elevation={2}>
-                        <Box p={2} borderBottom={1} borderColor="divider">
+                        <Box p={2} borderBottom={1} borderColor="divider" display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="h6" fontWeight="bold">
                                 Uploaded Files
                             </Typography>
+                            <Chip label={`${courseNotes.length} file${courseNotes.length !== 1 ? 's' : ''}`} size="small" />
                         </Box>
-                        <List>
-                            {courseNotes.length === 0 ? (
-                                <ListItem>
-                                    <ListItemText primary="No notes uploaded yet." secondary="Upload mock files to see them here." />
-                                </ListItem>
-                            ) : (
-                                courseNotes.map((note) => (
+
+                        {notesLoading ? (
+                            <Box display="flex" justifyContent="center" py={4}>
+                                <CircularProgress size={28} />
+                            </Box>
+                        ) : (
+                            <List>
+                                {courseNotes.length === 0 ? (
+                                    <ListItem>
+                                        <ListItemText
+                                            primary="No notes uploaded yet"
+                                            secondary="Upload files above to share with students"
+                                        />
+                                    </ListItem>
+                                ) : courseNotes.map((note) => (
                                     <ListItem key={note.id} divider>
                                         <ListItemIcon>
-                                            {getIcon(note.type)}
+                                            {getIcon(note.file_type)}
                                         </ListItemIcon>
                                         <ListItemText
-                                            primary={note.name}
-                                            secondary={note.size}
+                                            primary={note.file_name}
+                                            secondary={
+                                                <Box component="span" display="flex" gap={1} alignItems="center">
+                                                    <span>{note.file_size}</span>
+                                                    <span>•</span>
+                                                    <span>{new Date(note.created_at).toLocaleDateString()}</span>
+                                                </Box>
+                                            }
                                         />
                                         <ListItemSecondaryAction>
-                                            <IconButton edge="end" aria-label="download" sx={{ mr: 1 }}>
-                                                <Download />
-                                            </IconButton>
-                                            <IconButton edge="end" aria-label="delete" onClick={() => deleteNote(id, note.id)} color="error">
-                                                <Delete />
-                                            </IconButton>
+                                            <Tooltip title="Download">
+                                                <IconButton
+                                                    edge="end"
+                                                    sx={{ mr: 1 }}
+                                                    onClick={() => handleDownload(note)}
+                                                >
+                                                    <Download />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Delete">
+                                                <IconButton
+                                                    edge="end"
+                                                    color="error"
+                                                    onClick={() => deleteNote(courseId, note.id)}
+                                                >
+                                                    <Delete />
+                                                </IconButton>
+                                            </Tooltip>
                                         </ListItemSecondaryAction>
                                     </ListItem>
-                                ))
-                            )}
-                        </List>
+                                ))}
+                            </List>
+                        )}
+                    </Paper>
+                </Grid>
+
+                {/* Info sidebar */}
+                <Grid item xs={12} md={4}>
+                    <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>Storage Info</Typography>
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                            Files are stored securely in Supabase Storage and accessible to enrolled students.
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Supported formats:
+                        </Typography>
+                        <Box display="flex" gap={1} flexWrap="wrap" mt={1}>
+                            {['PDF', 'DOCX', 'DOC', 'JPG', 'PNG'].map(f => (
+                                <Chip key={f} label={f} size="small" variant="outlined" />
+                            ))}
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" display="block" mt={2}>
+                            Max file size: 10MB
+                        </Typography>
                     </Paper>
                 </Grid>
             </Grid>
