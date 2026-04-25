@@ -1,44 +1,115 @@
-import { Box, Typography, Grid, Paper, Card, CardContent, CardActionArea, LinearProgress, Chip, Avatar, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
-import { School, Notifications, Grade } from '@mui/icons-material';
+import { useState, useEffect } from 'react';
+import {
+    Box, Typography, Grid, Paper, Card, CardContent, CardActionArea,
+    LinearProgress, Chip, Avatar, List, ListItem, ListItemAvatar,
+    ListItemText, CircularProgress,
+} from '@mui/material';
+import { School, Grade, PlayArrow, Assignment } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import StatsCards from './StatsCards';
 import UpcomingDeadlines from './UpcomingDeadlines';
 import { useStudent } from '../../../contexts/StudentContext';
 import useAuth from '../../../hooks/useAuth';
+import { supabase } from '../../../supabaseClient';
+import { formatDistanceToNow } from 'date-fns';
 
 const StudentDashboardHome = () => {
+    const { profile } = useAuth();
     const { user } = useAuth();
-    const { enrolledCourses, grades } = useStudent();
+    const { enrolledCourses, enrollments, activeSessions } = useStudent();
     const navigate = useNavigate();
 
-    // Mock notifications
-    const notifications = [
-        { id: 1, text: 'New grade posted for Calculus', time: '2 hours ago', icon: <Grade color="primary" /> },
-        { id: 2, text: 'Physics notes uploaded', time: '1 day ago', icon: <School color="success" /> },
-    ];
+    const [notifications, setNotifications] = useState([]);
+    const [loadingNotifs, setLoadingNotifs] = useState(false);
+
+    // Build real notifications from:
+    // 1. Recently uploaded notes for enrolled courses
+    // 2. Active sessions
+    // 3. Recently created assignments
+    useEffect(() => {
+        if (!enrollments.length) return;
+        const load = async () => {
+            setLoadingNotifs(true);
+            const notifs = [];
+            try {
+                // Recent notes (last 3 days)
+                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+                const { data: notes } = await supabase
+                    .from('course_notes')
+                    .select('id, file_name, created_at, courses(name)')
+                    .in('course_id', enrollments)
+                    .gte('created_at', threeDaysAgo)
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+
+                (notes || []).forEach(n => notifs.push({
+                    id: `note-${n.id}`,
+                    text: `New file "${n.file_name}" in ${n.courses?.name}`,
+                    time: formatDistanceToNow(new Date(n.created_at), { addSuffix: true }),
+                    icon: <School color="success" />,
+                }));
+
+                // Recent assignments (last 3 days)
+                const { data: assignments } = await supabase
+                    .from('assignments')
+                    .select('id, title, created_at, courses(name)')
+                    .in('course_id', enrollments)
+                    .gte('created_at', threeDaysAgo)
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+
+                (assignments || []).forEach(a => notifs.push({
+                    id: `assign-${a.id}`,
+                    text: `New assignment "${a.title}" in ${a.courses?.name}`,
+                    time: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
+                    icon: <Assignment color="primary" />,
+                }));
+
+                // Active sessions
+                Object.entries(activeSessions).forEach(([courseId, session]) => {
+                    const course = enrolledCourses.find(c => c.id === courseId);
+                    notifs.push({
+                        id: `session-${session.id}`,
+                        text: `Live session active in ${course?.name || 'a course'}`,
+                        time: formatDistanceToNow(new Date(session.started_at), { addSuffix: true }),
+                        icon: <PlayArrow color="error" />,
+                    });
+                });
+
+                // Sort by most recent
+                notifs.sort((a, b) => a.time > b.time ? 1 : -1);
+                setNotifications(notifs.slice(0, 5));
+            } catch (err) {
+                console.error('Failed to load notifications:', err);
+            } finally {
+                setLoadingNotifs(false);
+            }
+        };
+        load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enrollments, activeSessions]);
 
     return (
         <Box>
-            {/* Welcome Section */}
+            {/* Welcome */}
             <Paper elevation={0} sx={{ p: 3, mb: 4, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white', borderRadius: 2 }}>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    Welcome back, {user?.name}! 👋
+                    Welcome back, {profile?.name || user?.email?.split('@')[0]}! 👋
                 </Typography>
                 <Typography variant="body1">
-                    Spring Semester 2026 • Your academic journey continues!
+                    {Object.keys(activeSessions).length > 0
+                        ? `🟢 ${Object.keys(activeSessions).length} live session(s) active right now!`
+                        : 'Your academic journey continues!'}
                 </Typography>
             </Paper>
 
-            {/* Stats */}
             <StatsCards />
 
             <Grid container spacing={3}>
                 {/* Enrolled Courses */}
                 <Grid item xs={12} md={8}>
                     <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                            My Courses
-                        </Typography>
+                        <Typography variant="h6" gutterBottom fontWeight="bold">My Courses</Typography>
                         {enrolledCourses.length === 0 ? (
                             <Box textAlign="center" py={4}>
                                 <Typography variant="body1" color="text.secondary">
@@ -47,78 +118,78 @@ const StudentDashboardHome = () => {
                             </Box>
                         ) : (
                             <Grid container spacing={2}>
-                                {enrolledCourses.map((course) => (
-                                    <Grid item xs={12} sm={6} key={course.id}>
-                                        <Card elevation={1}>
-                                            <CardActionArea onClick={() => navigate(`/student/courses/${course.id}`)}>
-                                                <CardContent>
-                                                    <Box display="flex" justifyContent="space-between" alignItems="start" mb={1}>
-                                                        <Typography variant="overline" color="text.secondary">
-                                                            {course.subject}
+                                {enrolledCourses.map((course) => {
+                                    const hasSession = !!activeSessions[course.id];
+                                    return (
+                                        <Grid item xs={12} sm={6} key={course.id}>
+                                            <Card elevation={1} sx={{
+                                                border: hasSession ? '2px solid #2e7d32' : '1px solid transparent',
+                                            }}>
+                                                <CardActionArea onClick={() => navigate(`/student/courses/${course.id}`)}>
+                                                    <CardContent>
+                                                        <Box display="flex" justifyContent="space-between" alignItems="start" mb={1}>
+                                                            <Typography variant="overline" color="text.secondary">
+                                                                {course.subject}
+                                                            </Typography>
+                                                            <Box display="flex" gap={0.5}>
+                                                                {hasSession && <Chip label="Live" color="success" size="small" />}
+                                                                <Chip label={`Grade ${course.grade}`} size="small" color="primary" variant="outlined" />
+                                                            </Box>
+                                                        </Box>
+                                                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                                            {course.name}
                                                         </Typography>
-                                                        <Chip label={`Grade ${course.grade}`} size="small" color="primary" variant="outlined" />
-                                                    </Box>
-                                                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                                                        {course.name}
-                                                    </Typography>
-                                                    <Box mt={2}>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            Progress
-                                                        </Typography>
-                                                        <LinearProgress variant="determinate" value={(parseInt(course.id, 36) % 60) + 30} sx={{ mt: 0.5, borderRadius: 1 }} />
-                                                    </Box>
-                                                </CardContent>
-                                            </CardActionArea>
-                                        </Card>
-                                    </Grid>
-                                ))}
+                                                        <Box mt={1}>
+                                                            <Typography variant="caption" color="text.secondary">Progress</Typography>
+                                                            <LinearProgress variant="determinate"
+                                                                value={(parseInt(course.id?.slice(-4) || '0', 16) % 60) + 20}
+                                                                sx={{ mt: 0.5, borderRadius: 1 }} />
+                                                        </Box>
+                                                    </CardContent>
+                                                </CardActionArea>
+                                            </Card>
+                                        </Grid>
+                                    );
+                                })}
                             </Grid>
                         )}
                     </Paper>
                 </Grid>
 
-                {/* Sidebar Widgets */}
+                {/* Sidebar */}
                 <Grid item xs={12} md={4}>
                     <UpcomingDeadlines />
 
                     {/* Notifications */}
                     <Paper elevation={2} sx={{ p: 2, borderRadius: 2, mt: 3 }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                            Notifications
-                        </Typography>
-                        <List dense>
-                            {notifications.map((notification) => (
-                                <ListItem key={notification.id}>
-                                    <ListItemAvatar>
-                                        <Avatar sx={{ bgcolor: 'background.paper' }}>
-                                            {notification.icon}
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText
-                                        primary={notification.text}
-                                        secondary={notification.time}
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
-
-                    {/* Recent Grades */}
-                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, mt: 3 }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                            Recent Grades
-                        </Typography>
-                        <List dense>
-                            {grades.slice(0, 3).map((grade) => (
-                                <ListItem key={grade.id}>
-                                    <ListItemText
-                                        primary={grade.assessment}
-                                        secondary={grade.subject}
-                                    />
-                                    <Chip label={grade.grade} size="small" color="primary" />
-                                </ListItem>
-                            ))}
-                        </List>
+                        <Typography variant="h6" gutterBottom fontWeight="bold">Notifications</Typography>
+                        {loadingNotifs ? (
+                            <Box display="flex" justifyContent="center" py={2}>
+                                <CircularProgress size={22} />
+                            </Box>
+                        ) : notifications.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                                No new notifications
+                            </Typography>
+                        ) : (
+                            <List dense disablePadding>
+                                {notifications.map((n) => (
+                                    <ListItem key={n.id} sx={{ px: 0 }}>
+                                        <ListItemAvatar>
+                                            <Avatar sx={{ bgcolor: 'background.paper', width: 32, height: 32 }}>
+                                                {n.icon}
+                                            </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText
+                                            primary={n.text}
+                                            secondary={n.time}
+                                            primaryTypographyProps={{ variant: 'body2' }}
+                                            secondaryTypographyProps={{ variant: 'caption' }}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        )}
                     </Paper>
                 </Grid>
             </Grid>
