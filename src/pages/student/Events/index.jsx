@@ -1,123 +1,150 @@
-import { Box, Typography, Paper, Grid, List, ListItem, ListItemIcon, ListItemText, Chip, Button, Divider } from '@mui/material';
-import { Event, AccessTime, Announcement, VideoCall, CalendarMonth } from '@mui/icons-material';
-import { format, addDays } from 'date-fns';
+import {
+    Box, Typography, Paper, Grid, List, ListItem,
+    ListItemText, Chip, CircularProgress, Divider, Alert,
+} from '@mui/material';
+import { Event, Announcement, CalendarMonth, School, Groups, BeachAccess } from '@mui/icons-material';
+import { format } from 'date-fns';
+import useEvents from '../../../hooks/useEvents';
 
-const Events = () => {
-    // Mock events data
-    const todaysClasses = [
-        { id: 1, name: 'Calculus II', time: '09:00 AM', room: 'Room 101' },
-        { id: 2, name: 'Physics Lab', time: '02:00 PM', room: 'Lab 3' },
-    ];
+const TYPE_CONFIG = {
+    academic: { color: 'primary',   icon: <School fontSize="small" />,      label: 'Academic' },
+    exam:     { color: 'error',     icon: <Event fontSize="small" />,        label: 'Exam' },
+    meeting:  { color: 'warning',   icon: <Groups fontSize="small" />,       label: 'Meeting' },
+    holiday:  { color: 'success',   icon: <BeachAccess fontSize="small" />,  label: 'Holiday' },
+};
 
-    const upcomingExams = [
-        { id: 1, subject: 'Mathematics', date: format(addDays(new Date(), 7), 'MMM dd, yyyy'), type: 'Midterm' },
-        { id: 2, subject: 'Physics', date: format(addDays(new Date(), 14), 'MMM dd, yyyy'), type: 'Quiz' },
-    ];
+const StudentEvents = () => {
+    const { events, loading } = useEvents('students');
 
-    const announcements = [
-        { id: 1, title: 'Campus Closed - Holiday', date: 'Jan 28, 2026', priority: 'high' },
-        { id: 2, title: 'Library Extended Hours', date: 'Jan 25, 2026', priority: 'low' },
-        { id: 3, title: 'Registration Opens for Summer', date: 'Jan 20, 2026', priority: 'medium' },
-    ];
+    const today = new Date().toISOString().split('T')[0];
 
-    const getPriorityColor = (priority) => {
-        if (priority === 'high') return 'error';
-        if (priority === 'medium') return 'warning';
-        return 'default';
-    };
+    const todayEvents   = events.filter(e => e.date === today);
+    const examEvents    = events.filter(e => e.type === 'exam');
+    const otherEvents   = events.filter(e => e.type !== 'exam');
 
     return (
         <Box>
             <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">
-                    Events & Schedule
-                </Typography>
+                <Typography variant="h4" fontWeight="bold">Events & Schedule</Typography>
                 <Typography variant="subtitle1" color="text.secondary">
                     {format(new Date(), 'EEEE, MMMM do, yyyy')}
                 </Typography>
             </Box>
 
-            <Grid container spacing={3}>
-                {/* Today's Classes */}
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3 }}>
-                        <Box display="flex" alignItems="center" gap={1} mb={2}>
-                            <CalendarMonth color="primary" />
-                            <Typography variant="h6" fontWeight="bold">
-                                Today's Classes
-                            </Typography>
-                        </Box>
-                        <List>
-                            {todaysClasses.map((cls) => (
-                                <ListItem key={cls.id} divider sx={{ py: 2 }}>
-                                    <ListItemIcon>
-                                        <AccessTime color="action" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={cls.name}
-                                        secondary={`${cls.time} • ${cls.room}`}
-                                    />
-                                    <Button variant="contained" size="small" startIcon={<VideoCall />}>
-                                        Join
-                                    </Button>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
-                </Grid>
+            {loading ? (
+                <Box display="flex" justifyContent="center" py={6}>
+                    <CircularProgress />
+                </Box>
+            ) : events.length === 0 ? (
+                <Alert severity="info">No upcoming events at the moment.</Alert>
+            ) : (
+                <Grid container spacing={3}>
+                    {/* Today's Events */}
+                    <Grid item xs={12} md={6}>
+                        <Paper elevation={2} sx={{ p: 3 }}>
+                            <Box display="flex" alignItems="center" gap={1} mb={2}>
+                                <CalendarMonth color="primary" />
+                                <Typography variant="h6" fontWeight="bold">Today's Events</Typography>
+                            </Box>
+                            {todayEvents.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary" py={1}>
+                                    No events scheduled for today.
+                                </Typography>
+                            ) : (
+                                <List disablePadding>
+                                    {todayEvents.map((event, i) => {
+                                        const cfg = TYPE_CONFIG[event.type] || TYPE_CONFIG.academic;
+                                        return (
+                                            <ListItem key={event.id} divider={i < todayEvents.length - 1} sx={{ px: 0 }}>
+                                                <ListItemText
+                                                    primary={event.title}
+                                                    secondary={event.description || cfg.label}
+                                                />
+                                                <Chip label={event.type} size="small" color={cfg.color} />
+                                            </ListItem>
+                                        );
+                                    })}
+                                </List>
+                            )}
+                        </Paper>
+                    </Grid>
 
-                {/* Upcoming Exams */}
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3 }}>
-                        <Box display="flex" alignItems="center" gap={1} mb={2}>
-                            <Event color="error" />
-                            <Typography variant="h6" fontWeight="bold">
-                                Upcoming Exams
-                            </Typography>
-                        </Box>
-                        <List>
-                            {upcomingExams.map((exam) => (
-                                <ListItem key={exam.id} divider>
-                                    <ListItemText
-                                        primary={exam.subject}
-                                        secondary={exam.date}
-                                    />
-                                    <Chip label={exam.type} size="small" variant="outlined" />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
-                </Grid>
+                    {/* Upcoming Exams */}
+                    <Grid item xs={12} md={6}>
+                        <Paper elevation={2} sx={{ p: 3 }}>
+                            <Box display="flex" alignItems="center" gap={1} mb={2}>
+                                <Event color="error" />
+                                <Typography variant="h6" fontWeight="bold">Upcoming Exams</Typography>
+                            </Box>
+                            {examEvents.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary" py={1}>
+                                    No upcoming exams.
+                                </Typography>
+                            ) : (
+                                <List disablePadding>
+                                    {examEvents.map((event, i) => (
+                                        <ListItem key={event.id} divider={i < examEvents.length - 1} sx={{ px: 0 }}>
+                                            <ListItemText
+                                                primary={event.title}
+                                                secondary={format(new Date(event.date + 'T00:00:00'), 'EEEE, MMM dd, yyyy')}
+                                            />
+                                            <Chip label="Exam" size="small" color="error" variant="outlined" />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            )}
+                        </Paper>
+                    </Grid>
 
-                {/* Announcements */}
-                <Grid item xs={12}>
-                    <Paper elevation={2} sx={{ p: 3 }}>
-                        <Box display="flex" alignItems="center" gap={1} mb={2}>
-                            <Announcement color="warning" />
-                            <Typography variant="h6" fontWeight="bold">
-                                Announcements
-                            </Typography>
-                        </Box>
-                        <List>
-                            {announcements.map((announcement) => (
-                                <ListItem key={announcement.id} divider>
-                                    <ListItemText
-                                        primary={announcement.title}
-                                        secondary={announcement.date}
-                                    />
-                                    <Chip
-                                        label={announcement.priority}
-                                        size="small"
-                                        color={getPriorityColor(announcement.priority)}
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
+                    {/* All Upcoming Events */}
+                    <Grid item xs={12}>
+                        <Paper elevation={2} sx={{ p: 3 }}>
+                            <Box display="flex" alignItems="center" gap={1} mb={2}>
+                                <Announcement color="warning" />
+                                <Typography variant="h6" fontWeight="bold">
+                                    All Upcoming Events ({otherEvents.length})
+                                </Typography>
+                            </Box>
+                            {otherEvents.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">
+                                    No other events scheduled.
+                                </Typography>
+                            ) : (
+                                <List disablePadding>
+                                    {otherEvents.map((event, i) => {
+                                        const cfg = TYPE_CONFIG[event.type] || TYPE_CONFIG.academic;
+                                        return (
+                                            <Box key={event.id}>
+                                                <ListItem sx={{ px: 0 }}>
+                                                    <ListItemText
+                                                        primary={event.title}
+                                                        secondary={
+                                                            <Box component="span" display="flex" gap={1} alignItems="center">
+                                                                <span>{format(new Date(event.date + 'T00:00:00'), 'MMM dd, yyyy')}</span>
+                                                                {event.description && <span>— {event.description}</span>}
+                                                            </Box>
+                                                        }
+                                                    />
+                                                    <Chip
+                                                        icon={cfg.icon}
+                                                        label={cfg.label}
+                                                        size="small"
+                                                        color={cfg.color}
+                                                        variant="outlined"
+                                                    />
+                                                </ListItem>
+                                                {i < otherEvents.length - 1 && <Divider />}
+                                            </Box>
+                                        );
+                                    })}
+                                </List>
+                            )}
+                        </Paper>
+                    </Grid>
                 </Grid>
-            </Grid>
+            )}
         </Box>
     );
 };
 
-export default Events;
+export default StudentEvents;
