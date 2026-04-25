@@ -136,12 +136,28 @@ export const TeacherProvider = ({ children }) => {
         }
     };
 
-    // ── Students (mock for now) ───────────────────────────────
-    const [students] = useState([
-        { id: 1, name: 'Alice Johnson', email: 'alice@example.com' },
-        { id: 2, name: 'Bob Smith', email: 'bob@example.com' },
-        { id: 3, name: 'Charlie Brown', email: 'charlie@example.com' },
-    ]);
+    // ── Students (from Supabase profiles) ────────────────────
+    const [students, setStudents] = useState([]);
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('id, name, email')
+                    .eq('role', 'Student');
+                if (error) throw error;
+                setStudents((data || []).map(s => ({
+                    id: s.id,
+                    name: s.name || s.email?.split('@')[0] || 'Unknown',
+                    email: s.email,
+                })));
+            } catch (err) {
+                console.error('Failed to fetch students:', err);
+            }
+        };
+        fetchStudents();
+    }, []);
 
     // ── Attendance (Supabase) ─────────────────────────────────
     const [attendance, setAttendance] = useState({});
