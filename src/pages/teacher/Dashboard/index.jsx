@@ -1,21 +1,38 @@
-import { Box, Typography, Button, Grid, Paper } from '@mui/material';
-import { Add } from '@mui/icons-material';
+import { Box, Typography, Button, Grid, Paper, Chip, Card, CardContent } from '@mui/material';
+import { Add, Event } from '@mui/icons-material';
 import StatsCards from './StatsCards';
 import RecentActivity from './RecentActivity';
 import { useNavigate } from 'react-router-dom';
+import useAuth from '../../../hooks/useAuth';
+import { useTeacher } from '../../../contexts/TeacherContext';
+import { format } from 'date-fns';
+
+const TYPE_COLORS = { academic: 'default', exam: 'error', meeting: 'warning', holiday: 'success' };
 
 const TeacherDashboardHome = () => {
     const navigate = useNavigate();
+    const { profile } = useAuth();
+    const { courses, activeSession } = useTeacher();
+
+    // Upcoming events from admin (stored in localStorage by admin)
+    const allEvents = JSON.parse(localStorage.getItem('admin_events') || '[]');
+    const today = new Date();
+    const upcomingEvents = allEvents
+        .filter(e => (e.target === 'all' || e.target === 'teachers') && new Date(e.date) >= today)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 3);
 
     return (
         <Box>
+            {/* Header */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" gutterBottom>
-                        Dashboard
+                        Welcome back, {profile?.name || 'Teacher'} 👋
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Welcome back, manage your courses and students.
+                        You have {courses.length} course{courses.length !== 1 ? 's' : ''}.
+                        {activeSession ? ' 🟢 A session is currently active.' : ''}
                     </Typography>
                 </Box>
                 <Button
@@ -28,22 +45,48 @@ const TeacherDashboardHome = () => {
                 </Button>
             </Box>
 
+            {/* Stats */}
             <StatsCards />
 
             <Grid container spacing={3}>
+                {/* Recent Activity */}
                 <Grid item xs={12} md={8}>
-                    {/* Calendar Placeholder or Schedule */}
-                    <Paper elevation={2} sx={{ p: 3, height: '100%', minHeight: 400 }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                            Upcoming Schedule
-                        </Typography>
-                        <Box display="flex" justifyContent="center" alignItems="center" height="80%" color="text.secondary">
-                            (Calendar Integration Placeholder)
-                        </Box>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={4}>
                     <RecentActivity />
+                </Grid>
+
+                {/* Upcoming Events */}
+                <Grid item xs={12} md={4}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="h6" fontWeight="bold">Upcoming Events</Typography>
+                            <Event color="primary" />
+                        </Box>
+                        {upcomingEvents.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                                No upcoming events
+                            </Typography>
+                        ) : upcomingEvents.map(event => (
+                            <Card key={event.id} variant="outlined" sx={{ mb: 1, borderRadius: 1 }}>
+                                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                                        <Box>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {event.title}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {format(new Date(event.date), 'MMM dd, yyyy')}
+                                            </Typography>
+                                        </Box>
+                                        <Chip
+                                            label={event.type}
+                                            size="small"
+                                            color={TYPE_COLORS[event.type] || 'default'}
+                                        />
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </Paper>
                 </Grid>
             </Grid>
         </Box>

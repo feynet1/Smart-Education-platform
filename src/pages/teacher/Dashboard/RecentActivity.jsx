@@ -1,13 +1,46 @@
 import { List, ListItem, ListItemText, ListItemAvatar, Avatar, Paper, Typography, Box, Divider } from '@mui/material';
-import { Notifications, Comment, AssignmentTurnedIn } from '@mui/icons-material';
+import { School, FactCheck, Note, PlayArrow } from '@mui/icons-material';
+import { useTeacher } from '../../../contexts/TeacherContext';
+import { formatDistanceToNow } from 'date-fns';
 
 const RecentActivity = () => {
-    const activities = [
-        { id: 1, text: 'You created a new course "Physics 101"', time: '2 hours ago', icon: <Notifications />, color: 'primary.main' },
-        { id: 2, text: 'Assignment "Lab Report" submitted by 5 students', time: '4 hours ago', icon: <AssignmentTurnedIn />, color: 'success.main' },
-        { id: 3, text: 'New comment on "Calculus II"', time: '1 day ago', icon: <Comment />, color: 'info.main' },
-        { id: 4, text: 'Attendance updated for "History"', time: 'Yesterday', icon: <Notifications />, color: 'warning.main' },
-    ];
+    const { courses, activeSession } = useTeacher();
+
+    // Build activity list from real data
+    const activities = [];
+
+    // Active session
+    if (activeSession) {
+        activities.push({
+            id: 'session',
+            text: `Live session is active`,
+            time: `Started ${formatDistanceToNow(new Date(activeSession.started_at), { addSuffix: true })}`,
+            icon: <PlayArrow />,
+            color: 'success.main',
+        });
+    }
+
+    // Recent courses (last 4)
+    courses.slice(0, 4).forEach(course => {
+        activities.push({
+            id: course.id,
+            text: `Course "${course.name}" — ${course.subject} (Grade ${course.grade})`,
+            time: formatDistanceToNow(new Date(course.createdAt), { addSuffix: true }),
+            icon: <School />,
+            color: 'primary.main',
+        });
+    });
+
+    // Fallback if nothing
+    if (activities.length === 0) {
+        activities.push({
+            id: 'empty',
+            text: 'No recent activity yet. Create a course to get started.',
+            time: '',
+            icon: <Note />,
+            color: 'text.secondary',
+        });
+    }
 
     return (
         <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
@@ -19,19 +52,19 @@ const RecentActivity = () => {
                     <Box key={activity.id}>
                         <ListItem alignItems="flex-start">
                             <ListItemAvatar>
-                                <Avatar sx={{ bgcolor: 'background.paper', color: activity.color, border: `1px solid`, borderColor: activity.color }}>
+                                <Avatar sx={{
+                                    bgcolor: 'background.paper',
+                                    color: activity.color,
+                                    border: '1px solid',
+                                    borderColor: activity.color,
+                                }}>
                                     {activity.icon}
                                 </Avatar>
                             </ListItemAvatar>
                             <ListItemText
                                 primary={activity.text}
                                 secondary={
-                                    <Typography
-                                        sx={{ display: 'inline' }}
-                                        component="span"
-                                        variant="caption"
-                                        color="text.secondary"
-                                    >
+                                    <Typography component="span" variant="caption" color="text.secondary">
                                         {activity.time}
                                     </Typography>
                                 }

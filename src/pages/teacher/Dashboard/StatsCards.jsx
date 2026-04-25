@@ -1,29 +1,43 @@
-import { Grid, Paper, Typography, Box } from '@mui/material';
+import { Grid, Paper, Typography, Box, CircularProgress } from '@mui/material';
 import { School, People, Class, Assignment } from '@mui/icons-material';
+import { useTeacher } from '../../../contexts/TeacherContext';
 
-const StatCard = ({ title, value, icon, color }) => (
+const StatCard = ({ title, value, icon, color, loading }) => (
     <Paper elevation={2} sx={{ p: 3, display: 'flex', alignItems: 'center', height: '100%' }}>
         <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${color}.light`, color: `${color}.main`, mr: 2 }}>
             {icon}
         </Box>
         <Box>
-            <Typography variant="h4" fontWeight="bold">
-                {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-                {title}
-            </Typography>
+            {loading ? (
+                <CircularProgress size={28} color={color} />
+            ) : (
+                <Typography variant="h4" fontWeight="bold">{value}</Typography>
+            )}
+            <Typography variant="body2" color="text.secondary">{title}</Typography>
         </Box>
     </Paper>
 );
 
 const StatsCards = () => {
-    // In a real app, mock these or fetch from context
+    const { courses, coursesLoading, students, activeSession, sessionAttendance } = useTeacher();
+
+    // Total courses this teacher has
+    const totalCourses = courses.length;
+
+    // Active classes = number of courses with an open session right now
+    const activeClasses = activeSession ? 1 : 0;
+
+    // Students today = students who joined any session today
+    const studentsToday = activeSession ? sessionAttendance.length : 0;
+
+    // Total students enrolled across all courses (using students list for now)
+    const totalStudents = students.length;
+
     const stats = [
-        { title: 'Total Courses', value: 4, icon: <School />, color: 'primary' },
-        { title: 'Active Classes', value: 2, icon: <Class />, color: 'secondary' },
-        { title: 'Students Today', value: 35, icon: <People />, color: 'success' },
-        { title: 'Pending Grades', value: 12, icon: <Assignment />, color: 'warning' },
+        { title: 'Total Courses',   value: totalCourses,   icon: <School />,     color: 'primary',   loading: coursesLoading },
+        { title: 'Active Classes',  value: activeClasses,  icon: <Class />,      color: 'secondary', loading: false },
+        { title: 'Students Today',  value: studentsToday,  icon: <People />,     color: 'success',   loading: false },
+        { title: 'Total Students',  value: totalStudents,  icon: <Assignment />, color: 'warning',   loading: false },
     ];
 
     return (
