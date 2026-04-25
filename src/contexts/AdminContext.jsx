@@ -123,7 +123,7 @@ export const AdminProvider = ({ children }) => {
             try {
                 const { data, error } = await supabase
                     .from('profiles')
-                    .select('id, name, email, role, created_at');
+                    .select('id, name, email, role, phone, created_at');
                 if (error) throw error;
                 if (data) {
                     const mappedUsers = data.map(u => ({
@@ -131,6 +131,7 @@ export const AdminProvider = ({ children }) => {
                         name: u.name || u.email?.split('@')[0] || 'Unknown',
                         email: u.email,
                         role: u.role || 'Student',
+                        phone: u.phone || '—',
                         status: 'active',
                         createdAt: new Date(u.created_at).toISOString().split('T')[0]
                     }));

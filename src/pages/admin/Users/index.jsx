@@ -99,6 +99,13 @@ const UsersManagement = () => {
         },
         { field: 'name',      headerName: 'Name',   flex: 1, minWidth: 150 },
         { field: 'email',     headerName: 'Email',  flex: 1, minWidth: 200 },
+        { field: 'phone',     headerName: 'Phone',  width: 150,
+            renderCell: (params) => (
+                <span style={{ color: params.value === '—' ? '#aaa' : 'inherit' }}>
+                    {params.value}
+                </span>
+            ),
+        },
         {
             field: 'role', headerName: 'Role', width: 120,
             renderCell: (params) => (
