@@ -3,16 +3,17 @@ import { useParams } from 'react-router-dom';
 import {
     Box, Typography, Button, Paper, TextField,
     Snackbar, Alert, CircularProgress, Chip,
+    Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow, Avatar, ButtonGroup,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { Save, Download } from '@mui/icons-material';
+import { Download, Save, Person } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useTeacher } from '../../../contexts/TeacherContext';
 
-const STATUS_COLORS = {
-    Present: 'success',
-    Absent: 'error',
-    Late: 'warning',
+const STATUS_CONFIG = {
+    Present: { color: 'success', label: 'Present' },
+    Late:    { color: 'warning', label: 'Late' },
+    Absent:  { color: 'error',   label: 'Absent' },
 };
 
 const AttendanceHelper = () => {
@@ -21,112 +22,80 @@ const AttendanceHelper = () => {
     const course = courses.find(c => c.id === courseId);
 
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    // rows: { id, name, status }
     const [rows, setRows] = useState([]);
     const [saving, setSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Load attendance when course or date changes
     useEffect(() => {
-        if (!courseId || !selectedDate) return;
+        if (!courseId || !selectedDate || students.length === 0) return;
 
-        const loadAttendance = async () => {
+        const load = async () => {
             const existing = attendance[courseId]?.[selectedDate];
-            let records;
+            const records = existing ?? await fetchAttendance(courseId, selectedDate);
 
-            if (existing) {
-                records = existing;
-            } else {
-                records = await fetchAttendance(courseId, selectedDate);
-            }
-
-            // Build rows — use fetched records or default all to Present
-            const initialRows = students.map(student => {
-                const found = records.find(r => r.studentId === student.id);
-                return {
-                    id: student.id,
-                    name: student.name,
-                    status: found?.status || 'Present',
-                };
-            });
-            setRows(initialRows);
+            setRows(students.map(s => {
+                const found = records.find(r => r.studentId === s.id);
+                return { id: s.id, name: s.name, status: found?.status || 'Present' };
+            }));
         };
-
-        loadAttendance();
+        load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [courseId, selectedDate]);
+    }, [courseId, selectedDate, students]);
 
-    const handleProcessRowUpdate = (newRow) => {
-        setRows(prev => prev.map(r => r.id === newRow.id ? newRow : r));
-        return newRow;
+    // Instant status change — optimistic, no Supabase call until Save
+    const setStatus = (studentId, status) => {
+        setRows(prev => prev.map(r => r.id === studentId ? { ...r, status } : r));
     };
 
     const handleSave = async () => {
         setSaving(true);
-        const records = rows.map(r => ({
-            studentId: r.id,
-            name: r.name,
-            status: r.status,
-        }));
+        const records = rows.map(r => ({ studentId: r.id, name: r.name, status: r.status }));
         const result = await saveAttendance(courseId, selectedDate, records);
         setSaving(false);
-        if (result.success) {
-            setSnackbar({ open: true, message: 'Attendance saved successfully', severity: 'success' });
-        } else {
-            setSnackbar({ open: true, message: result.error || 'Failed to save attendance', severity: 'error' });
-        }
+        setSnackbar({
+            open: true,
+            message: result.success ? 'Attendance saved' : result.error || 'Failed to save',
+            severity: result.success ? 'success' : 'error',
+        });
     };
 
     const handleExport = () => {
-        const csvContent = [
+        const csv = [
             ['Name', 'Status', 'Date'].join(','),
-            ...rows.map(r => `${r.name},${r.status},${selectedDate}`)
+            ...rows.map(r => `${r.name},${r.status},${selectedDate}`),
         ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `attendance_${course?.name}_${selectedDate}.csv`;
         a.click();
-        window.URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url);
     };
 
     if (!course) return <Typography p={3}>Course not found</Typography>;
 
-    const columns = [
-        { field: 'name', headerName: 'Student Name', flex: 1, minWidth: 200 },
-        {
-            field: 'status',
-            headerName: 'Status',
-            width: 160,
-            editable: true,
-            type: 'singleSelect',
-            valueOptions: ['Present', 'Absent', 'Late'],
-            renderCell: (params) => (
-                <Chip
-                    label={params.value}
-                    size="small"
-                    color={STATUS_COLORS[params.value] || 'default'}
-                />
-            ),
-        },
-    ];
+    const counts = {
+        Present: rows.filter(r => r.status === 'Present').length,
+        Late:    rows.filter(r => r.status === 'Late').length,
+        Absent:  rows.filter(r => r.status === 'Absent').length,
+    };
 
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold">Attendance</Typography>
                     <Typography variant="subtitle1" color="text.secondary">
                         {course.name} — {format(new Date(selectedDate + 'T00:00:00'), 'MMMM do, yyyy')}
                     </Typography>
                 </Box>
-                <Box display="flex" gap={2} alignItems="center">
+                <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
                     <TextField
-                        type="date"
-                        size="small"
-                        value={selectedDate}
+                        type="date" size="small" value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                         InputLabelProps={{ shrink: true }}
                     />
@@ -137,49 +106,110 @@ const AttendanceHelper = () => {
                         variant="contained"
                         startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save />}
                         onClick={handleSave}
-                        disabled={saving}
+                        disabled={saving || rows.length === 0}
                     >
                         {saving ? 'Saving…' : 'Save'}
                     </Button>
                 </Box>
             </Box>
 
-            {/* Summary chips */}
-            <Box display="flex" gap={2} mb={2}>
-                {['Present', 'Absent', 'Late'].map(status => (
+            {/* Summary */}
+            <Box display="flex" gap={2} mb={3} flexWrap="wrap">
+                {Object.entries(counts).map(([status, count]) => (
                     <Chip
                         key={status}
-                        label={`${status}: ${rows.filter(r => r.status === status).length}`}
-                        color={STATUS_COLORS[status]}
+                        label={`${status}: ${count}`}
+                        color={STATUS_CONFIG[status].color}
                         variant="outlined"
-                        size="small"
                     />
                 ))}
+                <Chip label={`Total: ${rows.length}`} variant="outlined" />
             </Box>
 
-            <Paper elevation={2} sx={{ height: 500, width: '100%' }}>
-                {attendanceLoading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                        <CircularProgress />
-                    </Box>
-                ) : (
-                    <DataGrid
-                        rows={rows}
-                        columns={columns}
-                        processRowUpdate={handleProcessRowUpdate}
-                        onProcessRowUpdateError={(err) => console.error(err)}
-                        hideFooter
-                        disableRowSelectionOnClick
-                        sx={{ border: 'none' }}
-                    />
-                )}
+            {/* Attendance Table */}
+            <Paper elevation={2}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                                <TableCell width={50}>#</TableCell>
+                                <TableCell>Student</TableCell>
+                                <TableCell align="center">Status</TableCell>
+                                <TableCell align="center" width={280}>Mark Attendance</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {attendanceLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                        <CircularProgress size={28} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : rows.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                        <Typography color="text.secondary">No students found</Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : rows.map((row, index) => (
+                                <TableRow key={row.id} hover>
+                                    <TableCell>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {index + 1}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1.5}>
+                                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.light', color: 'primary.main' }}>
+                                                <Person fontSize="small" />
+                                            </Avatar>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {row.name}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Chip
+                                            label={row.status}
+                                            size="small"
+                                            color={STATUS_CONFIG[row.status]?.color || 'default'}
+                                        />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        {/* Instant 3-button toggle */}
+                                        <ButtonGroup size="small" variant="outlined">
+                                            <Button
+                                                color="success"
+                                                variant={row.status === 'Present' ? 'contained' : 'outlined'}
+                                                onClick={() => setStatus(row.id, 'Present')}
+                                            >
+                                                Present
+                                            </Button>
+                                            <Button
+                                                color="warning"
+                                                variant={row.status === 'Late' ? 'contained' : 'outlined'}
+                                                onClick={() => setStatus(row.id, 'Late')}
+                                            >
+                                                Late
+                                            </Button>
+                                            <Button
+                                                color="error"
+                                                variant={row.status === 'Absent' ? 'contained' : 'outlined'}
+                                                onClick={() => setStatus(row.id, 'Absent')}
+                                            >
+                                                Absent
+                                            </Button>
+                                        </ButtonGroup>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </Paper>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-            >
+            <Snackbar open={snackbar.open} autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
