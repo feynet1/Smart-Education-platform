@@ -36,14 +36,27 @@ export const AdminProvider = ({ children }) => {
         localStorage.removeItem('admin_users');
     }, []);
 
-    const [events, setEvents] = useState(() => {
-        const saved = localStorage.getItem('admin_events');
-        return saved ? JSON.parse(saved) : [
-            { id: 1, title: 'Spring Semester Starts', date: '2026-01-15', type: 'academic', target: 'all' },
-            { id: 2, title: 'Midterm Exams Week',     date: '2026-02-20', type: 'exam',     target: 'students' },
-            { id: 3, title: 'Faculty Meeting',        date: '2026-02-05', type: 'meeting',  target: 'teachers' },
-        ];
-    });
+    const [events, setEvents] = useState([]);
+    const [eventsLoading, setEventsLoading] = useState(false);
+
+    // Fetch events from Supabase
+    const fetchEvents = async () => {
+        setEventsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('events')
+                .select('*')
+                .order('date', { ascending: true });
+            if (error) throw error;
+            setEvents(data || []);
+        } catch (err) {
+            console.error('Failed to fetch events:', err);
+        } finally {
+            setEventsLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchEvents(); }, []);
 
     const [systemLogs, setSystemLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
@@ -130,7 +143,7 @@ export const AdminProvider = ({ children }) => {
         fetchRealUsers();
     }, []);
 
-    useEffect(() => { localStorage.setItem('admin_events',   JSON.stringify(events));      }, [events]);
+    // (events are now stored in Supabase, not localStorage)
 
     const stats = {
         totalStudents: users.filter(u => u.role === 'Student').length,
@@ -274,14 +287,52 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const addEvent = (event) => {
-        setEvents(prev => [...prev, { ...event, id: Date.now() }]);
-        addLog(`Created event: ${event.title}`, 'Admin');
+    const addEvent = async (event) => {
+        try {
+            const { data, error } = await supabase
+                .from('events')
+                .insert({ title: event.title, date: event.date, type: event.type, target: event.target, description: event.description || null })
+                .select()
+                .single();
+            if (error) throw error;
+            setEvents(prev => [...prev, data].sort((a, b) => new Date(a.date) - new Date(b.date)));
+            addLog(`Created event: ${event.title}`, 'Admin');
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to create event:', err);
+            return { success: false, error: err.message };
+        }
     };
 
-    const deleteEvent = (eventId) => {
+    const updateEvent = async (eventId, updates) => {
+        const prev = events.find(e => e.id === eventId);
+        setEvents(evts => evts.map(e => e.id === eventId ? { ...e, ...updates } : e));
+        try {
+            const { error } = await supabase
+                .from('events')
+                .update(updates)
+                .eq('id', eventId);
+            if (error) throw error;
+            addLog(`Updated event: ${updates.title || prev?.title}`, 'Admin');
+            return { success: true };
+        } catch (err) {
+            setEvents(evts => evts.map(e => e.id === eventId ? prev : e));
+            return { success: false, error: err.message };
+        }
+    };
+
+    const deleteEvent = async (eventId) => {
+        const event = events.find(e => e.id === eventId);
         setEvents(prev => prev.filter(e => e.id !== eventId));
-        addLog('Deleted event', 'Admin');
+        try {
+            const { error } = await supabase.from('events').delete().eq('id', eventId);
+            if (error) throw error;
+            addLog(`Deleted event: ${event?.title}`, 'Admin');
+            return { success: true };
+        } catch (err) {
+            setEvents(prev => [...prev, event].sort((a, b) => new Date(a.date) - new Date(b.date)));
+            return { success: false, error: err.message };
+        }
     };
 
     // ── Danger Zone ──────────────────────────────────────────
@@ -383,14 +434,14 @@ export const AdminProvider = ({ children }) => {
     };
 
     const value = {
-        users, events, systemLogs, logsLoading, settings, stats,
+        users, events, eventsLoading, systemLogs, logsLoading, settings, stats,
         courses: getTeacherCourses(),
         attendance: getTeacherAttendance(),
         notes: getTeacherNotes(),
         grades: getStudentGrades(),
         enrollments: getStudentEnrollments(),
         updateUserRole, toggleUserStatus, addUser, deleteUser,
-        addEvent, deleteEvent, updateSettings, addLog, fetchLogs,
+        addEvent, updateEvent, deleteEvent, updateSettings, addLog, fetchLogs,
         clearAllLogs, resetAllData, exportDatabase,
     };
 
