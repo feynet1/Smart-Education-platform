@@ -159,7 +159,157 @@ export const TeacherProvider = ({ children }) => {
         fetchStudents();
     }, []);
 
-    // ── Attendance (Supabase) ─────────────────────────────────
+    // ── Class Sessions ────────────────────────────────────────
+    const [activeSession, setActiveSession] = useState(null);
+    const [sessionAttendance, setSessionAttendance] = useState([]);
+
+    // Check if there's already an open session for a course
+    const fetchActiveSession = async (courseId) => {
+        try {
+            const { data, error } = await supabase
+                .from('class_sessions')
+                .select('*')
+                .eq('course_id', courseId)
+                .eq('status', 'open')
+                .single();
+            if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+            setActiveSession(data || null);
+            if (data) fetchSessionAttendance(data.id);
+        } catch (err) {
+            console.error('Failed to fetch active session:', err);
+        }
+    };
+
+    // Fetch attendance for a session
+    const fetchSessionAttendance = async (sessionId) => {
+        try {
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('*')
+                .eq('session_id', sessionId);
+            if (error) throw error;
+            setSessionAttendance(data || []);
+        } catch (err) {
+            console.error('Failed to fetch session attendance:', err);
+        }
+    };
+
+    // Start a new session
+    const startSession = async (courseId) => {
+        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        try {
+            const { data, error } = await supabase
+                .from('class_sessions')
+                .insert({
+                    course_id: courseId,
+                    teacher_id: user.id,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'open',
+                })
+                .select()
+                .single();
+            if (error) throw error;
+            setActiveSession(data);
+            setSessionAttendance([]);
+            return { success: true, session: data };
+        } catch (err) {
+            console.error('Failed to start session:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // End session — mark all enrolled students who haven't joined as Absent
+    const endSession = async (courseId) => {
+        if (!activeSession) return { success: false, error: 'No active session' };
+        try {
+            // Get all students
+            const { data: allStudents } = await supabase
+                .from('profiles')
+                .select('id, name')
+                .eq('role', 'Student');
+
+            // Find students who haven't joined
+            const joinedIds = sessionAttendance.map(a => a.student_id);
+            const absentStudents = (allStudents || []).filter(s => !joinedIds.includes(s.id));
+
+            // Insert absent records
+            if (absentStudents.length > 0) {
+                const absentRows = absentStudents.map(s => ({
+                    course_id: courseId,
+                    session_id: activeSession.id,
+                    student_id: s.id,
+                    student_name: s.name || 'Unknown',
+                    date: activeSession.date,
+                    status: 'Absent',
+                }));
+                await supabase.from('attendance').upsert(absentRows, {
+                    onConflict: 'course_id,student_id,date',
+                });
+            }
+
+            // Close the session
+            const { error } = await supabase
+                .from('class_sessions')
+                .update({ status: 'closed', closed_at: new Date().toISOString() })
+                .eq('id', activeSession.id);
+            if (error) throw error;
+
+            setActiveSession(null);
+            setSessionAttendance([]);
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to end session:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Update a student's status in the session
+    const updateAttendanceStatus = async (attendanceId, status) => {
+        try {
+            const { error } = await supabase
+                .from('attendance')
+                .update({ status })
+                .eq('id', attendanceId);
+            if (error) throw error;
+            setSessionAttendance(prev =>
+                prev.map(a => a.id === attendanceId ? { ...a, status } : a)
+            );
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Subscribe to realtime attendance updates for active session
+    useEffect(() => {
+        if (!activeSession?.id) return;
+        const channel = supabase
+            .channel(`session-${activeSession.id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'attendance',
+                filter: `session_id=eq.${activeSession.id}`,
+            }, (payload) => {
+                setSessionAttendance(prev => {
+                    const exists = prev.find(a => a.id === payload.new.id);
+                    return exists ? prev : [...prev, payload.new];
+                });
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'attendance',
+                filter: `session_id=eq.${activeSession.id}`,
+            }, (payload) => {
+                setSessionAttendance(prev =>
+                    prev.map(a => a.id === payload.new.id ? payload.new : a)
+                );
+            })
+            .subscribe();
+
+        return () => supabase.removeChannel(channel);
+    }, [activeSession?.id]);
     const [attendance, setAttendance] = useState({});
     const [attendanceLoading, setAttendanceLoading] = useState(false);
 
@@ -256,6 +406,8 @@ export const TeacherProvider = ({ children }) => {
         addCourse, updateCourse, deleteCourse,
         students,
         attendance, attendanceLoading, fetchAttendance, saveAttendance,
+        activeSession, sessionAttendance,
+        fetchActiveSession, startSession, endSession, updateAttendanceStatus,
         notes, addNote, deleteNote,
     };
 

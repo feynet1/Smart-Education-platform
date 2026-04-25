@@ -1,109 +1,196 @@
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Grid, Paper, Button, Divider, List, ListItem, ListItemAvatar, Avatar, ListItemText, TextField } from '@mui/material';
+import {
+    Box, Typography, Grid, Paper, Button, Avatar, Chip,
+    List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction,
+    IconButton, Tooltip, Divider, CircularProgress, Alert, TextField,
+} from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
-import { VideoCall, Send, Person } from '@mui/icons-material';
+import {
+    PlayArrow, Stop, Person, Send,
+} from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
 
+const STATUS_COLORS = { Present: 'success', Absent: 'error', Late: 'warning' };
+const STATUS_CYCLE = { Present: 'Late', Late: 'Absent', Absent: 'Present' };
+
 const ClassroomHelper = () => {
-    const { id } = useParams();
-    const { courses } = useTeacher();
-    const course = courses.find(c => c.id === id);
+    const { id: courseId } = useParams();
+    const {
+        courses,
+        activeSession, sessionAttendance,
+        fetchActiveSession, startSession, endSession, updateAttendanceStatus,
+    } = useTeacher();
 
-    // Mock Chat Messages
-    const messages = [
-        { id: 1, sender: 'Alice', text: 'Good morning everyone!' },
-        { id: 2, sender: 'Bob', text: 'Is the assignment due today?' },
-    ];
+    const course = courses.find(c => c.id === courseId);
+    const [starting, setStarting] = useState(false);
+    const [ending, setEnding] = useState(false);
+    const [message, setMessage] = useState('');
 
-    if (!course) {
-        return <Typography>Course not found</Typography>;
-    }
+    // Load active session on mount
+    useEffect(() => {
+        if (courseId) fetchActiveSession(courseId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId]);
+
+    const handleStartSession = async () => {
+        setStarting(true);
+        await startSession(courseId);
+        setStarting(false);
+    };
+
+    const handleEndSession = async () => {
+        setEnding(true);
+        await endSession(courseId);
+        setEnding(false);
+    };
+
+    // Cycle through Present → Late → Absent on click
+    const handleStatusClick = async (record) => {
+        const next = STATUS_CYCLE[record.status] || 'Present';
+        await updateAttendanceStatus(record.id, next);
+    };
+
+    if (!course) return <Typography p={3}>Course not found</Typography>;
+
+    const presentCount = sessionAttendance.filter(a => a.status === 'Present').length;
+    const lateCount = sessionAttendance.filter(a => a.status === 'Late').length;
+    const absentCount = sessionAttendance.filter(a => a.status === 'Absent').length;
 
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            {/* Header */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold">
-                        {course.name} <Typography component="span" variant="h5" color="text.secondary">({course.subject})</Typography>
+                        {course.name}
+                        <Typography component="span" variant="h5" color="text.secondary" ml={1}>
+                            ({course.subject})
+                        </Typography>
                     </Typography>
                     <Typography variant="subtitle1" color="text.secondary">
-                        Classroom Interface
+                        Classroom — {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </Typography>
                 </Box>
-                <Button variant="contained" color="error" startIcon={<VideoCall />} size="large">
-                    Start Live Class
-                </Button>
+
+                {activeSession ? (
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Chip label="Session Active" color="success" variant="filled" />
+                        <Button
+                            variant="contained"
+                            color="error"
+                            startIcon={ending ? <CircularProgress size={16} color="inherit" /> : <Stop />}
+                            onClick={handleEndSession}
+                            disabled={ending}
+                        >
+                            {ending ? 'Ending…' : 'End Session'}
+                        </Button>
+                    </Box>
+                ) : (
+                    <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={starting ? <CircularProgress size={16} color="inherit" /> : <PlayArrow />}
+                        onClick={handleStartSession}
+                        disabled={starting}
+                        size="large"
+                    >
+                        {starting ? 'Starting…' : 'Start Session'}
+                    </Button>
+                )}
             </Box>
 
+            {!activeSession && (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                    Start a session to allow students to join and mark their attendance automatically.
+                </Alert>
+            )}
+
             <Grid container spacing={3}>
-                {/* Left Column: Info & QR */}
+                {/* Left — Join Code + Attendance */}
                 <Grid item xs={12} md={4}>
+                    {/* Join Code Card */}
                     <Paper elevation={2} sx={{ p: 3, mb: 3, textAlign: 'center' }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                            Join Code
-                        </Typography>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>Join Code</Typography>
                         <Typography variant="h3" color="primary" sx={{ letterSpacing: 4, fontWeight: 'bold' }} gutterBottom>
                             {course.joinCode}
                         </Typography>
                         <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
-                            <QRCodeSVG value={course.joinCode} size={150} />
+                            <QRCodeSVG value={course.joinCode} size={140} />
                         </Box>
                         <Typography variant="caption" color="text.secondary">
-                            Scan to join the class
+                            Students scan or enter this code to join
                         </Typography>
                     </Paper>
 
-                    <Paper elevation={2} sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                            Attendees (Mock)
-                        </Typography>
-                        <List dense>
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <ListItem key={i}>
-                                    <ListItemAvatar>
-                                        <Avatar sx={{ width: 30, height: 30 }}>
-                                            <Person />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary={`Student ${i}`} secondary="Online" />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
+                    {/* Attendance Summary */}
+                    {activeSession && (
+                        <Paper elevation={2} sx={{ p: 2 }}>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                Live Attendance ({sessionAttendance.length} joined)
+                            </Typography>
+                            <Box display="flex" gap={1} mb={2} flexWrap="wrap">
+                                <Chip label={`Present: ${presentCount}`} color="success" size="small" />
+                                <Chip label={`Late: ${lateCount}`} color="warning" size="small" />
+                                <Chip label={`Absent: ${absentCount}`} color="error" size="small" />
+                            </Box>
+                            <Divider sx={{ mb: 1 }} />
+                            {sessionAttendance.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                                    Waiting for students to join…
+                                </Typography>
+                            ) : (
+                                <List dense>
+                                    {sessionAttendance.map((record) => (
+                                        <ListItem key={record.id} sx={{ px: 0 }}>
+                                            <ListItemAvatar>
+                                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.light' }}>
+                                                    <Person fontSize="small" />
+                                                </Avatar>
+                                            </ListItemAvatar>
+                                            <ListItemText
+                                                primary={record.student_name}
+                                                primaryTypographyProps={{ variant: 'body2' }}
+                                            />
+                                            <ListItemSecondaryAction>
+                                                <Tooltip title="Click to cycle status">
+                                                    <Chip
+                                                        label={record.status}
+                                                        size="small"
+                                                        color={STATUS_COLORS[record.status] || 'default'}
+                                                        onClick={() => handleStatusClick(record)}
+                                                        sx={{ cursor: 'pointer' }}
+                                                    />
+                                                </Tooltip>
+                                            </ListItemSecondaryAction>
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            )}
+                        </Paper>
+                    )}
                 </Grid>
 
-                {/* Right Column: Chat/Content */}
+                {/* Right — Chat placeholder */}
                 <Grid item xs={12} md={8}>
-                    <Paper elevation={2} sx={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
+                    <Paper elevation={2} sx={{ height: 560, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                            <Typography variant="h6" fontWeight="bold">
-                                Class Chat
+                            <Typography variant="h6" fontWeight="bold">Class Chat</Typography>
+                        </Box>
+                        <Box sx={{ p: 2, flexGrow: 1, overflowY: 'auto', bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography color="text.secondary" variant="body2">
+                                {activeSession ? 'Chat coming soon…' : 'Start a session to enable chat'}
                             </Typography>
                         </Box>
-
-                        <Box sx={{ p: 2, flexGrow: 1, overflowY: 'auto', bgcolor: '#f5f5f5' }}>
-                            {messages.map((msg) => (
-                                <Box key={msg.id} sx={{ mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                                        {msg.sender}
-                                    </Typography>
-                                    <Paper sx={{ p: 1.5, borderRadius: 2, bgcolor: 'white', maxWidth: '80%' }}>
-                                        <Typography variant="body2">
-                                            {msg.text}
-                                        </Typography>
-                                    </Paper>
-                                </Box>
-                            ))}
-                        </Box>
-
-                        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex' }}>
+                        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 1 }}>
                             <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="Type a message..."
-                                sx={{ mr: 1 }}
+                                fullWidth size="small"
+                                placeholder="Type a message…"
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                disabled={!activeSession}
                             />
-                            <Button variant="contained" endIcon={<Send />}>
+                            <Button variant="contained" endIcon={<Send />} disabled={!activeSession || !message}>
                                 Send
                             </Button>
                         </Box>
