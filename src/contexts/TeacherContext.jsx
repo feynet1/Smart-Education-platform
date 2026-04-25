@@ -89,6 +89,7 @@ export const TeacherProvider = ({ children }) => {
                 students: [],
             };
             setCourses(prev => [mapped, ...prev]);
+            addTeacherLog('Created course', mapped.name);
             return { success: true, course: mapped };
         } catch (err) {
             console.error('[addCourse] Failed:', err);
@@ -128,6 +129,7 @@ export const TeacherProvider = ({ children }) => {
                 .eq('id', id)
                 .eq('teacher_id', user.id);
             if (error) throw error;
+            addTeacherLog('Deleted course', courses.find(c => c.id === id)?.name || id);
             return { success: true };
         } catch (err) {
             console.error('Failed to delete course:', err);
@@ -159,7 +161,49 @@ export const TeacherProvider = ({ children }) => {
         fetchStudents();
     }, []);
 
-    // ── Class Sessions ────────────────────────────────────────
+    // ── Teacher Activity Logs ─────────────────────────────────
+    const [teacherLogs, setTeacherLogs] = useState([]);
+
+    const fetchTeacherLogs = async () => {
+        if (!user?.id) return;
+        try {
+            const { data, error } = await supabase
+                .from('teacher_activity_logs')
+                .select('*')
+                .eq('teacher_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(10);
+            if (error) throw error;
+            setTeacherLogs(data || []);
+        } catch (err) {
+            console.error('Failed to fetch teacher logs:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.id) fetchTeacherLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
+
+    const addTeacherLog = async (action, detail = '') => {
+        if (!user?.id) return;
+        const optimistic = { id: Date.now().toString(), teacher_id: user.id, action, detail, created_at: new Date().toISOString() };
+        setTeacherLogs(prev => [optimistic, ...prev].slice(0, 10));
+        try {
+            await supabase.from('teacher_activity_logs').insert({ teacher_id: user.id, action, detail });
+        } catch (err) {
+            console.error('Failed to log activity:', err);
+        }
+    };
+
+    const deleteTeacherLog = async (logId) => {
+        setTeacherLogs(prev => prev.filter(l => l.id !== logId));
+        try {
+            await supabase.from('teacher_activity_logs').delete().eq('id', logId);
+        } catch (err) {
+            console.error('Failed to delete log:', err);
+        }
+    };
     const [activeSession, setActiveSession] = useState(null);
     const [sessionAttendance, setSessionAttendance] = useState([]);
 
@@ -211,6 +255,7 @@ export const TeacherProvider = ({ children }) => {
             if (error) throw error;
             setActiveSession(data);
             setSessionAttendance([]);
+            addTeacherLog('Started session', courses.find(c => c.id === courseId)?.name || courseId);
             return { success: true, session: data };
         } catch (err) {
             console.error('Failed to start session:', err);
@@ -256,6 +301,7 @@ export const TeacherProvider = ({ children }) => {
 
             setActiveSession(null);
             setSessionAttendance([]);
+            addTeacherLog('Ended session', courses.find(c => c.id === courseId)?.name || courseId);
             return { success: true };
         } catch (err) {
             console.error('Failed to end session:', err);
@@ -370,6 +416,7 @@ export const TeacherProvider = ({ children }) => {
                     [date]: records,
                 },
             }));
+            addTeacherLog('Saved attendance', `${date}`);
             return { success: true };
         } catch (err) {
             console.error('Failed to save attendance:', err);
@@ -434,6 +481,7 @@ export const TeacherProvider = ({ children }) => {
                 ...prev,
                 [courseId]: [{ ...data, publicUrl: urlData.publicUrl }, ...(prev[courseId] || [])],
             }));
+            addTeacherLog('Uploaded file', file.name);
             setUploadProgress(prev => { const n = { ...prev }; delete n[file.name]; return n; });
             return { success: true };
         } catch (err) {
@@ -453,6 +501,7 @@ export const TeacherProvider = ({ children }) => {
             await supabase.storage.from('course-notes').remove([note.file_path]);
             // Delete metadata
             await supabase.from('course_notes').delete().eq('id', noteId);
+            addTeacherLog('Deleted file', note.file_name);
         } catch (err) {
             console.error('Failed to delete note:', err);
             // Rollback
@@ -473,6 +522,7 @@ export const TeacherProvider = ({ children }) => {
         activeSession, sessionAttendance,
         fetchActiveSession, startSession, endSession, updateAttendanceStatus,
         notes, notesLoading, uploadProgress, fetchNotes, addNote, deleteNote, getNoteUrl,
+        teacherLogs, deleteTeacherLog,
     };
 
     return (
