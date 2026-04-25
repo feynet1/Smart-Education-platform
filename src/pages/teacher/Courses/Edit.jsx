@@ -1,19 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    TextField,
-    MenuItem,
-    Grid
+    Dialog, DialogTitle, DialogContent, DialogActions,
+    Button, TextField, MenuItem, Grid, CircularProgress,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { useTeacher } from '../../../contexts/TeacherContext';
 
-const EditCourse = ({ open, onClose, course }) => {
+const EditCourse = ({ open, onClose, course, onSuccess, onError }) => {
     const { updateCourse } = useTeacher();
+    const [saving, setSaving] = useState(false);
     const { register, handleSubmit, setValue } = useForm();
 
     useEffect(() => {
@@ -21,13 +16,20 @@ const EditCourse = ({ open, onClose, course }) => {
             setValue('name', course.name);
             setValue('subject', course.subject);
             setValue('grade', course.grade);
-            setValue('description', course.description);
+            setValue('description', course.description || '');
         }
     }, [course, setValue]);
 
-    const onSubmit = (data) => {
-        updateCourse(course.id, data);
-        onClose();
+    const onSubmit = async (data) => {
+        setSaving(true);
+        const result = await updateCourse(course.id, data);
+        setSaving(false);
+        if (result?.success) {
+            onClose();
+            onSuccess?.('Course updated successfully');
+        } else {
+            onError?.(result?.error || 'Failed to update course');
+        }
     };
 
     return (
@@ -37,27 +39,17 @@ const EditCourse = ({ open, onClose, course }) => {
                 <DialogContent>
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Course Name"
-                                {...register('name', { required: true })}
-                            />
+                            <TextField fullWidth label="Course Name"
+                                {...register('name', { required: true })} />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Subject"
-                                {...register('subject', { required: true })}
-                            />
+                            <TextField fullWidth label="Subject"
+                                {...register('subject', { required: true })} />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField
-                                select
-                                fullWidth
-                                label="Grade Level"
-                                defaultValue={course?.grade || ""}
-                                {...register('grade', { required: true })}
-                            >
+                            <TextField select fullWidth label="Grade Level"
+                                defaultValue={course?.grade || ''}
+                                {...register('grade', { required: true })}>
                                 <MenuItem value="9">Grade 9</MenuItem>
                                 <MenuItem value="10">Grade 10</MenuItem>
                                 <MenuItem value="11">Grade 11</MenuItem>
@@ -66,19 +58,17 @@ const EditCourse = ({ open, onClose, course }) => {
                             </TextField>
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={3}
-                                label="Description"
-                                {...register('description')}
-                            />
+                            <TextField fullWidth multiline rows={3} label="Description (optional)"
+                                {...register('description')} />
                         </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={onClose}>Cancel</Button>
-                    <Button type="submit" variant="contained">Save Changes</Button>
+                    <Button onClick={onClose} disabled={saving}>Cancel</Button>
+                    <Button type="submit" variant="contained" disabled={saving}
+                        startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
+                        {saving ? 'Saving…' : 'Save Changes'}
+                    </Button>
                 </DialogActions>
             </form>
         </Dialog>
