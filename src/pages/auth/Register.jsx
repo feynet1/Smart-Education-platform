@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
     Box, Button, Card, CardContent, Container, Link,
     TextField, Typography, Alert, CircularProgress, MenuItem
@@ -36,6 +36,14 @@ const InviteOnlyMessage = () => (
 const RegisterForm = () => {
     const { register: registerUser } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Show info message when redirected from Google sign-in with no account
+    const searchParams = new URLSearchParams(location.search);
+    const googleError = searchParams.get('error') === 'no_account'
+        ? 'No existing account found for your Google address. Please register below to create one.'
+        : '';
+
     const [serverError, setServerError]     = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [isSubmitting, setIsSubmitting]   = useState(false);
@@ -71,7 +79,8 @@ const RegisterForm = () => {
                         Join our Education Platform
                     </Typography>
 
-                    {serverError    && <Alert severity="error"   sx={{ mb: 2 }}>{serverError}</Alert>}
+                    {googleError   && <Alert severity="info"    sx={{ mb: 2 }}>{googleError}</Alert>}
+                    {serverError   && <Alert severity="error"   sx={{ mb: 2 }}>{serverError}</Alert>}
                     {successMessage && <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>}
 
                     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>

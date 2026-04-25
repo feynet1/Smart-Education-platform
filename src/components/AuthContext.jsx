@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user);
             } else {
                 setLoading(false);
             }
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
 
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user);
             } else {
                 setProfile(null);
                 setPendingInvite(false);
@@ -61,22 +61,45 @@ export const AuthProvider = ({ children }) => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const fetchProfile = async (userId) => {
+    const fetchProfile = async (authUser) => {
         try {
-            const { data, error } = await supabase
+            const userId = authUser.id;
+            const userEmail = authUser.email;
+
+            // 1. Try by id first (email/password users)
+            let { data } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .single();
 
-            if (error || !data) {
-                // No profile — sign out and redirect
-                console.warn('No profile found — signing out:', userId);
+            if (!data && userEmail) {
+                // 2. Google user — look up by email
+                const { data: byEmail } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('email', userEmail)
+                    .single();
+
+                if (byEmail) {
+                    // Found by email — this is an existing user signing in via Google
+                    // Update the profile id to match the Google auth id
+                    await supabase
+                        .from('profiles')
+                        .update({ id: userId })
+                        .eq('email', userEmail);
+                    data = { ...byEmail, id: userId };
+                }
+            }
+
+            if (!data) {
+                // No profile found — new Google user with no existing account
+                // Sign them out and redirect to register
                 await supabase.auth.signOut();
                 setUser(null);
                 setProfile(null);
                 setLoading(false);
-                window.location.href = '/login';
+                window.location.href = '/register?error=no_account';
                 return;
             }
 
@@ -92,6 +115,14 @@ export const AuthProvider = ({ children }) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw getErrorMessage(error);
         return data.user;
+    };
+
+    const loginWithGoogle = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: `${window.location.origin}/login` }
+        });
+        if (error) throw getErrorMessage(error);
     };
 
     const register = async (userData) => {
@@ -116,7 +147,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         pendingInvite,
         loading,
-        login, register, logout,
+        login, loginWithGoogle, register, logout,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

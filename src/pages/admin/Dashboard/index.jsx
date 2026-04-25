@@ -54,8 +54,9 @@ const AdminDashboard = () => {
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .slice(0, 3);
 
-    // Active users (mock)
-    const activeUsers = users.filter(u => u.status === 'active').length;
+    // Active students and teachers separately
+    const activeStudents = users.filter(u => u.role === 'Student' && u.status === 'active').length;
+    const activeTeachers = users.filter(u => u.role === 'Teacher' && u.status === 'active').length;
 
     return (
         <Box>
@@ -77,7 +78,7 @@ const AdminDashboard = () => {
                         value={stats.totalStudents}
                         icon={<People />}
                         color="#1976d2"
-                        subtitle={`${activeUsers} active users`}
+                        subtitle={`${activeStudents} active students`}
                     />
                 </Grid>
                 <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
@@ -86,6 +87,7 @@ const AdminDashboard = () => {
                         value={stats.totalTeachers}
                         icon={<Person />}
                         color="#2e7d32"
+                        subtitle={`${activeTeachers} active teachers`}
                     />
                 </Grid>
                 <Grid item size={{ xs: 12, sm: 6, md: 3 }}>

@@ -104,29 +104,27 @@ export const AdminProvider = ({ children }) => {
         fetchSettings();
     }, []);
 
-    // Fetch real users from Supabase — replaces list entirely
+    // Fetch users from profiles table — single source of truth
     useEffect(() => {
         const fetchRealUsers = async () => {
             try {
-                const { data, error } = await supabase.functions.invoke('admin-user-manager', {
-                    body: { action: 'list' }
-                });
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('id, name, email, role, created_at');
                 if (error) throw error;
-                if (data?.users) {
-                    const mappedUsers = data.users.map(u => ({
+                if (data) {
+                    const mappedUsers = data.map(u => ({
                         id: u.id,
-                        name: u.user_metadata?.name || u.email?.split('@')[0] || 'Unknown',
+                        name: u.name || u.email?.split('@')[0] || 'Unknown',
                         email: u.email,
-                        role: u.user_metadata?.role || 'Student',
-                        status: u.banned_until ? 'inactive'
-                              : u.invited_at && !u.last_sign_in_at ? 'invited'
-                              : 'active',
+                        role: u.role || 'Student',
+                        status: 'active',
                         createdAt: new Date(u.created_at).toISOString().split('T')[0]
                     }));
                     setUsers(mappedUsers);
                 }
             } catch (err) {
-                console.error('Failed to fetch real users:', err);
+                console.error('Failed to fetch users from profiles:', err);
             }
         };
         fetchRealUsers();
@@ -152,7 +150,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    // Update role & name — syncs to Supabase for real users
+    // Update role & name — syncs to profiles table
     const updateUserRole = async (userId, newRole, newName) => {
         const user = users.find(u => u.id === userId);
         const prevRole = user?.role;
@@ -165,14 +163,19 @@ export const AdminProvider = ({ children }) => {
         ));
         addLog(`Updated user: role=${newRole}${newName ? `, name=${newName}` : ''}`, 'Admin');
 
-        const isRealUser = String(userId).includes('-');
-        if (!isRealUser) return { success: true };
-
         try {
-            const { error } = await supabase.functions.invoke('admin-user-manager', {
+            const updates = { role: newRole };
+            if (newName) updates.name = newName;
+            const { error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('id', userId);
+            if (error) throw error;
+
+            // Also sync to auth user_metadata via edge function
+            await supabase.functions.invoke('admin-user-manager', {
                 body: { action: 'update-role', payload: { userId, role: newRole, name: newName || prevName } }
             });
-            if (error) throw error;
             return { success: true };
         } catch (err) {
             // Rollback
