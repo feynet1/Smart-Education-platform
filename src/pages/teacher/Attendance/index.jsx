@@ -27,22 +27,31 @@ const AttendanceHelper = () => {
     const [saving, setSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    // Load attendance when course or date changes
+    // Pre-populate rows with students immediately (default Present)
+    // then overlay with saved attendance from Supabase
+    useEffect(() => {
+        if (students.length === 0) return;
+        // Set default rows instantly so buttons appear right away
+        setRows(students.map(s => ({ id: s.id, name: s.name, status: 'Present' })));
+    }, [students]);
+
+    // Load saved attendance for selected date (overlay on top of defaults)
     useEffect(() => {
         if (!courseId || !selectedDate || students.length === 0) return;
 
         const load = async () => {
             const existing = attendance[courseId]?.[selectedDate];
             const records = existing ?? await fetchAttendance(courseId, selectedDate);
-
-            setRows(students.map(s => {
-                const found = records.find(r => r.studentId === s.id);
-                return { id: s.id, name: s.name, status: found?.status || 'Present' };
-            }));
+            if (records.length > 0) {
+                setRows(prev => prev.map(r => {
+                    const found = records.find(rec => rec.studentId === r.id);
+                    return found ? { ...r, status: found.status } : r;
+                }));
+            }
         };
         load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [courseId, selectedDate, students]);
+    }, [courseId, selectedDate]);
 
     // Instant status change — optimistic, no Supabase call until Save
     const setStatus = (studentId, status) => {
