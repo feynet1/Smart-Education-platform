@@ -1,6 +1,5 @@
 -- ============================================================
 -- profiles table
--- One row per auth user. Created automatically via trigger.
 -- ============================================================
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -10,40 +9,28 @@ create table if not exists profiles (
   created_at timestamptz default now()
 );
 
--- Enable RLS
 alter table profiles enable row level security;
 
--- Drop existing policies to avoid conflicts on re-run
 drop policy if exists "Users can read own profile" on profiles;
 drop policy if exists "Users can update own profile" on profiles;
 drop policy if exists "Service role full access" on profiles;
+drop policy if exists "Authenticated users can read profiles" on profiles;
 
--- Users can read their own profile
 create policy "Users can read own profile"
   on profiles for select
   using (auth.uid() = id);
 
--- Users can update their own profile
 create policy "Users can update own profile"
   on profiles for update
   using (auth.uid() = id);
 
--- Service role can do everything (needed for the trigger and edge functions)
 create policy "Service role full access"
   on profiles for all
   using (auth.role() = 'service_role');
 
 -- ============================================================
--- Trigger: auto-create profile on signup
---
--- SECURITY RULE:
---   - Email/password signups (provider = 'email') are allowed
---     only when registrationEnabled = true in platform_settings,
---     OR when the user was invited (raw_user_meta_data has a role).
---   - Google OAuth signups (provider = 'google') are BLOCKED
---     unless the user's email already exists in profiles
---     (meaning they were previously invited and accepted).
---   - Any other provider is blocked by default.
+-- Trigger function: handle_new_user
+-- Called after every insert into auth.users
 -- ============================================================
 create or replace function public.handle_new_user()
 returns trigger
@@ -52,73 +39,75 @@ security definer
 set search_path = public
 as $$
 declare
-  v_provider text;
-  v_role text;
-  v_name text;
+  v_provider  text;
+  v_role      text;
+  v_name      text;
+  v_reg_raw   text;
   v_reg_enabled boolean;
-  v_existing_profile uuid;
+  v_existing_id uuid;
 begin
-  -- Determine provider
-  v_provider := new.raw_app_meta_data->>'provider';
+  -- Determine OAuth provider (defaults to 'email')
+  v_provider := coalesce(new.raw_app_meta_data->>'provider', 'email');
 
-  -- ── Google OAuth ──────────────────────────────────────────
-  -- Only allow if a profile row already exists for this email
-  -- (i.e. the user was invited first via email/password flow)
+  -- ── Block uninvited Google users ──────────────────────────
   if v_provider = 'google' then
-    select id into v_existing_profile
+    select id into v_existing_id
       from public.profiles
       where email = new.email
       limit 1;
 
-    if v_existing_profile is null then
-      -- No prior profile — uninvited Google user. Block by raising exception.
-      raise exception 'GOOGLE_NOT_INVITED: No account found for %. Contact your administrator.', new.email;
+    if v_existing_id is null then
+      raise exception 'GOOGLE_NOT_INVITED: No account found for this email.';
     end if;
 
-    -- Profile exists — update the id to link to the new Google auth user
-    -- (handles the case where they were invited via email and now link Google)
+    -- Invited user linking Google — update profile id
     update public.profiles set id = new.id where email = new.email;
     return new;
   end if;
 
   -- ── Email / Password signup ───────────────────────────────
-  if v_provider = 'email' then
-    -- Check if this is an admin invite (has role in metadata)
-    v_role := coalesce(new.raw_user_meta_data->>'role', '');
-    v_name := coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1));
+  v_role := coalesce(new.raw_user_meta_data->>'role', '');
+  v_name := coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1));
 
-    if v_role != '' then
-      -- Invited user — always allowed, create profile with assigned role
-      insert into public.profiles (id, name, email, role)
-        values (new.id, v_name, new.email, v_role)
-        on conflict (id) do update set role = excluded.role, name = excluded.name;
-      return new;
-    end if;
+  -- Admin invite (has role in metadata) — always allowed
+  if v_role <> '' then
+    insert into public.profiles (id, name, email, role)
+      values (new.id, v_name, new.email, v_role)
+      on conflict (id) do update
+        set role = excluded.role,
+            name = excluded.name;
+    return new;
+  end if;
 
-    -- Open registration — check platform_settings
-    select (value::text = 'true' or value::boolean = true)
-      into v_reg_enabled
+  -- Open registration — read registrationEnabled from platform_settings
+  -- value is stored as jsonb: true (boolean) or "true" (string) depending on insert
+  v_reg_raw := null;
+  begin
+    select value::text
+      into v_reg_raw
       from public.platform_settings
       where key = 'registrationEnabled'
       limit 1;
+  exception when others then
+    v_reg_raw := 'false';
+  end;
 
-    if v_reg_enabled then
-      insert into public.profiles (id, name, email, role)
-        values (new.id, v_name, new.email, coalesce(nullif(v_role,''), 'Student'))
-        on conflict (id) do nothing;
-      return new;
-    else
-      -- Registration disabled and not an invite — block
-      raise exception 'REGISTRATION_DISABLED: Registration is currently closed. Contact your administrator.';
-    end if;
+  -- Accept both jsonb true and string "true"
+  v_reg_enabled := (v_reg_raw = 'true' or v_reg_raw = '"true"');
+
+  if v_reg_enabled then
+    insert into public.profiles (id, name, email, role)
+      values (new.id, v_name, new.email, 'Student')
+      on conflict (id) do nothing;
+    return new;
   end if;
 
-  -- ── Any other provider — block ────────────────────────────
-  raise exception 'PROVIDER_NOT_ALLOWED: Sign-in provider "%" is not permitted.', v_provider;
+  -- Registration closed and not an invite
+  raise exception 'REGISTRATION_DISABLED: Registration is currently closed.';
 end;
 $$;
 
--- Attach trigger to auth.users
+-- Attach trigger
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
