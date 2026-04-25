@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
     Box, Typography, Paper, TextField, Button, Switch,
     FormControlLabel, Grid, Avatar, Snackbar, Alert, CircularProgress,
+    Dialog, DialogTitle, DialogContent, DialogActions, InputAdornment, IconButton,
 } from '@mui/material';
-import { Save } from '@mui/icons-material';
+import { Save, Visibility, VisibilityOff, Lock } from '@mui/icons-material';
 import useAuth from '../../../hooks/useAuth';
 import { supabase } from '../../../supabaseClient';
 
@@ -20,6 +21,45 @@ const Settings = () => {
         push: false,
         updates: true,
     });
+
+    // ── Change Password ───────────────────────────────────────
+    const [pwDialog, setPwDialog] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [pwSaving, setPwSaving] = useState(false);
+    const [pwError, setPwError] = useState('');
+
+    const handleOpenPwDialog = () => {
+        setNewPassword('');
+        setConfirmPassword('');
+        setPwError('');
+        setPwDialog(true);
+    };
+
+    const handleChangePassword = async () => {
+        if (newPassword.length < 6) {
+            setPwError('Password must be at least 6 characters');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPwError('Passwords do not match');
+            return;
+        }
+        setPwSaving(true);
+        setPwError('');
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            setPwDialog(false);
+            setSnackbar({ open: true, message: 'Password changed successfully', severity: 'success' });
+        } catch (err) {
+            setPwError(err.message || 'Failed to change password');
+        } finally {
+            setPwSaving(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!user?.id) return;
@@ -125,7 +165,14 @@ const Settings = () => {
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Security
                         </Typography>
-                        <Button variant="outlined" color="primary" fullWidth sx={{ mb: 2 }}>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            fullWidth
+                            sx={{ mb: 2 }}
+                            startIcon={<Lock />}
+                            onClick={handleOpenPwDialog}
+                        >
                             Change Password
                         </Button>
                         <Button variant="outlined" color="error" fullWidth>
@@ -154,6 +201,60 @@ const Settings = () => {
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
+
+            {/* Change Password Dialog */}
+            <Dialog open={pwDialog} onClose={() => setPwDialog(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Change Password</DialogTitle>
+                <DialogContent>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                        {pwError && <Alert severity="error">{pwError}</Alert>}
+                        <TextField
+                            fullWidth
+                            label="New Password"
+                            type={showNew ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            helperText="Minimum 6 characters"
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={() => setShowNew(v => !v)} edge="end">
+                                            {showNew ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                        <TextField
+                            fullWidth
+                            label="Confirm New Password"
+                            type={showConfirm ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={() => setShowConfirm(v => !v)} edge="end">
+                                            {showConfirm ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPwDialog(false)} disabled={pwSaving}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleChangePassword}
+                        disabled={pwSaving || !newPassword || !confirmPassword}
+                        startIcon={pwSaving ? <CircularProgress size={16} color="inherit" /> : <Lock />}
+                    >
+                        {pwSaving ? 'Saving…' : 'Change Password'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
