@@ -51,11 +51,7 @@ const NotesHelper = () => {
 
     const handleDownload = (note) => {
         const url = getNoteUrl(note.file_path);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = note.file_name;
-        a.target = '_blank';
-        a.click();
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     if (!course) return <Typography p={3}>Course not found</Typography>;
