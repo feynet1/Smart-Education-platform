@@ -143,29 +143,72 @@ export const TeacherProvider = ({ children }) => {
         { id: 3, name: 'Charlie Brown', email: 'charlie@example.com' },
     ]);
 
-    // ── Attendance (localStorage for now) ────────────────────
-    const [attendance, setAttendance] = useState(() => {
-        const saved = localStorage.getItem('teacher_attendance');
-        return saved ? JSON.parse(saved) : {};
-    });
+    // ── Attendance (Supabase) ─────────────────────────────────
+    const [attendance, setAttendance] = useState({});
+    const [attendanceLoading, setAttendanceLoading] = useState(false);
 
-    useEffect(() => {
-        localStorage.setItem('teacher_attendance', JSON.stringify(attendance));
-    }, [attendance]);
+    // Fetch attendance for a specific course + date
+    const fetchAttendance = async (courseId, date) => {
+        setAttendanceLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('student_id, student_name, status')
+                .eq('course_id', courseId)
+                .eq('date', date);
+            if (error) throw error;
+            // Store as { courseId: { date: [records] } }
+            const records = (data || []).map(r => ({
+                studentId: r.student_id,
+                name: r.student_name,
+                status: r.status,
+            }));
+            setAttendance(prev => ({
+                ...prev,
+                [courseId]: {
+                    ...(prev[courseId] || {}),
+                    [date]: records,
+                },
+            }));
+            return records;
+        } catch (err) {
+            console.error('Failed to fetch attendance:', err);
+            return [];
+        } finally {
+            setAttendanceLoading(false);
+        }
+    };
 
-    const saveAttendance = (courseId, date, records) => {
-        setAttendance(prev => {
-            const courseAttendance = prev[courseId] || [];
-            const existingIndex = courseAttendance.findIndex(a => a.date === date);
-            let newCourseAttendance;
-            if (existingIndex >= 0) {
-                newCourseAttendance = [...courseAttendance];
-                newCourseAttendance[existingIndex] = { date, records };
-            } else {
-                newCourseAttendance = [...courseAttendance, { date, records }];
-            }
-            return { ...prev, [courseId]: newCourseAttendance };
-        });
+    // Save attendance — upsert all records for a course + date
+    const saveAttendance = async (courseId, date, records) => {
+        try {
+            // Build upsert rows
+            const rows = records.map(r => ({
+                course_id: courseId,
+                student_id: r.studentId,
+                student_name: r.name,
+                date,
+                status: r.status,
+            }));
+
+            const { error } = await supabase
+                .from('attendance')
+                .upsert(rows, { onConflict: 'course_id,student_id,date' });
+            if (error) throw error;
+
+            // Update local state
+            setAttendance(prev => ({
+                ...prev,
+                [courseId]: {
+                    ...(prev[courseId] || {}),
+                    [date]: records,
+                },
+            }));
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to save attendance:', err);
+            return { success: false, error: err.message };
+        }
     };
 
     // ── Notes (localStorage for now) ─────────────────────────
@@ -196,7 +239,7 @@ export const TeacherProvider = ({ children }) => {
         courses, coursesLoading, fetchCourses,
         addCourse, updateCourse, deleteCourse,
         students,
-        attendance, saveAttendance,
+        attendance, attendanceLoading, fetchAttendance, saveAttendance,
         notes, addNote, deleteNote,
     };
 
