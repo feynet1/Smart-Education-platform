@@ -576,8 +576,94 @@ const Landing = () => {
                     <Typography variant="h4" fontWeight="bold" mt={1}>
                         Designed for Every Role
                     </Typography>
+                    {/* Mobile swipe indicator */}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, mt: 1 }}>
+                        👉 Swipe to see all roles
+                    </Typography>
                 </Box>
-                <Grid container spacing={4}>
+
+                {/* Mobile: Horizontal scroll carousel */}
+                <Box sx={{
+                    display: { xs: 'block', md: 'none' },
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    '&::-webkit-scrollbar': { display: 'none' },
+                    mx: -2, px: 2,
+                }}>
+                    <Box sx={{ display: 'flex', gap: 3, pb: 2 }}>
+                        {[
+                            {
+                                icon: <SecurityIcon fontSize="large" />,
+                                role: 'Administrators',
+                                amharic: 'አስተዳዳሪዎች',
+                                color: ETH_RED,
+                                points: ['Manage all users and roles', 'Generate institution-wide reports', 'Control platform settings', 'Publish events & announcements'],
+                            },
+                            {
+                                icon: <MenuBookIcon fontSize="large" />,
+                                role: 'Teachers',
+                                amharic: 'አስተማሪዎች',
+                                color: ETH_GREEN,
+                                points: ['Create and manage courses', 'Track attendance per session', 'Grade assignments & exams', 'Communicate with students'],
+                            },
+                            {
+                                icon: <EmojiEventsIcon fontSize="large" />,
+                                role: 'Students',
+                                amharic: 'ተማሪዎች',
+                                color: ETH_BLUE,
+                                points: ['View enrolled courses', 'Check grades in real time', 'Track attendance records', 'Stay updated on events'],
+                            },
+                        ].map((r, idx) => (
+                            <Card key={r.role} elevation={0} sx={{
+                                flex: '0 0 88%',
+                                scrollSnapAlign: 'center',
+                                border: `2px solid ${r.color}`,
+                                borderRadius: 3,
+                                boxShadow: 3,
+                                position: 'relative',
+                            }}>
+                                <CardContent sx={{ p: 3 }}>
+                                    {/* Role number badge */}
+                                    <Box sx={{
+                                        position: 'absolute', top: 12, right: 12,
+                                        bgcolor: r.color,
+                                        color: '#fff',
+                                        borderRadius: 2,
+                                        width: 28, height: 28,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: 13,
+                                        fontWeight: 800,
+                                    }}>
+                                        {idx + 1}
+                                    </Box>
+                                    <Avatar sx={{ bgcolor: r.color, mb: 1.5, width: 56, height: 56 }}>
+                                        {r.icon}
+                                    </Avatar>
+                                    <Typography variant="h6" fontWeight="bold">{r.role}</Typography>
+                                    <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                                        {r.amharic}
+                                    </Typography>
+                                    <Stack spacing={1}>
+                                        {r.points.map(p => (
+                                            <Box key={p} display="flex" alignItems="center" gap={1}>
+                                                <CheckCircleOutlineIcon sx={{ color: r.color, fontSize: 18 }} />
+                                                <Typography variant="body2" color="text.secondary">{p}</Typography>
+                                            </Box>
+                                        ))}
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </Box>
+                </Box>
+
+                {/* Desktop: Grid layout (unchanged) */}
+                <Grid container spacing={4} sx={{ display: { xs: 'none', md: 'flex' } }}>
                     {[
                         {
                             icon: <SecurityIcon fontSize="large" />,
