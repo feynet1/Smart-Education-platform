@@ -453,24 +453,97 @@ const Landing = () => {
             </Box>
 
             {/* Stats */}
-            <Box sx={{ bgcolor: '#f8f9fa', py: 5, borderBottom: `4px solid ${ETH_YELLOW}` }}>
+            <Box sx={{ bgcolor: '#f8f9fa', py: { xs: 6, md: 8 }, borderBottom: `4px solid ${ETH_YELLOW}` }}>
                 <Container maxWidth="lg">
-                    <Grid container spacing={3} justifyContent="center">
-                        {stats.map(s => (
-                            <Grid item xs={6} md={3} key={s.label} sx={{ textAlign: 'center' }}>
-                                <Box sx={{
-                                    bgcolor: '#fff', borderRadius: 3, py: 3, px: 2,
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.07)',
-                                    border: '1px solid #f0f0f0',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
-                                    '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
+                    <Box textAlign="center" mb={5}>
+                        <Typography variant="overline" fontWeight="bold" sx={{ color: ETH_GREEN }}>
+                            Platform Stats
+                        </Typography>
+                        <Typography variant="h4" fontWeight="bold" mt={1}>
+                            Trusted by Ethiopian Institutions
+                        </Typography>
+                        {/* Mobile swipe indicator */}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, mt: 1 }}>
+                            👉 Swipe to see all stats
+                        </Typography>
+                    </Box>
+
+                    {/* Mobile: Horizontal scroll carousel */}
+                    <Box sx={{
+                        display: { xs: 'block', md: 'none' },
+                        overflowX: 'auto',
+                        overflowY: 'hidden',
+                        scrollSnapType: 'x mandatory',
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'none',
+                        '&::-webkit-scrollbar': { display: 'none' },
+                        mx: -2, px: 2,
+                    }}>
+                        <Box sx={{ display: 'flex', gap: 3, pb: 2 }}>
+                            {stats.map((s, idx) => (
+                                <Card key={s.label} elevation={0} sx={{
+                                    flex: '0 0 75%',
+                                    scrollSnapAlign: 'center',
+                                    bgcolor: '#fff',
+                                    borderRadius: 3,
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                                    border: `2px solid ${ETH_GREEN}`,
+                                    textAlign: 'center',
                                 }}>
-                                    <Avatar sx={{ bgcolor: ETH_GREEN, mx: 'auto', mb: 1.5, width: 52, height: 52 }}>
-                                        {s.icon}
-                                    </Avatar>
-                                    <Typography variant="h4" fontWeight="bold" sx={{ color: ETH_GREEN }}>{s.value}</Typography>
-                                    <Typography variant="body2" color="text.secondary" fontWeight={500}>{s.label}</Typography>
-                                </Box>
+                                    <CardContent sx={{ py: 3, px: 2 }}>
+                                        <Avatar sx={{ bgcolor: ETH_GREEN, mx: 'auto', mb: 1.5, width: 56, height: 56 }}>
+                                            {s.icon}
+                                        </Avatar>
+                                        <Typography variant="h3" fontWeight="bold" sx={{ color: ETH_GREEN, mb: 0.5 }}>
+                                            {s.value}
+                                        </Typography>
+                                        <Typography variant="body1" color="text.secondary" fontWeight={600}>
+                                            {s.label}
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Box>
+                    </Box>
+
+                    {/* Desktop: 2x2 Grid layout */}
+                    <Grid container spacing={3} justifyContent="center" sx={{ display: { xs: 'none', md: 'flex' } }}>
+                        {stats.map((s, idx) => (
+                            <Grid item xs={6} md={3} key={s.label}>
+                                <Card elevation={0} sx={{
+                                    bgcolor: '#fff',
+                                    borderRadius: 3,
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                                    border: `2px solid ${[ETH_GREEN, ETH_BLUE, ETH_RED, ETH_YELLOW][idx]}`,
+                                    textAlign: 'center',
+                                    height: '100%',
+                                    transition: 'transform 0.2s, box-shadow 0.2s',
+                                    '&:hover': {
+                                        transform: 'translateY(-6px)',
+                                        boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+                                    }
+                                }}>
+                                    <CardContent sx={{ py: 3.5, px: 2 }}>
+                                        <Avatar sx={{
+                                            bgcolor: [ETH_GREEN, ETH_BLUE, ETH_RED, ETH_YELLOW][idx],
+                                            mx: 'auto',
+                                            mb: 2,
+                                            width: 60,
+                                            height: 60
+                                        }}>
+                                            {s.icon}
+                                        </Avatar>
+                                        <Typography variant="h3" fontWeight="bold" sx={{
+                                            color: [ETH_GREEN, ETH_BLUE, ETH_RED, ETH_YELLOW][idx],
+                                            mb: 0.5
+                                        }}>
+                                            {s.value}
+                                        </Typography>
+                                        <Typography variant="body1" color="text.secondary" fontWeight={600}>
+                                            {s.label}
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
                             </Grid>
                         ))}
                     </Grid>
