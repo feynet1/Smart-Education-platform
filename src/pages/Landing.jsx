@@ -480,8 +480,56 @@ const Landing = () => {
             {/* About */}
             <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
                 <Grid container spacing={6} alignItems="center">
+                    {/* Images section */}
                     <Grid item xs={12} md={6}>
-                        <Grid container spacing={2}>
+                        {/* Mobile: Horizontal scroll carousel */}
+                        <Box sx={{
+                            display: { xs: 'block', md: 'none' },
+                            overflowX: 'auto',
+                            overflowY: 'hidden',
+                            scrollSnapType: 'x mandatory',
+                            WebkitOverflowScrolling: 'touch',
+                            scrollbarWidth: 'none',
+                            '&::-webkit-scrollbar': { display: 'none' },
+                            mx: -2, px: 2,
+                            mb: 4,
+                        }}>
+                            <Box sx={{ display: 'flex', gap: 2, pb: 2 }}>
+                                {[ABOUT_IMG_1, ABOUT_IMG_2, ABOUT_IMG_3, ABOUT_IMG_4].map((img, i) => (
+                                    <Box key={i} sx={{
+                                        flex: '0 0 75%',
+                                        scrollSnapAlign: 'center',
+                                        borderRadius: 3,
+                                        overflow: 'hidden',
+                                        boxShadow: 3,
+                                        height: 220,
+                                        border: i === 0 ? `3px solid ${ETH_GREEN}` :
+                                            i === 1 ? `3px solid ${ETH_YELLOW}` :
+                                                i === 2 ? `3px solid ${ETH_RED}` : `3px solid ${ETH_BLUE}`,
+                                        position: 'relative',
+                                    }}>
+                                        <img src={img} alt={`education ${i + 1}`}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                        {/* Image number badge */}
+                                        <Box sx={{
+                                            position: 'absolute', bottom: 12, right: 12,
+                                            bgcolor: 'rgba(0,0,0,0.65)',
+                                            backdropFilter: 'blur(8px)',
+                                            color: '#fff',
+                                            borderRadius: 2,
+                                            px: 1.5, py: 0.5,
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                        }}>
+                                            {i + 1} / 4
+                                        </Box>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Box>
+
+                        {/* Desktop: 2x2 Grid (unchanged) */}
+                        <Grid container spacing={2} sx={{ display: { xs: 'none', md: 'flex' } }}>
                             {[ABOUT_IMG_1, ABOUT_IMG_2, ABOUT_IMG_3, ABOUT_IMG_4].map((img, i) => (
                                 <Grid item xs={6} key={i}>
                                     <Box sx={{
@@ -498,6 +546,8 @@ const Landing = () => {
                             ))}
                         </Grid>
                     </Grid>
+
+                    {/* Text content */}
                     <Grid item xs={12} md={6}>
                         <Typography variant="overline" fontWeight="bold" sx={{ color: ETH_GREEN }}>
                             About the Platform
