@@ -20,9 +20,9 @@ const ETH_RED = '#DA121A';
 const ETH_BLUE = '#0F47AF'; // Star center
 
 // ─── High-quality images from Unsplash CDN ───────────────────────────────────
-// Hero: student using laptop for online learning (Chris Montgomery)
+// Hero: MacBook displaying online class / group of people (Chris Montgomery)
 const HERO_IMG =
-    'https://images.unsplash.com/photo-1610484826967-09c5720778c7?w=1200&q=90&fit=crop';
+    'https://images.unsplash.com/photo-1588702547923-7093a6c3ba33?w=1400&q=90&fit=crop';
 
 // About grid: online-platform / edtech themed
 const ABOUT_IMG_1 =
@@ -154,94 +154,302 @@ const Landing = () => {
                 </Box>
             </Box>
 
-            {/* Hero */}
+            {/* ═══════════════════════════════════════════════════════════
+                 HERO — Full-screen, image background, rich content
+            ═══════════════════════════════════════════════════════════ */}
             <Box sx={{
-                background: `linear-gradient(135deg, ${ETH_GREEN} 0%, ${ETH_BLUE} 100%)`,
-                color: '#fff', py: { xs: 8, md: 12 }, px: 2,
-                position: 'relative', overflow: 'hidden'
+                position: 'relative',
+                minHeight: { xs: '92vh', md: '95vh' },
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                overflow: 'hidden',
             }}>
-                {/* Decorative circles */}
+                {/* Full-bleed background image */}
                 <Box sx={{
-                    position: 'absolute', top: -80, right: -80,
-                    width: 320, height: 320, borderRadius: '50%',
-                    bgcolor: 'rgba(252,221,9,0.12)', pointerEvents: 'none'
-                }} />
-                <Box sx={{
-                    position: 'absolute', bottom: -60, left: -60,
-                    width: 240, height: 240, borderRadius: '50%',
-                    bgcolor: 'rgba(218,18,26,0.10)', pointerEvents: 'none'
+                    position: 'absolute', inset: 0,
+                    backgroundImage: `url(${HERO_IMG})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center 30%',
+                    zIndex: 0,
                 }} />
 
-                <Container maxWidth="lg">
-                    <Grid container spacing={6} alignItems="center">
+                {/* Multi-layer gradient overlay — deep green→blue with opacity */}
+                <Box sx={{
+                    position: 'absolute', inset: 0, zIndex: 1,
+                    background: `
+                        linear-gradient(
+                            135deg,
+                            rgba(7,137,48,0.92) 0%,
+                            rgba(15,71,175,0.85) 55%,
+                            rgba(7,137,48,0.75) 100%
+                        )
+                    `,
+                }} />
+
+                {/* Decorative blobs */}
+                <Box sx={{
+                    position: 'absolute', top: -120, right: -120, zIndex: 1,
+                    width: 500, height: 500, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(252,221,9,0.18) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                }} />
+                <Box sx={{
+                    position: 'absolute', bottom: -100, left: -100, zIndex: 1,
+                    width: 420, height: 420, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(218,18,26,0.15) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                }} />
+                <Box sx={{
+                    position: 'absolute', top: '40%', left: '50%', zIndex: 1,
+                    width: 300, height: 300, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(252,221,9,0.08) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                }} />
+
+                {/* Content */}
+                <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, py: { xs: 10, md: 6 } }}>
+                    <Grid container spacing={{ xs: 4, md: 8 }} alignItems="center">
+
+                        {/* ── Left: Text ── */}
                         <Grid item xs={12} md={6}>
-                            <Chip
-                                label="🇪🇹  Smart Education Platform — Ethiopia"
-                                sx={{ bgcolor: 'rgba(255,255,255,0.18)', color: '#fff', mb: 2, fontWeight: 600 }}
-                            />
-                            <Typography variant="h3" fontWeight="bold" gutterBottom sx={{ lineHeight: 1.2 }}>
-                                Manage Education.<br />Empower Ethiopia.
+                            {/* Badge */}
+                            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1,
+                                bgcolor: 'rgba(255,255,255,0.15)',
+                                backdropFilter: 'blur(8px)',
+                                border: '1px solid rgba(255,255,255,0.25)',
+                                borderRadius: 10, px: 2, py: 0.8, mb: 3
+                            }}>
+                                <Box sx={{ fontSize: 18, lineHeight: 1 }}>🇪🇹</Box>
+                                <Typography variant="body2" color="#fff" fontWeight={600} letterSpacing={0.5}>
+                                    Ethiopia&apos;s #1 Online Education Platform
+                                </Typography>
+                            </Box>
+
+                            {/* Main headline */}
+                            <Typography
+                                component="h1"
+                                sx={{
+                                    fontSize: { xs: '2.6rem', sm: '3.4rem', md: '4rem', lg: '4.6rem' },
+                                    fontWeight: 900,
+                                    color: '#fff',
+                                    lineHeight: 1.1,
+                                    letterSpacing: '-0.5px',
+                                    mb: 1.5,
+                                    textShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                                }}
+                            >
+                                Manage Education.
+                                <Box component="span" sx={{
+                                    display: 'block',
+                                    color: ETH_YELLOW,
+                                    textShadow: `0 0 40px rgba(252,221,9,0.5)`,
+                                }}>
+                                    Empower Ethiopia.
+                                </Box>
                             </Typography>
-                            <Typography variant="h6" sx={{ opacity: 0.92, mb: 1, fontWeight: 400 }}>
+
+                            {/* Amharic subtitle */}
+                            <Typography sx={{
+                                fontSize: { xs: '1.1rem', md: '1.35rem' },
+                                color: 'rgba(255,255,255,0.88)',
+                                fontWeight: 400,
+                                mb: 2,
+                                fontStyle: 'italic',
+                                letterSpacing: 0.3,
+                            }}>
                                 ትምህርትን ያስተዳድሩ። ኢትዮጵያን ያብቁ።
                             </Typography>
-                            <Typography variant="body1" sx={{ opacity: 0.85, mb: 4 }}>
-                                A unified platform for Ethiopian schools — connecting admins, teachers, and students
-                                to collaborate, track progress, and achieve academic excellence.
+
+                            {/* Description */}
+                            <Typography sx={{
+                                fontSize: { xs: '1rem', md: '1.15rem' },
+                                color: 'rgba(255,255,255,0.82)',
+                                lineHeight: 1.75,
+                                mb: 4,
+                                maxWidth: 520,
+                            }}>
+                                A unified online platform connecting <strong style={{ color: '#fff' }}>Admins</strong>,{' '}
+                                <strong style={{ color: '#fff' }}>Teachers</strong>, and{' '}
+                                <strong style={{ color: '#fff' }}>Students</strong> across Ethiopia —
+                                track attendance, manage courses, view grades, and collaborate in real time,
+                                from any device, anywhere.
                             </Typography>
-                            <Box display="flex" gap={2} flexWrap="wrap">
+
+                            {/* CTA Buttons */}
+                            <Box display="flex" gap={2} flexWrap="wrap" mb={5}>
                                 <Button
                                     component={RouterLink} to="/register"
-                                    variant="contained" size="large"
-                                    sx={{ bgcolor: ETH_YELLOW, color: '#1a1a1a', fontWeight: 700, '&:hover': { bgcolor: '#e0c200' } }}
+                                    size="large"
+                                    sx={{
+                                        bgcolor: ETH_YELLOW, color: '#111', fontWeight: 800,
+                                        fontSize: '1rem', px: 4, py: 1.6, borderRadius: 3,
+                                        boxShadow: `0 8px 32px rgba(252,221,9,0.45)`,
+                                        '&:hover': {
+                                            bgcolor: '#ffe033',
+                                            boxShadow: `0 12px 40px rgba(252,221,9,0.6)`,
+                                            transform: 'translateY(-2px)',
+                                        },
+                                        transition: 'all 0.2s',
+                                    }}
                                 >
-                                    Get Started Free
+                                    🚀 Get Started Free
                                 </Button>
                                 <Button
                                     component={RouterLink} to="/login"
-                                    variant="outlined" size="large"
-                                    sx={{ borderColor: '#fff', color: '#fff', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}
+                                    size="large"
+                                    sx={{
+                                        bgcolor: 'rgba(255,255,255,0.12)',
+                                        backdropFilter: 'blur(8px)',
+                                        border: '2px solid rgba(255,255,255,0.5)',
+                                        color: '#fff', fontWeight: 700,
+                                        fontSize: '1rem', px: 4, py: 1.6, borderRadius: 3,
+                                        '&:hover': {
+                                            bgcolor: 'rgba(255,255,255,0.22)',
+                                            border: '2px solid #fff',
+                                            transform: 'translateY(-2px)',
+                                        },
+                                        transition: 'all 0.2s',
+                                    }}
                                 >
-                                    Sign In
+                                    Sign In →
                                 </Button>
                             </Box>
+
+                            {/* Trust indicators */}
+                            <Box display="flex" gap={3} flexWrap="wrap">
+                                {[
+                                    { icon: '✅', text: 'Free to start' },
+                                    { icon: '🔒', text: 'Secure & private' },
+                                    { icon: '📱', text: 'Works on any device' },
+                                ].map(t => (
+                                    <Box key={t.text} display="flex" alignItems="center" gap={0.8}>
+                                        <Typography sx={{ fontSize: 16 }}>{t.icon}</Typography>
+                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
+                                            {t.text}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
                         </Grid>
+
+                        {/* ── Right: Clean image card + floating badges ── */}
                         <Grid item xs={12} md={6}>
-                            {/* Browser-frame mockup */}
-                            <Box sx={{
-                                borderRadius: 4, overflow: 'hidden',
-                                boxShadow: '0 32px 80px rgba(0,0,0,0.45)',
-                                border: `3px solid ${ETH_YELLOW}`,
-                                bgcolor: '#1a1a2e',
-                            }}>
-                                {/* Fake browser bar */}
+                            <Box sx={{ position: 'relative', mt: { xs: 4, md: 0 } }}>
+
+                                {/* Main image — no browser chrome, clean card */}
                                 <Box sx={{
-                                    bgcolor: '#1e2a3a', px: 2, py: 1,
-                                    display: 'flex', alignItems: 'center', gap: 1
+                                    borderRadius: 5,
+                                    overflow: 'hidden',
+                                    boxShadow: '0 40px 100px rgba(0,0,0,0.55)',
+                                    border: `4px solid rgba(252,221,9,0.7)`,
+                                    transform: { md: 'perspective(1200px) rotateY(-4deg) rotateX(2deg)' },
+                                    transition: 'transform 0.4s ease',
+                                    '&:hover': {
+                                        transform: 'perspective(1200px) rotateY(0deg) rotateX(0deg)',
+                                    },
+                                    height: { xs: 260, sm: 340, md: 420 },
                                 }}>
-                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: ETH_RED }} />
-                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: ETH_YELLOW }} />
-                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: ETH_GREEN }} />
+                                    <img
+                                        src={HERO_IMG}
+                                        alt="Students learning online with EduPlatform"
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                            objectPosition: 'center top',
+                                            display: 'block',
+                                        }}
+                                    />
+                                    {/* Subtle inner gradient at bottom for depth */}
                                     <Box sx={{
-                                        flex: 1, mx: 1, bgcolor: '#2d3e50', borderRadius: 1,
-                                        px: 1.5, py: 0.4
+                                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                                        height: 80,
+                                        background: 'linear-gradient(to top, rgba(7,137,48,0.35), transparent)',
+                                        pointerEvents: 'none',
+                                    }} />
+                                </Box>
+
+                                {/* Floating stat card — top left */}
+                                <Box sx={{
+                                    position: 'absolute', top: { xs: -18, md: -22 }, left: { xs: 12, md: -32 },
+                                    bgcolor: '#fff', borderRadius: 3, px: 2.5, py: 1.5,
+                                    boxShadow: '0 12px 40px rgba(0,0,0,0.22)',
+                                    display: 'flex', alignItems: 'center', gap: 1.5,
+                                    border: `2px solid ${ETH_GREEN}`,
+                                    zIndex: 3,
+                                }}>
+                                    <Box sx={{
+                                        width: 42, height: 42, borderRadius: 2,
+                                        bgcolor: ETH_GREEN,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     }}>
-                                        <Typography variant="caption" color="#8899aa" sx={{ fontSize: 10 }}>
-                                            app.eduplatform.et/dashboard
+                                        <PeopleIcon sx={{ color: '#fff', fontSize: 22 }} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="h6" fontWeight={800} color={ETH_GREEN} lineHeight={1}>
+                                            500+
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                            Active Students
                                         </Typography>
                                     </Box>
                                 </Box>
-                                <Box sx={{ height: { xs: 220, md: 360 } }}>
-                                    <img
-                                        src={HERO_IMG}
-                                        alt="EduPlatform online dashboard"
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                                    />
+
+                                {/* Floating stat card — bottom right */}
+                                <Box sx={{
+                                    position: 'absolute', bottom: { xs: -18, md: -22 }, right: { xs: 12, md: -28 },
+                                    bgcolor: '#fff', borderRadius: 3, px: 2.5, py: 1.5,
+                                    boxShadow: '0 12px 40px rgba(0,0,0,0.22)',
+                                    display: 'flex', alignItems: 'center', gap: 1.5,
+                                    border: `2px solid ${ETH_BLUE}`,
+                                    zIndex: 3,
+                                }}>
+                                    <Box sx={{
+                                        width: 42, height: 42, borderRadius: 2,
+                                        bgcolor: ETH_BLUE,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                        <BarChartIcon sx={{ color: '#fff', fontSize: 22 }} />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="h6" fontWeight={800} color={ETH_BLUE} lineHeight={1}>
+                                            Real-Time
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                            Grades & Attendance
+                                        </Typography>
+                                    </Box>
+                                </Box>
+
+                                {/* Floating badge — top right */}
+                                <Box sx={{
+                                    position: 'absolute', top: { xs: 50, md: 32 }, right: { xs: 12, md: -36 },
+                                    bgcolor: ETH_YELLOW, borderRadius: 3, px: 2, py: 1.2,
+                                    boxShadow: '0 8px 28px rgba(252,221,9,0.55)',
+                                    zIndex: 3,
+                                    textAlign: 'center',
+                                }}>
+                                    <Typography sx={{ fontSize: 22, lineHeight: 1, mb: 0.3 }}>🇪🇹</Typography>
+                                    <Typography variant="caption" fontWeight={800} color="#111" display="block">
+                                        Made for
+                                    </Typography>
+                                    <Typography variant="caption" fontWeight={800} color="#111" display="block">
+                                        Ethiopia
+                                    </Typography>
                                 </Box>
                             </Box>
                         </Grid>
                     </Grid>
                 </Container>
+
+                {/* Bottom wave divider */}
+                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2, lineHeight: 0 }}>
+                    <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+                        style={{ display: 'block', width: '100%', height: 80 }}>
+                        <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#ffffff" />
+                    </svg>
+                </Box>
             </Box>
 
             {/* Stats */}
@@ -435,53 +643,108 @@ const Landing = () => {
                         <Typography variant="body2" color="text.secondary" mt={1}>
                             Empowering students and teachers across Ethiopia
                         </Typography>
+                        {/* Mobile swipe indicator */}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, mt: 1 }}>
+                            👉 Swipe to explore
+                        </Typography>
                     </Box>
-                    <Grid container spacing={2}>
-                        {/* Large feature image */}
-                        <Grid item xs={12} md={8}>
-                            <Box sx={{
-                                borderRadius: 3, overflow: 'hidden',
-                                boxShadow: 4, height: { xs: 220, md: 340 },
-                                transition: 'transform 0.25s, box-shadow 0.25s',
-                                '&:hover': { transform: 'scale(1.02)', boxShadow: 8 },
-                                border: `3px solid ${ETH_GREEN}`
-                            }}>
-                                <img src={GALLERY[0]} alt="online class session"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                            </Box>
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <Stack spacing={2} height="100%">
-                                {[GALLERY[1], GALLERY[2]].map((img, i) => (
-                                    <Box key={i} sx={{
-                                        borderRadius: 3, overflow: 'hidden',
-                                        boxShadow: 2, flex: 1, minHeight: 160,
-                                        transition: 'transform 0.25s, box-shadow 0.25s',
-                                        '&:hover': { transform: 'scale(1.03)', boxShadow: 6 },
-                                        border: `2px solid ${i === 0 ? ETH_YELLOW : ETH_RED}`
+
+                    {/* Mobile: Horizontal scroll carousel */}
+                    <Box sx={{
+                        display: { xs: 'block', md: 'none' },
+                        overflowX: 'auto',
+                        overflowY: 'hidden',
+                        scrollSnapType: 'x mandatory',
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'none', // Firefox
+                        '&::-webkit-scrollbar': { display: 'none' }, // Chrome/Safari
+                        mx: -2, px: 2, // Bleed to edges
+                    }}>
+                        <Box sx={{
+                            display: 'flex',
+                            gap: 2,
+                            pb: 2, // Space for shadow
+                        }}>
+                            {GALLERY.map((img, i) => (
+                                <Box key={i} sx={{
+                                    flex: '0 0 85%', // Each card takes 85% width
+                                    scrollSnapAlign: 'center',
+                                    borderRadius: 4,
+                                    overflow: 'hidden',
+                                    boxShadow: 4,
+                                    height: 240,
+                                    border: `3px solid ${[ETH_GREEN, ETH_YELLOW, ETH_RED, ETH_BLUE, ETH_GREEN, ETH_YELLOW][i]}`,
+                                    position: 'relative',
+                                }}>
+                                    <img src={img} alt={`gallery ${i + 1}`}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                    {/* Image number badge */}
+                                    <Box sx={{
+                                        position: 'absolute', top: 12, right: 12,
+                                        bgcolor: 'rgba(0,0,0,0.6)',
+                                        backdropFilter: 'blur(8px)',
+                                        color: '#fff',
+                                        borderRadius: 2,
+                                        px: 1.5, py: 0.5,
+                                        fontSize: 12,
+                                        fontWeight: 700,
                                     }}>
-                                        <img src={img} alt={`gallery ${i + 2}`}
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                        {i + 1} / {GALLERY.length}
                                     </Box>
-                                ))}
-                            </Stack>
-                        </Grid>
-                        {/* Bottom row */}
-                        {[GALLERY[3], GALLERY[4], GALLERY[5]].map((img, i) => (
-                            <Grid item xs={12} sm={4} key={i + 3}>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Box>
+
+                    {/* Desktop: Grid layout (unchanged) */}
+                    <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                        <Grid container spacing={2}>
+                            {/* Large feature image */}
+                            <Grid item xs={12} md={8}>
                                 <Box sx={{
                                     borderRadius: 3, overflow: 'hidden',
-                                    boxShadow: 2, height: 200,
+                                    boxShadow: 4, height: { xs: 220, md: 340 },
                                     transition: 'transform 0.25s, box-shadow 0.25s',
-                                    '&:hover': { transform: 'scale(1.04)', boxShadow: 8 },
-                                    border: `2px solid ${[ETH_BLUE, ETH_GREEN, ETH_YELLOW][i]}`
+                                    '&:hover': { transform: 'scale(1.02)', boxShadow: 8 },
+                                    border: `3px solid ${ETH_GREEN}`
                                 }}>
-                                    <img src={img} alt={`gallery ${i + 4}`}
+                                    <img src={GALLERY[0]} alt="online class session"
                                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                 </Box>
                             </Grid>
-                        ))}
-                    </Grid>
+                            <Grid item xs={12} md={4}>
+                                <Stack spacing={2} height="100%">
+                                    {[GALLERY[1], GALLERY[2]].map((img, i) => (
+                                        <Box key={i} sx={{
+                                            borderRadius: 3, overflow: 'hidden',
+                                            boxShadow: 2, flex: 1, minHeight: 160,
+                                            transition: 'transform 0.25s, box-shadow 0.25s',
+                                            '&:hover': { transform: 'scale(1.03)', boxShadow: 6 },
+                                            border: `2px solid ${i === 0 ? ETH_YELLOW : ETH_RED}`
+                                        }}>
+                                            <img src={img} alt={`gallery ${i + 2}`}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            </Grid>
+                            {/* Bottom row */}
+                            {[GALLERY[3], GALLERY[4], GALLERY[5]].map((img, i) => (
+                                <Grid item xs={12} sm={4} key={i + 3}>
+                                    <Box sx={{
+                                        borderRadius: 3, overflow: 'hidden',
+                                        boxShadow: 2, height: 200,
+                                        transition: 'transform 0.25s, box-shadow 0.25s',
+                                        '&:hover': { transform: 'scale(1.04)', boxShadow: 8 },
+                                        border: `2px solid ${[ETH_BLUE, ETH_GREEN, ETH_YELLOW][i]}`
+                                    }}>
+                                        <img src={img} alt={`gallery ${i + 4}`}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                    </Box>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
                 </Container>
             </Box>
 
