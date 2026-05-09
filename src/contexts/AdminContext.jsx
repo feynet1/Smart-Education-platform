@@ -24,8 +24,35 @@ export const AdminProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : [];
     };
 
-    // Start empty — will be populated from Supabase only
+    // ── Users (Supabase profiles) ─────────────────────────────
     const [users, setUsers] = useState([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+
+    const fetchUsers = async () => {
+        setUsersLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, name, email, role, phone, status, grade, created_at')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setUsers((data || []).map(u => ({
+                id: u.id,
+                name: u.name || u.email?.split('@')[0] || 'Unknown',
+                email: u.email,
+                role: u.role || 'Student',
+                phone: u.phone || '—',
+                grade: u.grade || '—',
+                // Fall back to 'active' if status column does not exist yet
+                status: u.status || 'active',
+                createdAt: new Date(u.created_at).toISOString().split('T')[0],
+            })));
+        } catch (err) {
+            console.error('Failed to fetch users from profiles:', err);
+        } finally {
+            setUsersLoading(false);
+        }
+    };
 
     // ── Courses (Supabase) ────────────────────────────────────
     const [courses, setCourses] = useState([]);
@@ -84,10 +111,11 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    // Clear any stale mock user data from localStorage
+    // Clear any stale mock user data from localStorage and load real users
     useEffect(() => {
         localStorage.removeItem('admin_users');
-    }, []);
+        fetchUsers();
+    }, []); 
 
     const [events, setEvents] = useState([]);
     const [eventsLoading, setEventsLoading] = useState(false);
@@ -170,32 +198,7 @@ export const AdminProvider = ({ children }) => {
         fetchSettings();
     }, []);
 
-    // Fetch users from profiles table — single source of truth
-    useEffect(() => {
-        const fetchRealUsers = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('id, name, email, role, phone, created_at');
-                if (error) throw error;
-                if (data) {
-                    const mappedUsers = data.map(u => ({
-                        id: u.id,
-                        name: u.name || u.email?.split('@')[0] || 'Unknown',
-                        email: u.email,
-                        role: u.role || 'Student',
-                        phone: u.phone || '—',
-                        status: 'active',
-                        createdAt: new Date(u.created_at).toISOString().split('T')[0]
-                    }));
-                    setUsers(mappedUsers);
-                }
-            } catch (err) {
-                console.error('Failed to fetch users from profiles:', err);
-            }
-        };
-        fetchRealUsers();
-    }, []);
+    // (users are fetched on mount via fetchUsers above)
 
     // (events are now stored in Supabase, not localStorage)
 
@@ -251,7 +254,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    // Toggle status — syncs to Supabase for real users (ban/unban)
+    // Toggle status — persists to profiles table AND bans/unbans in auth
     const toggleUserStatus = async (userId) => {
         const user = users.find(u => u.id === userId);
         if (!user) return { success: false };
@@ -259,19 +262,24 @@ export const AdminProvider = ({ children }) => {
 
         // Optimistic update
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
-        addLog(`Toggled user status to ${newStatus}`, 'Admin');
-
-        const isRealUser = String(userId).includes('-');
-        if (!isRealUser) return { success: true };
+        addLog(`${newStatus === 'inactive' ? 'Deactivated' : 'Activated'} user: ${user.name}`, 'Admin');
 
         try {
-            const { error } = await supabase.functions.invoke('admin-user-manager', {
+            // 1. Persist status to profiles table
+            const { error: profileErr } = await supabase
+                .from('profiles')
+                .update({ status: newStatus })
+                .eq('id', userId);
+            if (profileErr) throw profileErr;
+
+            // 2. Ban/unban in Supabase Auth via edge function
+            await supabase.functions.invoke('admin-user-manager', {
                 body: { action: 'update-status', payload: { userId, status: newStatus } }
             });
-            if (error) throw error;
+
             return { success: true };
         } catch (err) {
-            // Rollback to previous status
+            // Rollback
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: user.status } : u));
             return { success: false, error: `Failed to update status: ${err.message}` };
         }
@@ -493,7 +501,8 @@ export const AdminProvider = ({ children }) => {
     };
 
     const value = {
-        users, events, eventsLoading, systemLogs, logsLoading, settings, stats,
+        users, usersLoading, fetchUsers,
+        events, eventsLoading, systemLogs, logsLoading, settings, stats,
         courses, coursesLoading, fetchCourses, deleteCourse,
         attendance: getTeacherAttendance(),
         notes: getTeacherNotes(),

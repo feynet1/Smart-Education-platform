@@ -1,55 +1,60 @@
 /**
  * Admin User Management
  *
- * View and manage all platform users (Students, Teachers, Admins).
- * Supports role changes, status toggling, add, and delete.
+ * Fetches all users from Supabase profiles table.
+ * Supports edit (name + role), activate/deactivate, invite, and delete.
  */
 import { useState } from 'react';
 import {
     Box, Typography, Paper, Button, Chip, Dialog, DialogTitle,
     DialogContent, DialogActions, FormControl, InputLabel, Select,
     MenuItem, TextField, InputAdornment, IconButton, Snackbar,
-    Alert, Avatar, Tooltip
+    Alert, Avatar, Tooltip, CircularProgress,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Search, Edit, Block, CheckCircle, PersonAdd, Delete } from '@mui/icons-material';
+import { Search, Edit, Block, CheckCircle, PersonAdd, Delete, Refresh } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 
 const UsersManagement = () => {
     const {
-        users, updateUserRole, toggleUserStatus, addUser, deleteUser,
+        users, usersLoading, fetchUsers,
+        updateUserRole, toggleUserStatus, addUser, deleteUser,
     } = useAdmin();
 
-    const [searchTerm, setSearchTerm]   = useState('');
-    const [roleFilter, setRoleFilter]   = useState('all');
-    const [editDialog, setEditDialog]   = useState({ open: false, user: null });
-    const [addDialog, setAddDialog]     = useState(false);
-    const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null });
-    const [addFormData, setAddFormData] = useState({ name: '', email: '', role: 'Student' });
+    const [searchTerm, setSearchTerm]     = useState('');
+    const [roleFilter, setRoleFilter]     = useState('all');
+    const [editDialog, setEditDialog]     = useState({ open: false, user: null });
+    const [addDialog, setAddDialog]       = useState(false);
+    const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
+    const [addFormData, setAddFormData]   = useState({ name: '', email: '', role: 'Student' });
     const [selectedRole, setSelectedRole] = useState('');
     const [selectedName, setSelectedName] = useState('');
-    const [snackbar, setSnackbar]       = useState({ open: false, message: '', severity: 'success' });
+    const [saving, setSaving]             = useState(false);
+    const [deleting, setDeleting]         = useState(false);
+    const [inviting, setInviting]         = useState(false);
+    const [snackbar, setSnackbar]         = useState({ open: false, message: '', severity: 'success' });
 
-    const showSuccess = (message) => setSnackbar({ open: true, message, severity: 'success' });
-    const showError   = (message) => setSnackbar({ open: true, message, severity: 'error' });
+    const showSuccess = (msg) => setSnackbar({ open: true, message: msg, severity: 'success' });
+    const showError   = (msg) => setSnackbar({ open: true, message: msg, severity: 'error' });
 
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = users.filter(u => {
         const matchesSearch =
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+            u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = roleFilter === 'all' || u.role === roleFilter;
         return matchesSearch && matchesRole;
     });
 
-    const handleRoleChange = async () => {
-        if (editDialog.user && selectedRole) {
-            const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName);
-            if (result?.success !== false) {
-                showSuccess('User updated successfully');
-            } else {
-                showError(result.error);
-            }
+    const handleEditSave = async () => {
+        if (!editDialog.user || !selectedRole || !selectedName.trim()) return;
+        setSaving(true);
+        const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName.trim());
+        setSaving(false);
+        if (result?.success !== false) {
+            showSuccess('User updated successfully');
             setEditDialog({ open: false, user: null });
+        } else {
+            showError(result.error || 'Failed to update user');
         }
     };
 
@@ -58,74 +63,83 @@ const UsersManagement = () => {
         if (result?.success !== false) {
             showSuccess('User status updated');
         } else {
-            showError(result.error);
+            showError(result.error || 'Failed to update status');
         }
     };
 
-    const handleAddUser = async () => {
-        if (!addFormData.name || !addFormData.email) return;
+    const handleInviteUser = async () => {
+        if (!addFormData.name.trim() || !addFormData.email.trim()) return;
+        setInviting(true);
         const result = await addUser(addFormData);
+        setInviting(false);
         if (result?.success) {
             showSuccess('Invitation sent successfully');
             setAddDialog(false);
             setAddFormData({ name: '', email: '', role: 'Student' });
-        } else if (result?.error) {
-            showError(result.error);
+        } else {
+            showError(result.error || 'Failed to send invitation');
         }
     };
 
     const handleDeleteUser = async () => {
-        if (!deleteDialog.userId) return;
-        const result = await deleteUser(deleteDialog.userId);
+        if (!deleteDialog.user) return;
+        setDeleting(true);
+        const result = await deleteUser(deleteDialog.user.id);
+        setDeleting(false);
         if (result?.success) {
             showSuccess('User deleted successfully');
-        } else if (result?.error) {
-            showError(result.error);
+            setDeleteDialog({ open: false, user: null });
+        } else {
+            showError(result.error || 'Failed to delete user');
         }
-        setDeleteDialog({ open: false, userId: null });
     };
 
     const columns = [
         {
-            field: 'avatar', headerName: '', width: 60, sortable: false,
+            field: 'avatar', headerName: '', width: 56, sortable: false,
             renderCell: (params) => (
                 <Avatar sx={{
+                    width: 32, height: 32, fontSize: 14,
                     bgcolor: params.row.role === 'Admin' ? 'error.main'
-                           : params.row.role === 'Teacher' ? 'success.main' : 'primary.main'
+                           : params.row.role === 'Teacher' ? 'success.main' : 'primary.main',
                 }}>
-                    {params.row.name.charAt(0)}
+                    {params.row.name.charAt(0).toUpperCase()}
                 </Avatar>
             ),
         },
-        { field: 'name',      headerName: 'Name',   flex: 1, minWidth: 150 },
-        { field: 'email',     headerName: 'Email',  flex: 1, minWidth: 200 },
-        { field: 'phone',     headerName: 'Phone',  width: 150,
-            renderCell: (params) => (
-                <span style={{ color: params.value === '—' ? '#aaa' : 'inherit' }}>
-                    {params.value}
-                </span>
-            ),
-        },
+        { field: 'name',  headerName: 'Name',  flex: 1, minWidth: 140 },
+        { field: 'email', headerName: 'Email', flex: 1, minWidth: 190 },
         {
-            field: 'role', headerName: 'Role', width: 120,
+            field: 'role', headerName: 'Role', width: 110,
             renderCell: (params) => (
                 <Chip label={params.value} size="small"
                     color={params.value === 'Admin' ? 'error' : params.value === 'Teacher' ? 'success' : 'primary'} />
             ),
         },
         {
-            field: 'status', headerName: 'Status', width: 110,
+            field: 'grade', headerName: 'Grade', width: 90,
             renderCell: (params) => (
-                <Chip label={params.value} size="small" variant="outlined"
-                    color={params.value === 'active' ? 'success' : params.value === 'invited' ? 'warning' : 'default'} />
+                <Typography variant="body2" color={params.value === '—' ? 'text.disabled' : 'text.primary'}>
+                    {params.value === '—' ? '—' : params.value === 'University' ? 'Univ.' : `Gr. ${params.value}`}
+                </Typography>
             ),
         },
-        { field: 'createdAt', headerName: 'Joined', width: 120 },
+        {
+            field: 'status', headerName: 'Status', width: 100,
+            renderCell: (params) => (
+                <Chip label={params.value} size="small" variant="outlined"
+                    color={
+                        params.value === 'active'   ? 'success' :
+                        params.value === 'invited'  ? 'warning' : 'default'
+                    } />
+            ),
+        },
+        { field: 'createdAt', headerName: 'Joined', width: 110 },
         {
             field: 'actions', headerName: 'Actions', width: 130, sortable: false,
             renderCell: (params) => (
-                <Box display="flex" gap={1}>
-                    <Tooltip title="Edit User">
+                <Box display="flex" gap={0.5}>
+                    <Tooltip title="Edit">
                         <IconButton size="small" onClick={() => {
                             setEditDialog({ open: true, user: params.row });
                             setSelectedRole(params.row.role);
@@ -136,9 +150,8 @@ const UsersManagement = () => {
                     </Tooltip>
                     <Tooltip title={params.row.status === 'active' ? 'Deactivate' : 'Activate'}>
                         <IconButton size="small"
-                            onClick={() => handleToggleStatus(params.row.id)}
                             color={params.row.status === 'active' ? 'default' : 'success'}
-                        >
+                            onClick={() => handleToggleStatus(params.row.id)}>
                             {params.row.status === 'active'
                                 ? <Block fontSize="small" />
                                 : <CheckCircle fontSize="small" />}
@@ -146,7 +159,7 @@ const UsersManagement = () => {
                     </Tooltip>
                     <Tooltip title="Delete">
                         <IconButton size="small" color="error"
-                            onClick={() => setDeleteDialog({ open: true, userId: params.row.id })}>
+                            onClick={() => setDeleteDialog({ open: true, user: params.row })}>
                             <Delete fontSize="small" />
                         </IconButton>
                     </Tooltip>
@@ -162,24 +175,29 @@ const UsersManagement = () => {
                 <Box>
                     <Typography variant="h4" fontWeight="bold" gutterBottom>User Management</Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Manage all platform users, roles, and permissions
+                        {usersLoading ? 'Loading…' : `${users.length} users on the platform`}
                     </Typography>
                 </Box>
-                <Button variant="contained" startIcon={<PersonAdd />} onClick={() => setAddDialog(true)}>
-                    Invite User
-                </Button>
+                <Box display="flex" gap={1}>
+                    <Button variant="outlined" startIcon={usersLoading ? <CircularProgress size={16} /> : <Refresh />}
+                        onClick={fetchUsers} disabled={usersLoading}>
+                        Refresh
+                    </Button>
+                    <Button variant="contained" startIcon={<PersonAdd />} onClick={() => setAddDialog(true)}>
+                        Invite User
+                    </Button>
+                </Box>
             </Box>
 
             {/* Filters */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
                 <Box display="flex" gap={2} flexWrap="wrap">
-                    <TextField
-                        size="small" placeholder="Search users..." value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)} sx={{ minWidth: 250 }}
+                    <TextField size="small" placeholder="Search by name or email…"
+                        value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                        sx={{ minWidth: 260 }}
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><Search /></InputAdornment>
-                        }}
-                    />
+                        }} />
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>Role</InputLabel>
                         <Select value={roleFilter} label="Role" onChange={(e) => setRoleFilter(e.target.value)}>
@@ -195,27 +213,32 @@ const UsersManagement = () => {
             {/* Users Table */}
             <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
                 <DataGrid
-                    rows={filteredUsers} columns={columns}
+                    rows={filteredUsers}
+                    columns={columns}
+                    loading={usersLoading}
                     initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                    pageSizeOptions={[5, 10, 25]}
-                    disableRowSelectionOnClick autoHeight
-                    sx={{ border: 'none', '& .MuiDataGrid-columnHeaders': { bgcolor: '#f5f5f5' } }}
+                    pageSizeOptions={[5, 10, 25, 50]}
+                    disableRowSelectionOnClick
+                    autoHeight
+                    sx={{
+                        border: 'none',
+                        '& .MuiDataGrid-columnHeaders': { bgcolor: '#f5f5f5' },
+                    }}
                 />
             </Paper>
 
-            {/* Edit User Dialog */}
-            <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, user: null })}>
+            {/* ── Edit User Dialog ── */}
+            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })}>
                 <DialogTitle>Edit User</DialogTitle>
-                <DialogContent sx={{ minWidth: 320 }}>
+                <DialogContent sx={{ minWidth: 340 }}>
                     <Box display="flex" flexDirection="column" gap={2} mt={1}>
-                        <TextField
-                            label="Full Name" fullWidth
+                        <TextField label="Full Name" fullWidth required
                             value={selectedName}
-                            onChange={(e) => setSelectedName(e.target.value)}
-                        />
+                            onChange={(e) => setSelectedName(e.target.value)} />
                         <FormControl fullWidth>
                             <InputLabel>Role</InputLabel>
-                            <Select value={selectedRole} label="Role" onChange={(e) => setSelectedRole(e.target.value)}>
+                            <Select value={selectedRole} label="Role"
+                                onChange={(e) => setSelectedRole(e.target.value)}>
                                 <MenuItem value="Admin">Admin</MenuItem>
                                 <MenuItem value="Teacher">Teacher</MenuItem>
                                 <MenuItem value="Student">Student</MenuItem>
@@ -224,56 +247,73 @@ const UsersManagement = () => {
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setEditDialog({ open: false, user: null })}>Cancel</Button>
-                    <Button onClick={handleRoleChange} variant="contained"
-                        disabled={!selectedName || !selectedRole}>Save</Button>
-                </DialogActions>
-            </Dialog>
-
-            <Dialog open={addDialog} onClose={() => setAddDialog(false)}>
-                <DialogTitle>Invite New User</DialogTitle>
-                <DialogContent sx={{ minWidth: 400 }}>
-                    <Typography variant="body2" color="text.secondary" mb={2}>
-                        An invitation email will be sent. The user sets their own password.
-                    </Typography>
-                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
-                        <TextField label="Full Name" fullWidth value={addFormData.name}
-                            onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })} />
-                        <TextField label="Email" fullWidth type="email" value={addFormData.email}
-                            onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })} />
-                        <FormControl fullWidth>
-                            <InputLabel>Role</InputLabel>
-                            <Select value={addFormData.role} label="Role"
-                                onChange={(e) => setAddFormData({ ...addFormData, role: e.target.value })}>
-                                <MenuItem value="Admin">Admin</MenuItem>
-                                <MenuItem value="Teacher">Teacher</MenuItem>
-                                <MenuItem value="Student">Student</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-                    <Button onClick={handleAddUser} variant="contained"
-                        disabled={!addFormData.name || !addFormData.email}>
-                        Send Invite
+                    <Button onClick={() => setEditDialog({ open: false, user: null })} disabled={saving}>
+                        Cancel
+                    </Button>
+                    <Button variant="contained" onClick={handleEditSave}
+                        disabled={saving || !selectedName.trim() || !selectedRole}
+                        startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
+                        {saving ? 'Saving…' : 'Save'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, userId: null })}>
-                <DialogTitle>Delete User</DialogTitle>
-                <DialogContent>
-                    <Typography>Are you sure you want to delete this user? This action cannot be undone.</Typography>
+            {/* ── Invite User Dialog ── */}
+            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)}>
+                <DialogTitle>Invite New User</DialogTitle>
+                <DialogContent sx={{ minWidth: 400 }}>
+                    <Typography variant="body2" color="text.secondary" mb={2}>
+                        An invitation email will be sent. The user sets their own password via the link.
+                    </Typography>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                        <TextField label="Full Name" fullWidth required
+                            value={addFormData.name}
+                            onChange={(e) => setAddFormData(f => ({ ...f, name: e.target.value }))} />
+                        <TextField label="Email" fullWidth required type="email"
+                            value={addFormData.email}
+                            onChange={(e) => setAddFormData(f => ({ ...f, email: e.target.value }))} />
+                        <FormControl fullWidth>
+                            <InputLabel>Role</InputLabel>
+                            <Select value={addFormData.role} label="Role"
+                                onChange={(e) => setAddFormData(f => ({ ...f, role: e.target.value }))}>
+                                <MenuItem value="Admin">Admin</MenuItem>
+                                <MenuItem value="Teacher">Teacher</MenuItem>
+                                <MenuItem value="Student">Student</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteDialog({ open: false, userId: null })}>Cancel</Button>
-                    <Button onClick={handleDeleteUser} variant="contained" color="error">Delete</Button>
+                    <Button onClick={() => setAddDialog(false)} disabled={inviting}>Cancel</Button>
+                    <Button variant="contained" onClick={handleInviteUser}
+                        disabled={inviting || !addFormData.name.trim() || !addFormData.email.trim()}
+                        startIcon={inviting ? <CircularProgress size={16} color="inherit" /> : null}>
+                        {inviting ? 'Sending…' : 'Send Invite'}
+                    </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Snackbar — success and error feedback */}
+            {/* ── Delete Confirmation Dialog ── */}
+            <Dialog open={deleteDialog.open} onClose={() => !deleting && setDeleteDialog({ open: false, user: null })}>
+                <DialogTitle>Delete User</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Delete <strong>{deleteDialog.user?.name}</strong> ({deleteDialog.user?.email})?
+                        This removes them from the platform permanently.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialog({ open: false, user: null })} disabled={deleting}>
+                        Cancel
+                    </Button>
+                    <Button variant="contained" color="error" onClick={handleDeleteUser} disabled={deleting}
+                        startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : null}>
+                        {deleting ? 'Deleting…' : 'Delete'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar */}
             <Snackbar open={snackbar.open} autoHideDuration={4000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
                 <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
