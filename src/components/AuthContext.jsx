@@ -129,9 +129,18 @@ export const AuthProvider = ({ children }) => {
         const { data, error } = await supabase.auth.signUp({
             email: userData.email,
             password: userData.password,
-            options: { data: { name: userData.name, role: userData.role } }
+            options: { data: { name: userData.name, role: userData.role, grade: userData.grade || null } }
         });
         if (error) throw getErrorMessage(error);
+
+        // If the trigger created the profile, update it with grade immediately
+        if (data.user && userData.role === 'Student' && userData.grade) {
+            await supabase
+                .from('profiles')
+                .update({ grade: userData.grade })
+                .eq('id', data.user.id);
+        }
+
         return data.user;
     };
 

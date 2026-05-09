@@ -7,7 +7,7 @@ import {
     TextField, Typography, Alert, CircularProgress, MenuItem
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
-import { registerSchema } from '../../utils/validationSchemas';
+import { registerSchema, GRADES } from '../../utils/validationSchemas';
 import useAuth from '../../hooks/useAuth';
 import { supabase } from '../../supabaseClient';
 
@@ -48,10 +48,12 @@ const RegisterForm = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [isSubmitting, setIsSubmitting]   = useState(false);
 
-    const { register, handleSubmit, formState: { errors } } = useForm({
+    const { register, handleSubmit, watch, formState: { errors } } = useForm({
         resolver: zodResolver(registerSchema),
         mode: 'onTouched',
     });
+
+    const selectedRole = watch('role');
 
     const onSubmit = async (data) => {
         setIsSubmitting(true);
@@ -97,6 +99,19 @@ const RegisterForm = () => {
                             <MenuItem value="Student">Student</MenuItem>
                             <MenuItem value="Teacher">Teacher</MenuItem>
                         </TextField>
+
+                        {/* Grade selector — only shown for Students */}
+                        {selectedRole === 'Student' && (
+                            <TextField margin="normal" required fullWidth select label="Select Your Grade" defaultValue=""
+                                inputProps={register('grade')} error={!!errors.grade} helperText={errors.grade?.message || 'You will only see courses for your grade'}>
+                                {GRADES.map(g => (
+                                    <MenuItem key={g} value={g}>
+                                        {g === 'University' ? 'University' : `Grade ${g}`}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
+
                         <Button type="submit" fullWidth variant="contained"
                             sx={{ mt: 3, mb: 2, height: 48 }} disabled={isSubmitting}>
                             {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Sign Up'}

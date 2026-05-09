@@ -16,17 +16,21 @@ export const StudentProvider = ({ children }) => {
     const [enrollments, setEnrollments] = useState([]);
 
     useEffect(() => {
-        if (!user?.id) return;
+        if (!user?.id || !profile) return;
         fetchAllCourses();
         fetchEnrollments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id]);
+    }, [user?.id, profile?.grade]);
 
     const fetchAllCourses = async () => {
         try {
-            const { data, error } = await supabase
-                .from('courses')
-                .select('*');
+            // Only fetch courses that match the student's grade
+            const studentGrade = profile?.grade;
+            let query = supabase.from('courses').select('*');
+            if (studentGrade) {
+                query = query.eq('grade', studentGrade);
+            }
+            const { data, error } = await query;
             if (error) throw error;
             setAllCourses((data || []).map(c => ({
                 id: c.id,
@@ -191,6 +195,7 @@ export const StudentProvider = ({ children }) => {
         grades,
         gpa: calculateGPA(),
         attendancePercentage: 100,
+        studentGrade: profile?.grade || null,
         enrollInCourse,
         unenroll,
         joinSession,

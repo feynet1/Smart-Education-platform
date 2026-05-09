@@ -8,7 +8,7 @@ import { Login as JoinIcon } from '@mui/icons-material';
 import { useStudent } from '../../../contexts/StudentContext';
 
 const StudentCoursesList = () => {
-    const { enrolledCourses, activeSessions, joinSession } = useStudent();
+    const { enrolledCourses, activeSessions, joinSession, studentGrade } = useStudent();
     const navigate = useNavigate();
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -27,7 +27,9 @@ const StudentCoursesList = () => {
             <Box mb={4}>
                 <Typography variant="h4" fontWeight="bold">My Courses</Typography>
                 <Typography variant="subtitle1" color="text.secondary">
-                    View your enrolled courses
+                    {studentGrade
+                        ? `Showing ${studentGrade === 'University' ? 'University' : `Grade ${studentGrade}`} courses`
+                        : 'View your enrolled courses'}
                 </Typography>
             </Box>
 

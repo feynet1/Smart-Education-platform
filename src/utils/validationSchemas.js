@@ -5,6 +5,11 @@ export const loginSchema = z.object({
     password: z.string().min(1, "Password is required"),
 });
 
+const GRADES = [
+    '1', '2', '3', '4', '5', '6', '7', '8',
+    '9', '10', '11', '12', 'University',
+];
+
 export const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
@@ -18,7 +23,16 @@ export const registerSchema = z.object({
     role: z.enum(['Student', 'Teacher'], {
         errorMap: () => ({ message: "Please select a role" }),
     }),
+    grade: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords must match",
     path: ["confirmPassword"],
+}).refine((data) => {
+    if (data.role === 'Student') return GRADES.includes(data.grade ?? '');
+    return true;
+}, {
+    message: "Please select your grade",
+    path: ["grade"],
 });
+
+export { GRADES };
