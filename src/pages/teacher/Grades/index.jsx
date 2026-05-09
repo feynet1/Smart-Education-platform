@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Edit, Grade as GradeIcon } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
+import { supabase } from '../../../supabaseClient';
 import {
     scoreToGrade, gradeColor, calcWeightedTotal,
     CATEGORIES, CATEGORY_LABELS, DEFAULT_WEIGHTS,
@@ -52,7 +53,7 @@ const ScoreCell = ({ entry, onEdit }) => {
 const TeacherGrades = () => {
     const { id: courseId } = useParams();
     const {
-        courses, students,
+        courses,
         gradeEntries, gradesLoading, courseWeights,
         fetchGradeEntries, saveGradeEntry, deleteGradeEntry,
         fetchWeights,
@@ -62,6 +63,34 @@ const TeacherGrades = () => {
     const isLoading = gradesLoading[courseId] ?? false;
     const weights = courseWeights[courseId] || DEFAULT_WEIGHTS;
     const entries = gradeEntries[courseId] || {};
+
+    // ── Fetch enrolled students for this course ───────────────
+    const [enrolledStudents, setEnrolledStudents] = useState([]);
+    const [enrolledLoading, setEnrolledLoading] = useState(false);
+
+    useEffect(() => {
+        if (!courseId) return;
+        const fetchEnrolled = async () => {
+            setEnrolledLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('enrollments')
+                    .select('student_id, profiles(id, name, email)')
+                    .eq('course_id', courseId);
+                if (error) throw error;
+                const list = (data || []).map(e => ({
+                    id: e.student_id,
+                    name: e.profiles?.name || e.profiles?.email?.split('@')[0] || 'Unknown',
+                }));
+                setEnrolledStudents(list);
+            } catch (err) {
+                console.error('Failed to fetch enrolled students:', err);
+            } finally {
+                setEnrolledLoading(false);
+            }
+        };
+        fetchEnrolled();
+    }, [courseId]);
 
     // Dialog state for editing a single cell
     const [dialog, setDialog] = useState({ open: false, studentId: '', studentName: '', category: '' });
@@ -80,20 +109,16 @@ const TeacherGrades = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courseId]);
 
-    // Build enrolled student list — use students who have at least one entry OR all enrolled
-    // We show all students from the teacher's student list for this course
-    const enrolledStudentIds = Object.keys(entries);
-    // Merge: students with entries + all students (teacher can pre-fill)
-    const rosterStudents = students.filter(s =>
-        enrolledStudentIds.includes(s.id)
-    );
-    // Also add students who have entries but aren't in the profiles list
-    enrolledStudentIds.forEach(sid => {
-        if (!rosterStudents.find(s => s.id === sid)) {
-            const name = entries[sid]?.name || 'Unknown';
-            rosterStudents.push({ id: sid, name });
+    // Roster = enrolled students (from enrollments table)
+    // Also include any students who have grade entries but aren't in the enrollment list
+    const rosterMap = {};
+    enrolledStudents.forEach(s => { rosterMap[s.id] = s; });
+    Object.keys(entries).forEach(sid => {
+        if (!rosterMap[sid]) {
+            rosterMap[sid] = { id: sid, name: entries[sid]?.name || 'Unknown' };
         }
     });
+    const rosterStudents = Object.values(rosterMap);
 
     const openEdit = (studentId, studentName, category) => {
         const existing = entries[studentId]?.[category];
@@ -176,7 +201,7 @@ const TeacherGrades = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {isLoading ? (
+                            {isLoading || enrolledLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={CATEGORIES.length + 3} align="center" sx={{ py: 4 }}>
                                         <CircularProgress size={28} />
@@ -188,7 +213,7 @@ const TeacherGrades = () => {
                                         <Box display="flex" flexDirection="column" alignItems="center" gap={1}>
                                             <GradeIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
                                             <Typography color="text.secondary">
-                                                No students enrolled yet. Students join using the course code.
+                                                No students enrolled yet. Students join using the course join code.
                                             </Typography>
                                         </Box>
                                     </TableCell>
