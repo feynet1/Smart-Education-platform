@@ -516,10 +516,11 @@ export const TeacherProvider = ({ children }) => {
 
     // ── Grades (Supabase) ─────────────────────────────────────
     const [grades, setGrades] = useState({});          // { courseId: [grade rows] }
-    const [gradesLoading, setGradesLoading] = useState(false);
+    const [gradesLoading, setGradesLoading] = useState({}); // { courseId: boolean }
 
     const fetchGrades = async (courseId) => {
-        setGradesLoading(true);
+        // Only show loading spinner on first load (no existing data)
+        setGradesLoading(prev => ({ ...prev, [courseId]: true }));
         try {
             const { data, error } = await supabase
                 .from('grades')
@@ -533,11 +534,11 @@ export const TeacherProvider = ({ children }) => {
             console.error('Failed to fetch grades:', err);
             return [];
         } finally {
-            setGradesLoading(false);
+            setGradesLoading(prev => ({ ...prev, [courseId]: false }));
         }
     };
 
-    // Upsert a single grade record
+    // Upsert a single grade record — updates local state immediately, no refetch needed
     const saveGrade = async (gradeData) => {
         if (!user?.id) return { success: false, error: 'Not authenticated' };
         try {
@@ -559,7 +560,7 @@ export const TeacherProvider = ({ children }) => {
                 .select()
                 .single();
             if (error) throw error;
-            // Update local cache
+            // Update local cache without triggering a full reload
             setGrades(prev => {
                 const existing = prev[gradeData.courseId] || [];
                 const idx = existing.findIndex(g => g.id === data.id);
@@ -577,6 +578,7 @@ export const TeacherProvider = ({ children }) => {
     };
 
     const deleteGrade = async (courseId, gradeId) => {
+        // Optimistic remove — no loading state needed
         setGrades(prev => ({
             ...prev,
             [courseId]: (prev[courseId] || []).filter(g => g.id !== gradeId),
@@ -587,7 +589,7 @@ export const TeacherProvider = ({ children }) => {
             return { success: true };
         } catch (err) {
             console.error('Failed to delete grade:', err);
-            await fetchGrades(courseId); // rollback
+            await fetchGrades(courseId); // rollback on error
             return { success: false, error: err.message };
         }
     };

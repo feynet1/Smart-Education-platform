@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     Box, Typography, Button, Paper, Chip, IconButton,
@@ -30,15 +30,18 @@ const TeacherGrades = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const courseGrades = grades[courseId] || [];
+    const isLoading = gradesLoading[courseId] ?? false;
 
     const showSnack = (message, severity = 'success') =>
         setSnackbar({ open: true, message, severity });
 
-    const load = useCallback(() => {
-        if (courseId) fetchGrades(courseId);
-    }, [courseId, fetchGrades]);
-
-    useEffect(() => { load(); }, [load]);
+    // Fetch only on mount — saves don't refetch, they update local state directly
+    useEffect(() => {
+        if (courseId && !grades[courseId]) {
+            fetchGrades(courseId);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId]);
 
     const filteredGrades = courseGrades.filter(g =>
         g.student_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -182,7 +185,7 @@ const TeacherGrades = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {gradesLoading ? (
+                            {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                         <CircularProgress size={28} />
