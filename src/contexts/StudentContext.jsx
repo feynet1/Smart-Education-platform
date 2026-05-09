@@ -172,7 +172,59 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    // ── Grades (Supabase grade_entries) ──────────────────────
+    // ── Attendance History (Supabase) ────────────────────────
+    const [attendanceRecords, setAttendanceRecords] = useState([]);
+    const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+    const fetchAttendanceHistory = async () => {
+        if (!user?.id) return;
+        setAttendanceLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('id, course_id, date, status, session_id')
+                .eq('student_id', user.id)
+                .order('date', { ascending: false });
+            if (error) throw error;
+            setAttendanceRecords(data || []);
+        } catch (err) {
+            console.error('Failed to fetch attendance history:', err);
+        } finally {
+            setAttendanceLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.id) fetchAttendanceHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
+
+    // Overall attendance percentage across all courses
+    const calculateAttendancePercentage = () => {
+        if (attendanceRecords.length === 0) return null;
+        const present = attendanceRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
+        return Math.round((present / attendanceRecords.length) * 100);
+    };
+
+    // Per-course attendance: { courseId: { total, present, late, absent, percentage } }
+    const courseAttendanceStats = enrollments.reduce((acc, courseId) => {
+        const records = attendanceRecords.filter(r => r.course_id === courseId);
+        if (records.length === 0) {
+            acc[courseId] = { total: 0, present: 0, late: 0, absent: 0, percentage: null };
+            return acc;
+        }
+        const present = records.filter(r => r.status === 'Present').length;
+        const late    = records.filter(r => r.status === 'Late').length;
+        const absent  = records.filter(r => r.status === 'Absent').length;
+        acc[courseId] = {
+            total: records.length,
+            present,
+            late,
+            absent,
+            percentage: Math.round(((present + late) / records.length) * 100),
+        };
+        return acc;
+    }, {});
     const [grades, setGrades] = useState([]);
     const [gradesLoading, setGradesLoading] = useState(false);
 
@@ -282,12 +334,16 @@ export const StudentProvider = ({ children }) => {
         grades,
         gradesLoading,
         gpa: calculateGPA(),
-        attendancePercentage: 100,
+        attendanceRecords,
+        attendanceLoading,
+        attendancePercentage: calculateAttendancePercentage(),
+        courseAttendanceStats,
         studentGrade: profile?.grade || null,
         enrollInCourse,
         unenroll,
         joinSession,
         fetchActiveSessions,
+        fetchAttendanceHistory,
     };
 
     return (

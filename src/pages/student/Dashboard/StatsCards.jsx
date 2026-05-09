@@ -1,15 +1,15 @@
-import { Grid, Paper, Typography, Box } from '@mui/material';
-import { School, TrendingUp, EventAvailable, CheckCircle } from '@mui/icons-material';
+import { Grid, Paper, Typography, Box, CircularProgress } from '@mui/material';
+import { School, TrendingUp, CheckCircle, EventAvailable } from '@mui/icons-material';
 import { useStudent } from '../../../contexts/StudentContext';
 
-const StatCard = ({ title, value, icon, color, suffix = '' }) => (
+const StatCard = ({ title, value, icon, color, suffix = '', loading = false }) => (
     <Paper elevation={2} sx={{ p: 3, display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: `${color}.light`, color: `${color}.main`, mr: 2 }}>
+        <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: `${color}.light`, color: `${color}.main`, mr: 2, flexShrink: 0 }}>
             {icon}
         </Box>
         <Box>
             <Typography variant="h4" fontWeight="bold">
-                {value}{suffix}
+                {loading ? <CircularProgress size={24} /> : `${value}${suffix}`}
             </Typography>
             <Typography variant="body2" color="text.secondary">
                 {title}
@@ -19,13 +19,52 @@ const StatCard = ({ title, value, icon, color, suffix = '' }) => (
 );
 
 const StatsCards = () => {
-    const { enrolledCourses, gpa, attendancePercentage } = useStudent();
+    const {
+        enrolledCourses,
+        gpa,
+        attendancePercentage,
+        attendanceLoading,
+        attendanceRecords,
+        activeSessions,
+    } = useStudent();
+
+    // Count today's active sessions
+    const activeSessionCount = Object.keys(activeSessions).length;
+
+    // Total sessions attended (present + late)
+    const totalAttended = attendanceRecords.filter(
+        r => r.status === 'Present' || r.status === 'Late'
+    ).length;
 
     const stats = [
-        { title: 'Overall GPA', value: gpa, icon: <TrendingUp />, color: 'primary' },
-        { title: 'Attendance', value: attendancePercentage, icon: <CheckCircle />, color: 'success', suffix: '%' },
-        { title: 'Enrolled Courses', value: enrolledCourses.length, icon: <School />, color: 'info' },
-        { title: 'Classes Today', value: 2, icon: <EventAvailable />, color: 'warning' }, // Mock
+        {
+            title: 'Overall GPA',
+            value: gpa,
+            icon: <TrendingUp />,
+            color: 'primary',
+        },
+        {
+            title: 'Attendance Rate',
+            value: attendancePercentage != null ? attendancePercentage : '—',
+            suffix: attendancePercentage != null ? '%' : '',
+            icon: <CheckCircle />,
+            color: attendancePercentage == null ? 'info'
+                 : attendancePercentage >= 75 ? 'success'
+                 : attendancePercentage >= 50 ? 'warning' : 'error',
+            loading: attendanceLoading,
+        },
+        {
+            title: 'Enrolled Courses',
+            value: enrolledCourses.length,
+            icon: <School />,
+            color: 'info',
+        },
+        {
+            title: activeSessionCount > 0 ? 'Live Sessions Now' : 'Sessions Attended',
+            value: activeSessionCount > 0 ? activeSessionCount : totalAttended,
+            icon: <EventAvailable />,
+            color: activeSessionCount > 0 ? 'error' : 'warning',
+        },
     ];
 
     return (

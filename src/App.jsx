@@ -22,6 +22,7 @@ import CourseDetails from './pages/student/Courses/CourseDetails';
 import StudentGrades from './pages/student/Grades';
 import StudentEvents from './pages/student/Events';
 import StudentProfile from './pages/student/Profile';
+import StudentAttendance from './pages/student/Attendance';
 
 // Teacher Pages
 import TeacherDashboardHome from './pages/teacher/Dashboard';
@@ -76,6 +77,7 @@ function App() {
               <Route path="courses/:id" element={<CourseDetails />} />
               <Route path="grades" element={<StudentGrades />} />
               <Route path="events" element={<StudentEvents />} />
+              <Route path="attendance" element={<StudentAttendance />} />
               <Route path="profile" element={<StudentProfile />} />
             </Route>
 

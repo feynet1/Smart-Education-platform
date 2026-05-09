@@ -12,11 +12,10 @@ import { useStudent } from '../../../contexts/StudentContext';
 import useAuth from '../../../hooks/useAuth';
 import { supabase } from '../../../supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
-
 const StudentDashboardHome = () => {
     const { profile } = useAuth();
     const { user } = useAuth();
-    const { enrolledCourses, enrollments, activeSessions } = useStudent();
+    const { enrolledCourses, enrollments, activeSessions, courseAttendanceStats } = useStudent();
     const navigate = useNavigate();
 
     const [notifications, setNotifications] = useState([]);
@@ -140,10 +139,35 @@ const StudentDashboardHome = () => {
                                                             {course.name}
                                                         </Typography>
                                                         <Box mt={1}>
-                                                            <Typography variant="caption" color="text.secondary">Progress</Typography>
-                                                            <LinearProgress variant="determinate"
-                                                                value={(parseInt(course.id?.slice(-4) || '0', 16) % 60) + 20}
-                                                                sx={{ mt: 0.5, borderRadius: 1 }} />
+                                                            {(() => {
+                                                                const stats = courseAttendanceStats[course.id];
+                                                                if (!stats || stats.total === 0) {
+                                                                    return (
+                                                                        <Typography variant="caption" color="text.disabled">
+                                                                            No sessions yet
+                                                                        </Typography>
+                                                                    );
+                                                                }
+                                                                const pct = stats.percentage;
+                                                                const color = pct >= 75 ? 'success' : pct >= 50 ? 'warning' : 'error';
+                                                                return (
+                                                                    <>
+                                                                        <Box display="flex" justifyContent="space-between">
+                                                                            <Typography variant="caption" color="text.secondary">
+                                                                                Attendance
+                                                                            </Typography>
+                                                                            <Typography variant="caption" fontWeight="bold" color={`${color}.main`}>
+                                                                                {pct}%
+                                                                            </Typography>
+                                                                        </Box>
+                                                                        <LinearProgress
+                                                                            variant="determinate"
+                                                                            value={pct}
+                                                                            color={color}
+                                                                            sx={{ mt: 0.5, borderRadius: 1 }} />
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </Box>
                                                     </CardContent>
                                                 </CardActionArea>
