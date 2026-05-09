@@ -171,19 +171,51 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    // ── Grades (localStorage for now) ────────────────────────
-    const [grades] = useState(() => {
-        const saved = localStorage.getItem('student_grades');
-        return saved ? JSON.parse(saved) : [
-            { id: 1, courseId: '1', subject: 'Mathematics', assessment: 'Midterm Exam', score: 85, grade: 'A', feedback: 'Excellent work!', date: '2026-01-10' },
-            { id: 2, courseId: '2', subject: 'Physics', assessment: 'Lab Report', score: 78, grade: 'B+', feedback: 'Good analysis.', date: '2026-01-15' },
-        ];
-    });
+    // ── Grades (Supabase) ────────────────────────────────────
+    const [grades, setGrades] = useState([]);
+    const [gradesLoading, setGradesLoading] = useState(false);
+
+    const fetchGrades = async () => {
+        if (!user?.id) return;
+        setGradesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('grades')
+                .select('*')
+                .eq('student_id', user.id)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setGrades((data || []).map(g => ({
+                id: g.id,
+                courseId: g.course_id,
+                subject: g.subject,
+                assessment: g.assessment,
+                score: parseFloat(g.score),
+                grade: g.grade,
+                feedback: g.feedback || '',
+                date: g.graded_at,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch grades:', err);
+        } finally {
+            setGradesLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.id) fetchGrades();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
 
     const calculateGPA = () => {
-        if (grades.length === 0) return 0;
-        const gradePoints = { 'A+': 4.0, 'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7, 'C+': 2.3, 'C': 2.0, 'F': 0 };
-        const total = grades.reduce((sum, g) => sum + (gradePoints[g.grade] || 0), 0);
+        if (grades.length === 0) return '0.00';
+        const gradePoints = {
+            'A+': 4.0, 'A': 4.0, 'A-': 3.7,
+            'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+            'C+': 2.3, 'C': 2.0, 'C-': 1.7,
+            'D+': 1.3, 'D': 1.0, 'F': 0.0,
+        };
+        const total = grades.reduce((sum, g) => sum + (gradePoints[g.grade] ?? 0), 0);
         return (total / grades.length).toFixed(2);
     };
 
@@ -193,6 +225,7 @@ export const StudentProvider = ({ children }) => {
         allCourses,
         activeSessions,
         grades,
+        gradesLoading,
         gpa: calculateGPA(),
         attendancePercentage: 100,
         studentGrade: profile?.grade || null,

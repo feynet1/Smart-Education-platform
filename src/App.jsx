@@ -30,6 +30,7 @@ import ClassroomHelper from './pages/teacher/Classroom';
 import AttendanceHelper from './pages/teacher/Attendance';
 import NotesHelper from './pages/teacher/Notes';
 import TeacherAssignments from './pages/teacher/Assignments';
+import TeacherGrades from './pages/teacher/Grades';
 import CourseSelector from './pages/teacher/CourseSelector';
 import Settings from './pages/teacher/Settings';
 
@@ -100,6 +101,8 @@ function App() {
               <Route path="notes/:id" element={<NotesHelper />} />
               <Route path="assignments" element={<CourseSelector basePath="/teacher/assignments" title="Assignments" />} />
               <Route path="assignments/:id" element={<TeacherAssignments />} />
+              <Route path="grades" element={<CourseSelector basePath="/teacher/grades" title="Grades" />} />
+              <Route path="grades/:id" element={<TeacherGrades />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

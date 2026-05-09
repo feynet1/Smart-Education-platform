@@ -514,6 +514,84 @@ export const TeacherProvider = ({ children }) => {
         return data.publicUrl;
     };
 
+    // ── Grades (Supabase) ─────────────────────────────────────
+    const [grades, setGrades] = useState({});          // { courseId: [grade rows] }
+    const [gradesLoading, setGradesLoading] = useState(false);
+
+    const fetchGrades = async (courseId) => {
+        setGradesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('grades')
+                .select('*')
+                .eq('course_id', courseId)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setGrades(prev => ({ ...prev, [courseId]: data || [] }));
+            return data || [];
+        } catch (err) {
+            console.error('Failed to fetch grades:', err);
+            return [];
+        } finally {
+            setGradesLoading(false);
+        }
+    };
+
+    // Upsert a single grade record
+    const saveGrade = async (gradeData) => {
+        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        try {
+            const row = {
+                course_id:    gradeData.courseId,
+                teacher_id:   user.id,
+                student_id:   gradeData.studentId,
+                student_name: gradeData.studentName,
+                subject:      gradeData.subject,
+                assessment:   gradeData.assessment,
+                score:        gradeData.score,
+                grade:        gradeData.grade,
+                feedback:     gradeData.feedback || null,
+                graded_at:    gradeData.gradedAt || new Date().toISOString().split('T')[0],
+            };
+            const { data, error } = await supabase
+                .from('grades')
+                .upsert(row, { onConflict: 'course_id,student_id,assessment' })
+                .select()
+                .single();
+            if (error) throw error;
+            // Update local cache
+            setGrades(prev => {
+                const existing = prev[gradeData.courseId] || [];
+                const idx = existing.findIndex(g => g.id === data.id);
+                const updated = idx >= 0
+                    ? existing.map(g => g.id === data.id ? data : g)
+                    : [data, ...existing];
+                return { ...prev, [gradeData.courseId]: updated };
+            });
+            addTeacherLog('Graded student', `${gradeData.studentName} — ${gradeData.assessment}`);
+            return { success: true, grade: data };
+        } catch (err) {
+            console.error('Failed to save grade:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    const deleteGrade = async (courseId, gradeId) => {
+        setGrades(prev => ({
+            ...prev,
+            [courseId]: (prev[courseId] || []).filter(g => g.id !== gradeId),
+        }));
+        try {
+            const { error } = await supabase.from('grades').delete().eq('id', gradeId);
+            if (error) throw error;
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to delete grade:', err);
+            await fetchGrades(courseId); // rollback
+            return { success: false, error: err.message };
+        }
+    };
+
     const value = {
         courses, coursesLoading, fetchCourses,
         addCourse, updateCourse, deleteCourse,
@@ -522,6 +600,7 @@ export const TeacherProvider = ({ children }) => {
         activeSession, sessionAttendance,
         fetchActiveSession, startSession, endSession, updateAttendanceStatus,
         notes, notesLoading, uploadProgress, fetchNotes, addNote, deleteNote, getNoteUrl,
+        grades, gradesLoading, fetchGrades, saveGrade, deleteGrade,
         teacherLogs, deleteTeacherLog,
     };
 

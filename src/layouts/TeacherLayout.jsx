@@ -27,6 +27,7 @@ import {
     Class as ClassIcon,
     FactCheck as AttendanceIcon,
     Note as NoteIcon,
+    Grade as GradeIcon,
     Settings as SettingsIcon,
     Notifications as NotificationsIcon,
     AccountCircle
@@ -68,6 +69,7 @@ const TeacherLayout = () => {
         { text: 'Classroom',   icon: <ClassIcon />,      path: '/teacher/classroom' },
         { text: 'Attendance',  icon: <AttendanceIcon />, path: '/teacher/attendance' },
         { text: 'Assignments', icon: <NoteIcon />,       path: '/teacher/assignments' },
+        { text: 'Grades',      icon: <GradeIcon />,      path: '/teacher/grades' },
         { text: 'Notes',       icon: <NoteIcon />,       path: '/teacher/notes' },
         { text: 'Settings',    icon: <SettingsIcon />,   path: '/teacher/settings' },
     ];

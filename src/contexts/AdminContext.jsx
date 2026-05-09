@@ -15,14 +15,43 @@ export const AdminProvider = ({ children }) => {
         const saved = localStorage.getItem('teacher_notes');
         return saved ? JSON.parse(saved) : {};
     };
-    const getStudentGrades = () => {
-        const saved = localStorage.getItem('student_grades');
-        return saved ? JSON.parse(saved) : [];
-    };
     const getStudentEnrollments = () => {
         const saved = localStorage.getItem('student_enrollments');
         return saved ? JSON.parse(saved) : [];
     };
+
+    // ── Grades (Supabase) ─────────────────────────────────────
+    const [adminGrades, setAdminGrades] = useState([]);
+    const [adminGradesLoading, setAdminGradesLoading] = useState(false);
+
+    const fetchAdminGrades = async () => {
+        setAdminGradesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('grades')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(500);
+            if (error) throw error;
+            setAdminGrades((data || []).map(g => ({
+                id: g.id,
+                courseId: g.course_id,
+                subject: g.subject,
+                assessment: g.assessment,
+                score: parseFloat(g.score),
+                grade: g.grade,
+                feedback: g.feedback || '',
+                date: g.graded_at,
+                studentName: g.student_name,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch grades:', err);
+        } finally {
+            setAdminGradesLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchAdminGrades(); }, []);
 
     // ── Users (Supabase profiles) ─────────────────────────────
     const [users, setUsers] = useState([]);
@@ -504,9 +533,9 @@ export const AdminProvider = ({ children }) => {
         users, usersLoading, fetchUsers,
         events, eventsLoading, systemLogs, logsLoading, settings, stats,
         courses, coursesLoading, fetchCourses, deleteCourse,
+        grades: adminGrades, gradesLoading: adminGradesLoading, fetchAdminGrades,
         attendance: getTeacherAttendance(),
         notes: getTeacherNotes(),
-        grades: getStudentGrades(),
         enrollments: getStudentEnrollments(),
         updateUserRole, toggleUserStatus, addUser, deleteUser,
         addEvent, updateEvent, deleteEvent, updateSettings, addLog, fetchLogs,
