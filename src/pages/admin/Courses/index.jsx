@@ -24,16 +24,18 @@ import {
     DialogActions,
     Snackbar,
     Alert,
-    Avatar
+    Avatar,
+    CircularProgress,
 } from '@mui/material';
 import { Search, School, People, Delete, Visibility, ContentCopy } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 
 const CoursesManagement = () => {
-    const { courses } = useAdmin();
+    const { courses, coursesLoading, deleteCourse } = useAdmin();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [deleteDialog, setDeleteDialog] = useState({ open: false, course: null });
+    const [deleting, setDeleting] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Filter courses
@@ -48,10 +50,18 @@ const CoursesManagement = () => {
         setSnackbar({ open: true, message: 'Join code copied!', severity: 'info' });
     };
 
-    // Delete course (mock)
-    const handleDeleteCourse = () => {
-        setSnackbar({ open: true, message: 'Course deleted successfully', severity: 'success' });
+    // Delete course — real Supabase delete
+    const handleDeleteCourse = async () => {
+        if (!deleteDialog.course) return;
+        setDeleting(true);
+        const result = await deleteCourse(deleteDialog.course.id);
+        setDeleting(false);
         setDeleteDialog({ open: false, course: null });
+        if (result.success) {
+            setSnackbar({ open: true, message: 'Course deleted successfully', severity: 'success' });
+        } else {
+            setSnackbar({ open: true, message: result.error || 'Failed to delete course', severity: 'error' });
+        }
     };
 
     return (
@@ -63,7 +73,7 @@ const CoursesManagement = () => {
                         Course Management
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        View and manage all courses on the platform ({courses.length} total)
+                        View and manage all courses on the platform ({coursesLoading ? '…' : `${courses.length} total`})
                     </Typography>
                 </Box>
             </Box>
@@ -87,7 +97,11 @@ const CoursesManagement = () => {
             </Paper>
 
             {/* Courses Grid */}
-            {filteredCourses.length > 0 ? (
+            {coursesLoading ? (
+                <Box display="flex" justifyContent="center" py={8}>
+                    <CircularProgress />
+                </Box>
+            ) : filteredCourses.length > 0 ? (
                 <Grid container spacing={3}>
                     {filteredCourses.map((course) => (
                         <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={course.id}>
@@ -102,7 +116,7 @@ const CoursesManagement = () => {
                                                 {course.name}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary">
-                                                {course.subject}
+                                                {course.subject} · {course.teacherName}
                                             </Typography>
                                         </Box>
                                     </Box>
@@ -116,7 +130,7 @@ const CoursesManagement = () => {
                                         />
                                         <Chip
                                             size="small"
-                                            label={course.gradeLevel || 'General'}
+                                            label={`Grade ${course.grade || 'General'}`}
                                             color="primary"
                                             variant="outlined"
                                         />
@@ -186,8 +200,11 @@ const CoursesManagement = () => {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteDialog({ open: false, course: null })}>Cancel</Button>
-                    <Button onClick={handleDeleteCourse} color="error" variant="contained">Delete</Button>
+                    <Button onClick={() => setDeleteDialog({ open: false, course: null })} disabled={deleting}>Cancel</Button>
+                    <Button onClick={handleDeleteCourse} color="error" variant="contained" disabled={deleting}
+                        startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : null}>
+                        {deleting ? 'Deleting…' : 'Delete'}
+                    </Button>
                 </DialogActions>
             </Dialog>
 

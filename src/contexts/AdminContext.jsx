@@ -7,10 +7,6 @@ const AdminContext = createContext();
 export const useAdmin = () => useContext(AdminContext);
 
 export const AdminProvider = ({ children }) => {
-    const getTeacherCourses = () => {
-        const saved = localStorage.getItem('teacher_courses');
-        return saved ? JSON.parse(saved) : [];
-    };
     const getTeacherAttendance = () => {
         const saved = localStorage.getItem('teacher_attendance');
         return saved ? JSON.parse(saved) : {};
@@ -30,6 +26,54 @@ export const AdminProvider = ({ children }) => {
 
     // Start empty — will be populated from Supabase only
     const [users, setUsers] = useState([]);
+
+    // ── Courses (Supabase) ────────────────────────────────────
+    const [courses, setCourses] = useState([]);
+    const [coursesLoading, setCoursesLoading] = useState(false);
+
+    const fetchCourses = async () => {
+        setCoursesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('courses')
+                .select('*, profiles(name)')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setCourses((data || []).map(c => ({
+                id: c.id,
+                name: c.name,
+                subject: c.subject,
+                grade: c.grade,
+                description: c.description,
+                joinCode: c.join_code,
+                teacherId: c.teacher_id,
+                teacherName: c.profiles?.name || '—',
+                createdAt: c.created_at,
+                students: 0, // enrollment count added separately if needed
+            })));
+        } catch (err) {
+            console.error('Failed to fetch courses:', err);
+        } finally {
+            setCoursesLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchCourses(); }, []);
+
+    const deleteCourse = async (courseId) => {
+        const course = courses.find(c => c.id === courseId);
+        setCourses(prev => prev.filter(c => c.id !== courseId));
+        try {
+            const { error } = await supabase.from('courses').delete().eq('id', courseId);
+            if (error) throw error;
+            addLog(`Deleted course: ${course?.name ?? courseId}`, 'Admin');
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to delete course:', err);
+            setCourses(prev => [...prev, course].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+            return { success: false, error: err.message };
+        }
+    };
 
     // Clear any stale mock user data from localStorage
     useEffect(() => {
@@ -149,8 +193,8 @@ export const AdminProvider = ({ children }) => {
     const stats = {
         totalStudents: users.filter(u => u.role === 'Student').length,
         totalTeachers: users.filter(u => u.role === 'Teacher').length,
-        totalCourses:  getTeacherCourses().length,
-        activeClasses: getTeacherCourses().length,
+        totalCourses:  courses.length,
+        activeClasses: courses.length,
     };
 
     const addLog = async (action, user) => {
@@ -351,16 +395,16 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    // Reset all platform data: logs, events (localStorage), courses, attendance, notes, grades, enrollments
+    // Reset all platform data: logs, events, attendance, notes, grades, enrollments
     const resetAllData = async () => {
         try {
             // Clear Supabase logs
             const { error } = await supabase.from('activity_logs').delete().neq('id', 0);
             if (error) throw error;
 
-            // Clear all localStorage data
+            // Clear remaining localStorage data (legacy keys)
             const keys = [
-                'admin_events', 'teacher_courses', 'teacher_attendance',
+                'admin_events', 'teacher_attendance',
                 'teacher_notes', 'student_grades', 'student_enrollments',
             ];
             keys.forEach(k => localStorage.removeItem(k));
@@ -384,17 +428,22 @@ export const AdminProvider = ({ children }) => {
                 .order('created_at', { ascending: false });
             if (logsErr) throw logsErr;
 
-            const { data: settings, error: settingsErr } = await supabase
+            const { data: settingsData, error: settingsErr } = await supabase
                 .from('platform_settings')
                 .select('*');
             if (settingsErr) throw settingsErr;
 
+            const { data: coursesData, error: coursesErr } = await supabase
+                .from('courses')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (coursesErr) throw coursesErr;
+
             const exportData = {
                 exported_at: new Date().toISOString(),
-                platform_settings: settings,
+                platform_settings: settingsData,
                 activity_logs: logs,
-                events: JSON.parse(localStorage.getItem('admin_events') || '[]'),
-                courses: JSON.parse(localStorage.getItem('teacher_courses') || '[]'),
+                courses: coursesData,
             };
 
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -436,7 +485,7 @@ export const AdminProvider = ({ children }) => {
 
     const value = {
         users, events, eventsLoading, systemLogs, logsLoading, settings, stats,
-        courses: getTeacherCourses(),
+        courses, coursesLoading, fetchCourses, deleteCourse,
         attendance: getTeacherAttendance(),
         notes: getTeacherNotes(),
         grades: getStudentGrades(),
