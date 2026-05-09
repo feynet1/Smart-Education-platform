@@ -151,12 +151,34 @@ export const AuthProvider = ({ children }) => {
         window.location.href = '/';
     };
 
+    // Update profile name and phone in the profiles table
+    const updateProfile = async ({ name, phone }) => {
+        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        try {
+            const updates = {};
+            if (name)  updates.name  = name.trim();
+            if (phone !== undefined) updates.phone = phone.trim() || null;
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('id', user.id)
+                .select()
+                .single();
+            if (error) throw error;
+            setProfile(data);
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: getErrorMessage(err) };
+        }
+    };
+
     const value = {
         user, profile,
         isAuthenticated: !!user,
         pendingInvite,
         loading,
-        login, loginWithGoogle, register, logout,
+        login, loginWithGoogle, register, logout, updateProfile,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
