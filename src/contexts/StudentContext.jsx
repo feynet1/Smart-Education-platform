@@ -138,15 +138,18 @@ export const StudentProvider = ({ children }) => {
         if (!session) return { success: false, message: 'No active session for this course' };
         if (!user?.id || !profile) return { success: false, message: 'Not authenticated' };
 
-        // Check if already joined
+        // Check if already marked Present or Late for this session
         const { data: existing } = await supabase
             .from('attendance')
-            .select('id')
-            .eq('session_id', session.id)
+            .select('id, status')
+            .eq('course_id', courseId)
             .eq('student_id', user.id)
+            .eq('date', session.date)
             .single();
 
-        if (existing) return { success: false, message: 'Already joined this session' };
+        if (existing && (existing.status === 'Present' || existing.status === 'Late')) {
+            return { success: false, message: 'Already joined this session' };
+        }
 
         // Calculate if late (more than 15 min after session started)
         const startedAt = new Date(session.started_at);
@@ -155,17 +158,20 @@ export const StudentProvider = ({ children }) => {
         const status = minutesLate > 15 ? 'Late' : 'Present';
 
         try {
+            // Use upsert so an existing Absent record gets updated to Present/Late
             const { error } = await supabase
                 .from('attendance')
-                .insert({
-                    course_id: courseId,
-                    session_id: session.id,
-                    student_id: user.id,
+                .upsert({
+                    course_id:    courseId,
+                    session_id:   session.id,
+                    student_id:   user.id,
                     student_name: profile.name || user.email?.split('@')[0] || 'Student',
-                    date: session.date,
+                    date:         session.date,
                     status,
-                });
+                }, { onConflict: 'course_id,student_id,date' });
             if (error) throw error;
+            // Refresh attendance history so the new record shows up
+            fetchAttendanceHistory();
             return { success: true, message: `Marked as ${status}`, status };
         } catch (err) {
             return { success: false, message: err.message };
