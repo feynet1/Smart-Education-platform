@@ -1,96 +1,95 @@
 /**
  * Admin Attendance Monitoring
- * 
- * Overview of attendance data across all courses.
- * Displays aggregated attendance statistics and records.
+ * Real data from Supabase attendance table, grouped by course.
  */
 import { useState } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Grid,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Chip,
-    LinearProgress
+    Box, Typography, Paper, Grid, FormControl, InputLabel,
+    Select, MenuItem, Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow, Chip, LinearProgress, CircularProgress,
+    Button,
 } from '@mui/material';
+import { Refresh } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 
 const AttendanceMonitoring = () => {
-    const { attendance, courses } = useAdmin();
+    const { attendance, attendanceLoading, fetchAdminAttendance, courses } = useAdmin();
     const [selectedCourse, setSelectedCourse] = useState('all');
 
-    // Calculate attendance stats for each course
+    // attendance = flat array of { id, course_id, student_id, student_name, date, status }
+    // Group by course_id and compute stats
+    const courseStatsMap = {};
+
+    attendance.forEach(record => {
+        const cid = record.course_id;
+        if (!courseStatsMap[cid]) {
+            courseStatsMap[cid] = { present: 0, absent: 0, late: 0, total: 0, sessions: new Set() };
+        }
+        courseStatsMap[cid].total++;
+        courseStatsMap[cid].sessions.add(record.session_id || record.date);
+        if (record.status === 'Present') courseStatsMap[cid].present++;
+        else if (record.status === 'Absent') courseStatsMap[cid].absent++;
+        else if (record.status === 'Late')   courseStatsMap[cid].late++;
+    });
+
+    // Merge with courses list so every course appears (even with 0 records)
     const courseStats = courses.map(course => {
-        const courseAttendance = attendance[course.id] || [];
-        let present = 0, absent = 0, late = 0, total = 0;
-
-        courseAttendance.forEach(record => {
-            record.records.forEach(r => {
-                total++;
-                if (r.status === 'Present') present++;
-                else if (r.status === 'Absent') absent++;
-                else if (r.status === 'Late') late++;
-            });
-        });
-
-        const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-
+        const s = courseStatsMap[course.id] || { present: 0, absent: 0, late: 0, total: 0, sessions: new Set() };
+        const rate = s.total > 0 ? Math.round(((s.present + s.late) / s.total) * 100) : 0;
         return {
-            id: course.id,
-            name: course.name,
-            subject: course.subject,
-            present,
-            absent,
-            late,
-            total,
+            id:       course.id,
+            name:     course.name,
+            subject:  course.subject,
+            teacher:  course.teacherName || '—',
+            present:  s.present,
+            absent:   s.absent,
+            late:     s.late,
+            total:    s.total,
+            sessions: s.sessions.size,
             rate,
-            sessions: courseAttendance.length
         };
     });
 
-    // Filter based on selection
     const displayStats = selectedCourse === 'all'
         ? courseStats
         : courseStats.filter(s => s.id === selectedCourse);
 
-    // Overall statistics
-    const overall = {
-        totalSessions: courseStats.reduce((sum, s) => sum + s.sessions, 0),
-        avgRate: courseStats.length > 0
-            ? Math.round(courseStats.reduce((sum, s) => sum + s.rate, 0) / courseStats.length)
-            : 0,
-        totalPresent: courseStats.reduce((sum, s) => sum + s.present, 0),
-        totalAbsent: courseStats.reduce((sum, s) => sum + s.absent, 0),
-    };
+    // Overall platform stats
+    const totalRecords = attendance.length;
+    const totalPresent = attendance.filter(r => r.status === 'Present').length;
+    const totalLate    = attendance.filter(r => r.status === 'Late').length;
+    const totalAbsent  = attendance.filter(r => r.status === 'Absent').length;
+    const avgRate      = totalRecords > 0
+        ? Math.round(((totalPresent + totalLate) / totalRecords) * 100)
+        : 0;
+    const uniqueSessions = new Set(attendance.map(r => r.session_id || r.date)).size;
 
     return (
         <Box>
             {/* Header */}
-            <Box mb={3}>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    Attendance Monitoring
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Platform-wide attendance overview and analytics
-                </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom>
+                        Attendance Monitoring
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Platform-wide attendance — {totalRecords} records across {uniqueSessions} sessions
+                    </Typography>
+                </Box>
+                <Button variant="outlined"
+                    startIcon={attendanceLoading ? <CircularProgress size={16} /> : <Refresh />}
+                    onClick={fetchAdminAttendance} disabled={attendanceLoading}>
+                    Refresh
+                </Button>
             </Box>
 
             {/* Overall Stats */}
             <Grid container spacing={3} mb={3}>
                 <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', textAlign: 'center' }}>
-                        <Typography variant="h3" fontWeight="bold" color="primary.main">
-                            {overall.avgRate}%
+                        <Typography variant="h3" fontWeight="bold"
+                            color={avgRate >= 75 ? 'success.main' : avgRate >= 50 ? 'warning.main' : 'error.main'}>
+                            {attendanceLoading ? <CircularProgress size={32} /> : `${avgRate}%`}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">Average Attendance Rate</Typography>
                     </Paper>
@@ -98,15 +97,15 @@ const AttendanceMonitoring = () => {
                 <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', textAlign: 'center' }}>
                         <Typography variant="h3" fontWeight="bold" color="success.main">
-                            {overall.totalPresent}
+                            {attendanceLoading ? <CircularProgress size={32} /> : totalPresent + totalLate}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">Total Present</Typography>
+                        <Typography variant="body2" color="text.secondary">Present + Late</Typography>
                     </Paper>
                 </Grid>
                 <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', textAlign: 'center' }}>
                         <Typography variant="h3" fontWeight="bold" color="error.main">
-                            {overall.totalAbsent}
+                            {attendanceLoading ? <CircularProgress size={32} /> : totalAbsent}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">Total Absent</Typography>
                     </Paper>
@@ -114,7 +113,7 @@ const AttendanceMonitoring = () => {
                 <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', textAlign: 'center' }}>
                         <Typography variant="h3" fontWeight="bold" color="text.secondary">
-                            {overall.totalSessions}
+                            {attendanceLoading ? <CircularProgress size={32} /> : uniqueSessions}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">Total Sessions</Typography>
                     </Paper>
@@ -123,22 +122,19 @@ const AttendanceMonitoring = () => {
 
             {/* Filter */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <FormControl size="small" sx={{ minWidth: 250 }}>
+                <FormControl size="small" sx={{ minWidth: 260 }}>
                     <InputLabel>Filter by Course</InputLabel>
-                    <Select
-                        value={selectedCourse}
-                        label="Filter by Course"
-                        onChange={(e) => setSelectedCourse(e.target.value)}
-                    >
+                    <Select value={selectedCourse} label="Filter by Course"
+                        onChange={e => setSelectedCourse(e.target.value)}>
                         <MenuItem value="all">All Courses</MenuItem>
-                        {courses.map(course => (
-                            <MenuItem key={course.id} value={course.id}>{course.name}</MenuItem>
+                        {courses.map(c => (
+                            <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
             </Paper>
 
-            {/* Attendance Table */}
+            {/* Per-course table */}
             <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
                 <TableContainer>
                     <Table>
@@ -146,49 +142,64 @@ const AttendanceMonitoring = () => {
                             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                                 <TableCell><strong>Course</strong></TableCell>
                                 <TableCell><strong>Subject</strong></TableCell>
+                                <TableCell><strong>Teacher</strong></TableCell>
                                 <TableCell align="center"><strong>Sessions</strong></TableCell>
                                 <TableCell align="center"><strong>Present</strong></TableCell>
-                                <TableCell align="center"><strong>Absent</strong></TableCell>
                                 <TableCell align="center"><strong>Late</strong></TableCell>
+                                <TableCell align="center"><strong>Absent</strong></TableCell>
                                 <TableCell><strong>Attendance Rate</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {displayStats.length > 0 ? displayStats.map((stat) => (
+                            {attendanceLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                        <CircularProgress size={28} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : displayStats.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                        <Typography color="text.secondary">No attendance data yet</Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : displayStats.map(stat => (
                                 <TableRow key={stat.id} hover>
-                                    <TableCell>{stat.name}</TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight="medium">{stat.name}</Typography>
+                                    </TableCell>
                                     <TableCell>{stat.subject}</TableCell>
+                                    <TableCell>
+                                        <Typography variant="caption" color="text.secondary">{stat.teacher}</Typography>
+                                    </TableCell>
                                     <TableCell align="center">{stat.sessions}</TableCell>
                                     <TableCell align="center">
                                         <Chip label={stat.present} size="small" color="success" variant="outlined" />
                                     </TableCell>
                                     <TableCell align="center">
-                                        <Chip label={stat.absent} size="small" color="error" variant="outlined" />
-                                    </TableCell>
-                                    <TableCell align="center">
                                         <Chip label={stat.late} size="small" color="warning" variant="outlined" />
                                     </TableCell>
-                                    <TableCell>
-                                        <Box display="flex" alignItems="center" gap={2}>
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={stat.rate}
-                                                sx={{ flex: 1, height: 8, borderRadius: 1 }}
-                                                color={stat.rate >= 75 ? 'success' : stat.rate >= 50 ? 'warning' : 'error'}
-                                            />
-                                            <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 40 }}>
-                                                {stat.rate}%
-                                            </Typography>
-                                        </Box>
+                                    <TableCell align="center">
+                                        <Chip label={stat.absent} size="small" color="error" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell sx={{ minWidth: 180 }}>
+                                        {stat.total === 0 ? (
+                                            <Typography variant="caption" color="text.disabled">No data</Typography>
+                                        ) : (
+                                            <Box display="flex" alignItems="center" gap={1.5}>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={stat.rate}
+                                                    sx={{ flex: 1, height: 8, borderRadius: 1 }}
+                                                    color={stat.rate >= 75 ? 'success' : stat.rate >= 50 ? 'warning' : 'error'} />
+                                                <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 38 }}>
+                                                    {stat.rate}%
+                                                </Typography>
+                                            </Box>
+                                        )}
                                     </TableCell>
                                 </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <Typography color="text.secondary">No attendance data available</Typography>
-                                    </TableCell>
-                                </TableRow>
-                            )}
+                            ))}
                         </TableBody>
                     </Table>
                 </TableContainer>

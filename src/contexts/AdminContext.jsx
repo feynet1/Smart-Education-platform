@@ -8,10 +8,6 @@ const AdminContext = createContext();
 export const useAdmin = () => useContext(AdminContext);
 
 export const AdminProvider = ({ children }) => {
-    const getTeacherAttendance = () => {
-        const saved = localStorage.getItem('teacher_attendance');
-        return saved ? JSON.parse(saved) : {};
-    };
     const getTeacherNotes = () => {
         const saved = localStorage.getItem('teacher_notes');
         return saved ? JSON.parse(saved) : {};
@@ -20,6 +16,28 @@ export const AdminProvider = ({ children }) => {
         const saved = localStorage.getItem('student_enrollments');
         return saved ? JSON.parse(saved) : [];
     };
+
+    // ── Attendance (Supabase) ─────────────────────────────────
+    const [adminAttendance, setAdminAttendance] = useState([]);
+    const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+    const fetchAdminAttendance = async () => {
+        setAttendanceLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('id, course_id, student_id, student_name, date, status, session_id')
+                .order('date', { ascending: false });
+            if (error) throw error;
+            setAdminAttendance(data || []);
+        } catch (err) {
+            console.error('Failed to fetch attendance:', err);
+        } finally {
+            setAttendanceLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchAdminAttendance(); }, []);
 
     // ── Grades (Supabase grade_entries) ──────────────────────
     const [adminGrades, setAdminGrades] = useState([]);
@@ -573,7 +591,7 @@ export const AdminProvider = ({ children }) => {
         events, eventsLoading, systemLogs, logsLoading, settings, stats,
         courses, coursesLoading, fetchCourses, deleteCourse,
         grades: adminGrades, gradesLoading: adminGradesLoading, fetchAdminGrades,
-        attendance: getTeacherAttendance(),
+        attendance: adminAttendance, attendanceLoading, fetchAdminAttendance,
         notes: getTeacherNotes(),
         enrollments: getStudentEnrollments(),
         updateUserRole, toggleUserStatus, addUser, deleteUser,
