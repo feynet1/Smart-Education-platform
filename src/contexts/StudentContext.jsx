@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
+import { scoreToGrade, gradeToPoints } from '../utils/gradeUtils';
 
 const StudentContext = createContext();
 
@@ -171,7 +172,7 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    // ── Grades (Supabase) ────────────────────────────────────
+    // ── Grades (Supabase grade_entries) ──────────────────────
     const [grades, setGrades] = useState([]);
     const [gradesLoading, setGradesLoading] = useState(false);
 
@@ -179,22 +180,81 @@ export const StudentProvider = ({ children }) => {
         if (!user?.id) return;
         setGradesLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('grades')
+            // Fetch all grade entries for this student
+            const { data: entries, error: entriesErr } = await supabase
+                .from('grade_entries')
                 .select('*')
-                .eq('student_id', user.id)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            setGrades((data || []).map(g => ({
-                id: g.id,
-                courseId: g.course_id,
-                subject: g.subject,
-                assessment: g.assessment,
-                score: parseFloat(g.score),
-                grade: g.grade,
-                feedback: g.feedback || '',
-                date: g.graded_at,
-            })));
+                .eq('student_id', user.id);
+            if (entriesErr) throw entriesErr;
+
+            if (!entries || entries.length === 0) {
+                setGrades([]);
+                return;
+            }
+
+            // Get unique course IDs and fetch their weights
+            const courseIds = [...new Set(entries.map(e => e.course_id))];
+            const { data: weightsData } = await supabase
+                .from('course_weights')
+                .select('*')
+                .in('course_id', courseIds);
+
+            const weightsMap = {};
+            (weightsData || []).forEach(w => { weightsMap[w.course_id] = w; });
+
+            // Group entries by course, compute weighted total per course
+            const byCourse = {};
+            entries.forEach(e => {
+                if (!byCourse[e.course_id]) byCourse[e.course_id] = [];
+                byCourse[e.course_id].push(e);
+            });
+
+            const gradeRows = [];
+            Object.entries(byCourse).forEach(([cid, courseEntries]) => {
+                const w = weightsMap[cid];
+                const scoreMap = {};
+                courseEntries.forEach(e => { scoreMap[e.category] = e.score; });
+
+                // One row per category
+                courseEntries.forEach(e => {
+                    gradeRows.push({
+                        id:         e.id,
+                        courseId:   e.course_id,
+                        subject:    e.category, // used as subject label
+                        assessment: e.category,
+                        category:   e.category,
+                        score:      parseFloat(e.score),
+                        feedback:   e.feedback || '',
+                        date:       e.graded_at,
+                        weight:     w?.[e.category] ?? 0,
+                    });
+                });
+
+                // Compute weighted total for this course
+                let weightedSum = 0, totalWeight = 0;
+                courseEntries.forEach(e => {
+                    const weight = w?.[e.category] ?? 0;
+                    weightedSum += (parseFloat(e.score) * weight) / 100;
+                    totalWeight += weight;
+                });
+                if (totalWeight > 0) {
+                    const total = (weightedSum / totalWeight) * 100;
+                    gradeRows.push({
+                        id:         `total-${cid}`,
+                        courseId:   cid,
+                        subject:    'Weighted Total',
+                        assessment: 'Final',
+                        category:   'total',
+                        score:      parseFloat(total.toFixed(2)),
+                        feedback:   '',
+                        date:       '',
+                        weight:     100,
+                        isTotal:    true,
+                    });
+                }
+            });
+
+            setGrades(gradeRows);
         } catch (err) {
             console.error('Failed to fetch grades:', err);
         } finally {
@@ -208,15 +268,10 @@ export const StudentProvider = ({ children }) => {
     }, [user?.id]);
 
     const calculateGPA = () => {
-        if (grades.length === 0) return '0.00';
-        const gradePoints = {
-            'A+': 4.0, 'A': 4.0, 'A-': 3.7,
-            'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-            'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-            'D+': 1.3, 'D': 1.0, 'F': 0.0,
-        };
-        const total = grades.reduce((sum, g) => sum + (gradePoints[g.grade] ?? 0), 0);
-        return (total / grades.length).toFixed(2);
+        const totals = grades.filter(g => g.isTotal);
+        if (totals.length === 0) return '0.00';
+        const sum = totals.reduce((acc, g) => acc + gradeToPoints(scoreToGrade(g.score)), 0);
+        return (sum / totals.length).toFixed(2);
     };
 
     const value = {

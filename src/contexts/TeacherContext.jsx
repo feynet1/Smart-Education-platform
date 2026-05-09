@@ -518,27 +518,136 @@ export const TeacherProvider = ({ children }) => {
     const [grades, setGrades] = useState({});          // { courseId: [grade rows] }
     const [gradesLoading, setGradesLoading] = useState({}); // { courseId: boolean }
 
-    const fetchGrades = async (courseId) => {
-        // Only show loading spinner on first load (no existing data)
+    // ── Course Weights ────────────────────────────────────────
+    const [courseWeights, setCourseWeights] = useState({}); // { courseId: weights }
+
+    const fetchWeights = async (courseId) => {
+        try {
+            const { data, error } = await supabase
+                .from('course_weights')
+                .select('*')
+                .eq('course_id', courseId)
+                .single();
+            if (error && error.code !== 'PGRST116') throw error;
+            if (data) {
+                setCourseWeights(prev => ({ ...prev, [courseId]: data }));
+            }
+            return data || null;
+        } catch (err) {
+            console.error('Failed to fetch weights:', err);
+            return null;
+        }
+    };
+
+    const saveWeights = async (courseId, weights) => {
+        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        try {
+            const row = { course_id: courseId, ...weights, updated_at: new Date().toISOString() };
+            const { data, error } = await supabase
+                .from('course_weights')
+                .upsert(row, { onConflict: 'course_id' })
+                .select()
+                .single();
+            if (error) throw error;
+            setCourseWeights(prev => ({ ...prev, [courseId]: data }));
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to save weights:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // ── Grade Entries ─────────────────────────────────────────
+    // { courseId: { studentId: { category: entry } } }
+    const [gradeEntries, setGradeEntries] = useState({});
+
+    const fetchGradeEntries = async (courseId) => {
         setGradesLoading(prev => ({ ...prev, [courseId]: true }));
         try {
             const { data, error } = await supabase
-                .from('grades')
+                .from('grade_entries')
                 .select('*')
-                .eq('course_id', courseId)
-                .order('created_at', { ascending: false });
+                .eq('course_id', courseId);
             if (error) throw error;
-            setGrades(prev => ({ ...prev, [courseId]: data || [] }));
-            return data || [];
+            // Build nested map: { studentId: { category: entry } }
+            const map = {};
+            (data || []).forEach(e => {
+                if (!map[e.student_id]) map[e.student_id] = { name: e.student_name };
+                map[e.student_id][e.category] = e;
+            });
+            setGradeEntries(prev => ({ ...prev, [courseId]: map }));
+            return map;
         } catch (err) {
-            console.error('Failed to fetch grades:', err);
-            return [];
+            console.error('Failed to fetch grade entries:', err);
+            return {};
         } finally {
             setGradesLoading(prev => ({ ...prev, [courseId]: false }));
         }
     };
 
-    // Upsert a single grade record — updates local state immediately, no refetch needed
+    const saveGradeEntry = async ({ courseId, studentId, studentName, category, score, feedback }) => {
+        if (!user?.id) return { success: false, error: 'Not authenticated' };
+        try {
+            const row = {
+                course_id:    courseId,
+                teacher_id:   user.id,
+                student_id:   studentId,
+                student_name: studentName,
+                category,
+                score:        parseFloat(score),
+                feedback:     feedback || null,
+                graded_at:    new Date().toISOString().split('T')[0],
+            };
+            const { data, error } = await supabase
+                .from('grade_entries')
+                .upsert(row, { onConflict: 'course_id,student_id,category' })
+                .select()
+                .single();
+            if (error) throw error;
+            // Update local cache
+            setGradeEntries(prev => {
+                const courseMap = { ...(prev[courseId] || {}) };
+                if (!courseMap[studentId]) courseMap[studentId] = { name: studentName };
+                courseMap[studentId] = { ...courseMap[studentId], [category]: data };
+                return { ...prev, [courseId]: courseMap };
+            });
+            return { success: true, entry: data };
+        } catch (err) {
+            console.error('Failed to save grade entry:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    const deleteGradeEntry = async (courseId, studentId, category) => {
+        // Optimistic remove
+        setGradeEntries(prev => {
+            const courseMap = { ...(prev[courseId] || {}) };
+            if (courseMap[studentId]) {
+                const studentMap = { ...courseMap[studentId] };
+                delete studentMap[category];
+                courseMap[studentId] = studentMap;
+            }
+            return { ...prev, [courseId]: courseMap };
+        });
+        try {
+            const { error } = await supabase
+                .from('grade_entries')
+                .delete()
+                .eq('course_id', courseId)
+                .eq('student_id', studentId)
+                .eq('category', category);
+            if (error) throw error;
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to delete grade entry:', err);
+            await fetchGradeEntries(courseId);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Keep old grades/saveGrade/deleteGrade for backward compat
+    const fetchGrades = fetchGradeEntries;
+
     const saveGrade = async (gradeData) => {
         if (!user?.id) return { success: false, error: 'Not authenticated' };
         try {
@@ -560,7 +669,6 @@ export const TeacherProvider = ({ children }) => {
                 .select()
                 .single();
             if (error) throw error;
-            // Update local cache without triggering a full reload
             setGrades(prev => {
                 const existing = prev[gradeData.courseId] || [];
                 const idx = existing.findIndex(g => g.id === data.id);
@@ -578,7 +686,6 @@ export const TeacherProvider = ({ children }) => {
     };
 
     const deleteGrade = async (courseId, gradeId) => {
-        // Optimistic remove — no loading state needed
         setGrades(prev => ({
             ...prev,
             [courseId]: (prev[courseId] || []).filter(g => g.id !== gradeId),
@@ -589,7 +696,7 @@ export const TeacherProvider = ({ children }) => {
             return { success: true };
         } catch (err) {
             console.error('Failed to delete grade:', err);
-            await fetchGrades(courseId); // rollback on error
+            await fetchGradeEntries(courseId);
             return { success: false, error: err.message };
         }
     };
@@ -602,7 +709,12 @@ export const TeacherProvider = ({ children }) => {
         activeSession, sessionAttendance,
         fetchActiveSession, startSession, endSession, updateAttendanceStatus,
         notes, notesLoading, uploadProgress, fetchNotes, addNote, deleteNote, getNoteUrl,
-        grades, gradesLoading, fetchGrades, saveGrade, deleteGrade,
+        // Weighted grade entries (new system)
+        gradeEntries, gradesLoading, courseWeights,
+        fetchGradeEntries, saveGradeEntry, deleteGradeEntry,
+        fetchWeights, saveWeights,
+        // Legacy grade functions (kept for backward compat)
+        grades, fetchGrades, saveGrade, deleteGrade,
         teacherLogs, deleteTeacherLog,
     };
 

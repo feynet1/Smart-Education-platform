@@ -35,3 +35,46 @@ export const gradeColor = (grade) => {
     if (grade.startsWith('C')) return 'warning';
     return 'error';
 };
+
+/** Default weights for the 6 categories (must sum to 100) */
+export const DEFAULT_WEIGHTS = {
+    homework:   10,
+    assignment: 15,
+    quiz:       10,
+    midterm:    25,
+    project:    15,
+    final_exam: 25,
+};
+
+/** Human-readable labels for each category */
+export const CATEGORY_LABELS = {
+    homework:   'Homework',
+    assignment: 'Assignment',
+    quiz:       'Quiz',
+    midterm:    'Midterm',
+    project:    'Project',
+    final_exam: 'Final Exam',
+};
+
+export const CATEGORIES = Object.keys(DEFAULT_WEIGHTS);
+
+/**
+ * Calculate weighted total score from a map of { category: score }
+ * and a weights object { category: weight }.
+ * Returns null if no entries exist.
+ */
+export const calcWeightedTotal = (entries, weights) => {
+    let weightedSum = 0;
+    let totalWeight = 0;
+    CATEGORIES.forEach(cat => {
+        const score = entries[cat];
+        const weight = weights?.[cat] ?? DEFAULT_WEIGHTS[cat];
+        if (score != null && score !== '') {
+            weightedSum += (parseFloat(score) * weight) / 100;
+            totalWeight += weight;
+        }
+    });
+    if (totalWeight === 0) return null;
+    // Scale to 100 based on entered categories only
+    return (weightedSum / totalWeight) * 100;
+};
