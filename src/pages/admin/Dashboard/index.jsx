@@ -43,7 +43,7 @@ const StatCard = ({ title, value, icon, color, subtitle }) => (
 );
 
 const AdminDashboard = () => {
-    const { stats, users, systemLogs, events } = useAdmin();
+    const { stats, users, systemLogs, events, attendance, grades } = useAdmin();
 
     // Get recent logs (last 5)
     const recentLogs = systemLogs.slice(0, 5);
@@ -57,6 +57,24 @@ const AdminDashboard = () => {
     // Active students and teachers separately
     const activeStudents = users.filter(u => u.role === 'Student' && u.status === 'active').length;
     const activeTeachers = users.filter(u => u.role === 'Teacher' && u.status === 'active').length;
+
+    // ── Real quick stats ──────────────────────────────────────
+    // Attendance rate: (Present + Late) / total records
+    const attendanceRate = attendance.length > 0
+        ? Math.round(
+            (attendance.filter(r => r.status === 'Present' || r.status === 'Late').length
+            / attendance.length) * 100
+          )
+        : null;
+
+    // Average GPA from weighted grade totals
+    const avgGPA = grades.length > 0
+        ? (grades.reduce((sum, g) => sum + g.score, 0) / grades.length / 25).toFixed(2)
+        : null;
+    // grades.score is out of 100; GPA scale is 0–4, so divide by 25
+
+    // Total enrollments count
+    const totalEnrollments = users.filter(u => u.role === 'Student').length;
 
     return (
         <Box>
@@ -202,26 +220,33 @@ const AdminDashboard = () => {
                                             <FactCheck color="success" fontSize="small" />
                                             <Typography variant="body2">Attendance Rate</Typography>
                                         </Box>
-                                        <Typography variant="body2" fontWeight="bold" color="success.main">
-                                            87%
+                                        <Typography variant="body2" fontWeight="bold"
+                                            color={
+                                                attendanceRate == null ? 'text.disabled'
+                                                : attendanceRate >= 75 ? 'success.main'
+                                                : attendanceRate >= 50 ? 'warning.main' : 'error.main'
+                                            }>
+                                            {attendanceRate != null ? `${attendanceRate}%` : '—'}
                                         </Typography>
                                     </Box>
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
                                         <Box display="flex" alignItems="center" gap={1}>
                                             <Grade color="primary" fontSize="small" />
-                                            <Typography variant="body2">Average GPA</Typography>
+                                            <Typography variant="body2">Average Score</Typography>
                                         </Box>
                                         <Typography variant="body2" fontWeight="bold" color="primary.main">
-                                            3.45
+                                            {avgGPA != null
+                                                ? `${(grades.reduce((s, g) => s + g.score, 0) / grades.length).toFixed(1)}%`
+                                                : '—'}
                                         </Typography>
                                     </Box>
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
                                         <Box display="flex" alignItems="center" gap={1}>
                                             <TrendingUp color="warning" fontSize="small" />
-                                            <Typography variant="body2">Growth Rate</Typography>
+                                            <Typography variant="body2">Total Students</Typography>
                                         </Box>
                                         <Typography variant="body2" fontWeight="bold" color="warning.main">
-                                            +12%
+                                            {totalEnrollments}
                                         </Typography>
                                     </Box>
                                 </Box>
