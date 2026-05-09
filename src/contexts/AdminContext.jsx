@@ -34,12 +34,21 @@ export const AdminProvider = ({ children }) => {
     const fetchCourses = async () => {
         setCoursesLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('courses')
-                .select('*, profiles(name)')
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            setCourses((data || []).map(c => ({
+            // Fetch courses and teacher profiles in parallel
+            const [{ data: coursesData, error: coursesErr }, { data: profilesData, error: profilesErr }] =
+                await Promise.all([
+                    supabase.from('courses').select('*').order('created_at', { ascending: false }),
+                    supabase.from('profiles').select('id, name').eq('role', 'Teacher'),
+                ]);
+
+            if (coursesErr) throw coursesErr;
+            if (profilesErr) throw profilesErr;
+
+            // Build a quick lookup map: teacherId → name
+            const teacherMap = {};
+            (profilesData || []).forEach(p => { teacherMap[p.id] = p.name || '—'; });
+
+            setCourses((coursesData || []).map(c => ({
                 id: c.id,
                 name: c.name,
                 subject: c.subject,
@@ -47,9 +56,9 @@ export const AdminProvider = ({ children }) => {
                 description: c.description,
                 joinCode: c.join_code,
                 teacherId: c.teacher_id,
-                teacherName: c.profiles?.name || '—',
+                teacherName: teacherMap[c.teacher_id] || '—',
                 createdAt: c.created_at,
-                students: 0, // enrollment count added separately if needed
+                students: 0,
             })));
         } catch (err) {
             console.error('Failed to fetch courses:', err);
