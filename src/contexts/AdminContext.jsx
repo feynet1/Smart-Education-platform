@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { scoreToGrade } from '../utils/gradeUtils';
 
 const AdminContext = createContext();
 
@@ -20,30 +21,68 @@ export const AdminProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : [];
     };
 
-    // ── Grades (Supabase) ─────────────────────────────────────
+    // ── Grades (Supabase grade_entries) ──────────────────────
     const [adminGrades, setAdminGrades] = useState([]);
     const [adminGradesLoading, setAdminGradesLoading] = useState(false);
 
     const fetchAdminGrades = async () => {
         setAdminGradesLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('grades')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(500);
-            if (error) throw error;
-            setAdminGrades((data || []).map(g => ({
-                id: g.id,
-                courseId: g.course_id,
-                subject: g.subject,
-                assessment: g.assessment,
-                score: parseFloat(g.score),
-                grade: g.grade,
-                feedback: g.feedback || '',
-                date: g.graded_at,
-                studentName: g.student_name,
-            })));
+            // Fetch all grade entries + course weights in parallel
+            const [{ data: entries, error: entriesErr }, { data: weightsData, error: weightsErr }] =
+                await Promise.all([
+                    supabase.from('grade_entries').select('*').order('created_at', { ascending: false }),
+                    supabase.from('course_weights').select('*'),
+                ]);
+            if (entriesErr) throw entriesErr;
+            if (weightsErr) throw weightsErr;
+
+            // Build weights map: courseId → weights
+            const weightsMap = {};
+            (weightsData || []).forEach(w => { weightsMap[w.course_id] = w; });
+
+            // Group entries by (course_id, student_id) to compute weighted totals
+            const studentCourseMap = {};
+            (entries || []).forEach(e => {
+                const key = `${e.course_id}__${e.student_id}`;
+                if (!studentCourseMap[key]) {
+                    studentCourseMap[key] = {
+                        courseId: e.course_id,
+                        studentId: e.student_id,
+                        studentName: e.student_name,
+                        entries: {},
+                        latestDate: e.graded_at,
+                    };
+                }
+                studentCourseMap[key].entries[e.category] = parseFloat(e.score);
+                if (e.graded_at > studentCourseMap[key].latestDate) {
+                    studentCourseMap[key].latestDate = e.graded_at;
+                }
+            });
+
+            // Compute weighted total for each student-course pair
+            const gradeRows = Object.values(studentCourseMap).map(sc => {
+                const w = weightsMap[sc.courseId];
+                let weightedSum = 0, totalWeight = 0;
+                Object.entries(sc.entries).forEach(([cat, score]) => {
+                    const weight = w?.[cat] ?? 0;
+                    weightedSum += (score * weight) / 100;
+                    totalWeight += weight;
+                });
+                const total = totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 0;
+                const letter = scoreToGrade(total);
+                return {
+                    id:          `${sc.courseId}-${sc.studentId}`,
+                    courseId:    sc.courseId,
+                    studentName: sc.studentName,
+                    entries:     sc.entries,
+                    score:       parseFloat(total.toFixed(2)),
+                    grade:       letter,
+                    date:        sc.latestDate,
+                };
+            }).sort((a, b) => b.score - a.score);
+
+            setAdminGrades(gradeRows);
         } catch (err) {
             console.error('Failed to fetch grades:', err);
         } finally {

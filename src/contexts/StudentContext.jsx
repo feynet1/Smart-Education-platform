@@ -230,15 +230,15 @@ export const StudentProvider = ({ children }) => {
                     });
                 });
 
-                // Compute weighted total for this course
-                let weightedSum = 0, totalWeight = 0;
+                // Compute weighted total for this course (denominator = 100, not just entered weights)
+                let weightedSum = 0;
                 courseEntries.forEach(e => {
                     const weight = w?.[e.category] ?? 0;
                     weightedSum += (parseFloat(e.score) * weight) / 100;
-                    totalWeight += weight;
                 });
-                if (totalWeight > 0) {
-                    const total = (weightedSum / totalWeight) * 100;
+                // weightedSum is already the weighted total out of 100
+                if (weightedSum > 0) {
+                    const total = weightedSum;
                     gradeRows.push({
                         id:         `total-${cid}`,
                         courseId:   cid,
