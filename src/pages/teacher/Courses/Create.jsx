@@ -46,11 +46,19 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
                             <TextField select fullWidth label="Grade Level" defaultValue=""
                                 {...register('grade', { required: true })}
                                 error={!!errors.grade}>
+                                <MenuItem value="1">Grade 1</MenuItem>
+                                <MenuItem value="2">Grade 2</MenuItem>
+                                <MenuItem value="3">Grade 3</MenuItem>
+                                <MenuItem value="4">Grade 4</MenuItem>
+                                <MenuItem value="5">Grade 5</MenuItem>
+                                <MenuItem value="6">Grade 6</MenuItem>
+                                <MenuItem value="7">Grade 7</MenuItem>
+                                <MenuItem value="8">Grade 8</MenuItem>
                                 <MenuItem value="9">Grade 9</MenuItem>
                                 <MenuItem value="10">Grade 10</MenuItem>
                                 <MenuItem value="11">Grade 11</MenuItem>
                                 <MenuItem value="12">Grade 12</MenuItem>
-                                <MenuItem value="Uni">University</MenuItem>
+                                <MenuItem value="University">University</MenuItem>
                             </TextField>
                         </Grid>
                         <Grid item xs={12}>
