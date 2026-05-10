@@ -1,40 +1,36 @@
-import { useState } from 'react';
 import {
-    Box, Typography, Paper, Button, Chip, MenuItem,
-    Select, FormControl, InputLabel, CircularProgress,
-    Table, TableBody, TableCell, TableContainer, TableHead,
-    TableRow, LinearProgress,
+    Box, Typography, Paper, Button, Chip, CircularProgress,
+    LinearProgress, Accordion, AccordionSummary, AccordionDetails,
+    Table, TableBody, TableCell, TableRow,
 } from '@mui/material';
-import { Download } from '@mui/icons-material';
+import { Download, ExpandMore } from '@mui/icons-material';
 import { useStudent } from '../../../contexts/StudentContext';
 import { gradeColor, scoreToGrade, CATEGORY_LABELS } from '../../../utils/gradeUtils';
 
 const StudentGrades = () => {
     const { grades, gradesLoading, enrolledCourses, gpa } = useStudent();
-    const [filterCourse, setFilterCourse] = useState('all');
 
     // Separate totals from category rows
     const categoryRows = grades.filter(g => !g.isTotal);
     const totalRows    = grades.filter(g => g.isTotal);
 
-    const filteredRows = filterCourse === 'all'
-        ? categoryRows
-        : categoryRows.filter(g => g.courseId === filterCourse);
+    // Group category rows by courseId
+    const byCourse = categoryRows.reduce((acc, row) => {
+        if (!acc[row.courseId]) acc[row.courseId] = [];
+        acc[row.courseId].push(row);
+        return acc;
+    }, {});
 
-    const filteredTotals = filterCourse === 'all'
-        ? totalRows
-        : totalRows.filter(g => g.courseId === filterCourse);
-
-    // Average score across all category entries
+    // Average score across all category entries (percentage)
     const avgScore = categoryRows.length > 0
-        ? (categoryRows.reduce((s, g) => s + g.score, 0) / categoryRows.length).toFixed(1)
+        ? (categoryRows.reduce((s, g) => s + (g.percentage ?? g.score), 0) / categoryRows.length).toFixed(1)
         : null;
 
     const handleExport = () => {
-        const headers = ['Course', 'Category', 'Score', 'Weight', 'Feedback', 'Date'];
-        const rows = filteredRows.map(r => {
+        const headers = ['Course', 'Category', 'Score', 'Max', 'Percentage', 'Weight', 'Feedback', 'Date'];
+        const rows = categoryRows.map(r => {
             const course = enrolledCourses.find(c => c.id === r.courseId);
-            return `"${course?.name || r.courseId}","${CATEGORY_LABELS[r.category] || r.category}",${r.score},${r.weight}%,"${r.feedback}",${r.date}`;
+            return `"${course?.name || r.courseId}","${CATEGORY_LABELS[r.category] || r.category}",${r.score},${r.maxMark},${r.percentage}%,${r.weight}%,"${r.feedback}",${r.date}`;
         });
         const csv = [headers.join(','), ...rows].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -46,6 +42,7 @@ const StudentGrades = () => {
 
     return (
         <Box>
+            {/* Header */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold">Grades & Performance</Typography>
@@ -63,9 +60,9 @@ const StudentGrades = () => {
             <Box display="flex" gap={3} mb={4} flexWrap="wrap">
                 <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 140 }}>
                     <Typography variant="h4" fontWeight="bold" color="primary.main">
-                        {gradesLoading ? '…' : categoryRows.length}
+                        {gradesLoading ? '…' : totalRows.length}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">Assessments</Typography>
+                    <Typography variant="body2" color="text.secondary">Courses Graded</Typography>
                 </Paper>
                 <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 140 }}>
                     <Typography variant="h4" fontWeight="bold" color="success.main">
@@ -81,136 +78,165 @@ const StudentGrades = () => {
                 </Paper>
             </Box>
 
-            {/* Course totals summary */}
-            {filteredTotals.length > 0 && (
-                <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" fontWeight="bold" mb={2}>Course Totals</Typography>
-                    <Box display="flex" gap={2} flexWrap="wrap">
-                        {filteredTotals.map(t => {
-                            const course = enrolledCourses.find(c => c.id === t.courseId);
-                            const letter = t.isComplete ? scoreToGrade(t.score) : null;
-                            return (
-                                <Box key={t.id} sx={{
-                                    p: 2, borderRadius: 2, border: '1px solid #e0e0e0',
-                                    minWidth: 180, flex: '1 1 180px',
-                                }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                        {course?.name || 'Course'}
-                                    </Typography>
-                                    <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                                        <Typography variant="h5" fontWeight="bold">
-                                            {t.score.toFixed(1)}%
+            {/* Per-course accordion cards */}
+            {gradesLoading ? (
+                <Box display="flex" justifyContent="center" py={8}>
+                    <CircularProgress />
+                </Box>
+            ) : totalRows.length === 0 && categoryRows.length === 0 ? (
+                <Paper elevation={2} sx={{ p: 6, borderRadius: 2, textAlign: 'center' }}>
+                    <Typography color="text.secondary">
+                        No grades recorded yet. Your teacher will enter scores here.
+                    </Typography>
+                </Paper>
+            ) : (
+                <Box display="flex" flexDirection="column" gap={2}>
+                    {/* Courses with totals */}
+                    {totalRows.map(total => {
+                        const course = enrolledCourses.find(c => c.id === total.courseId);
+                        const letter = total.isComplete ? scoreToGrade(total.score) : null;
+                        const catRows = byCourse[total.courseId] || [];
+
+                        return (
+                            <Accordion key={total.id} elevation={2}
+                                sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
+                                <AccordionSummary expandIcon={<ExpandMore />}
+                                    sx={{ borderRadius: 2 }}>
+                                    <Box display="flex" alignItems="center" gap={2} width="100%" pr={2}>
+                                        {/* Course name */}
+                                        <Typography variant="h6" fontWeight="bold" sx={{ minWidth: 120 }}>
+                                            {course?.name || 'Course'}
                                         </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                                            {course?.subject}
+                                        </Typography>
+                                        {/* Total score */}
+                                        <Box display="flex" alignItems="center" gap={1.5} mr={2}>
+                                            <Box sx={{ width: 120 }}>
+                                                <LinearProgress variant="determinate"
+                                                    value={total.score}
+                                                    sx={{ height: 8, borderRadius: 1 }}
+                                                    color={letter ? gradeColor(letter) : 'info'} />
+                                            </Box>
+                                            <Typography variant="body1" fontWeight="bold">
+                                                {total.score.toFixed(1)}%
+                                            </Typography>
+                                        </Box>
+                                        {/* Grade chip */}
                                         {letter
-                                            ? <Chip label={letter} size="small" color={gradeColor(letter)} />
-                                            : <Chip label="Partial" size="small" variant="outlined" color="info" />
+                                            ? <Chip label={letter} color={gradeColor(letter)} size="small" />
+                                            : <Chip label={`${total.enteredWeight}% entered`} size="small" variant="outlined" color="info" />
                                         }
                                     </Box>
-                                    {!t.isComplete && (
-                                        <Typography variant="caption" color="text.disabled">
-                                            {t.enteredWeight}% of grade entered
-                                        </Typography>
-                                    )}
-                                    <LinearProgress variant="determinate" value={t.score}
-                                        sx={{ height: 6, borderRadius: 1, mt: 0.5 }}
-                                        color={letter ? gradeColor(letter) : 'info'} />
-                                </Box>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ pt: 0 }}>
+                                    <Table size="small">
+                                        <TableBody>
+                                            {catRows.map(row => {
+                                                const pct = row.percentage ?? row.score;
+                                                const rowLetter = scoreToGrade(pct);
+                                                return (
+                                                    <TableRow key={row.id} hover>
+                                                        <TableCell sx={{ width: 130 }}>
+                                                            <Chip label={CATEGORY_LABELS[row.category] || row.category}
+                                                                size="small" variant="outlined" />
+                                                        </TableCell>
+                                                        <TableCell sx={{ width: 100 }}>
+                                                            <Typography variant="body2" fontWeight="bold">
+                                                                {row.score}/{row.maxMark}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {pct}%
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell sx={{ width: 60 }}>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {row.weight}% weight
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell sx={{ width: 60 }}>
+                                                            <Chip label={rowLetter} size="small"
+                                                                color={gradeColor(rowLetter)} />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {row.feedback || '—'}
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell sx={{ width: 90 }}>
+                                                            <Typography variant="caption" color="text.disabled">
+                                                                {row.date}
+                                                            </Typography>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionDetails>
+                            </Accordion>
+                        );
+                    })}
+
+                    {/* Courses with partial grades (no total yet) */}
+                    {Object.entries(byCourse)
+                        .filter(([cid]) => !totalRows.find(t => t.courseId === cid))
+                        .map(([cid, catRows]) => {
+                            const course = enrolledCourses.find(c => c.id === cid);
+                            return (
+                                <Accordion key={cid} elevation={2}
+                                    sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
+                                    <AccordionSummary expandIcon={<ExpandMore />}>
+                                        <Box display="flex" alignItems="center" gap={2} width="100%" pr={2}>
+                                            <Typography variant="h6" fontWeight="bold" sx={{ minWidth: 120 }}>
+                                                {course?.name || 'Course'}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                                                {course?.subject}
+                                            </Typography>
+                                            <Chip label="Partial grades" size="small" variant="outlined" color="info" />
+                                        </Box>
+                                    </AccordionSummary>
+                                    <AccordionDetails sx={{ pt: 0 }}>
+                                        <Table size="small">
+                                            <TableBody>
+                                                {catRows.map(row => {
+                                                    const pct = row.percentage ?? row.score;
+                                                    return (
+                                                        <TableRow key={row.id} hover>
+                                                            <TableCell sx={{ width: 130 }}>
+                                                                <Chip label={CATEGORY_LABELS[row.category] || row.category}
+                                                                    size="small" variant="outlined" />
+                                                            </TableCell>
+                                                            <TableCell sx={{ width: 100 }}>
+                                                                <Typography variant="body2" fontWeight="bold">
+                                                                    {row.score}/{row.maxMark}
+                                                                </Typography>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    {pct}%
+                                                                </Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ width: 60 }}>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    {row.weight}% weight
+                                                                </Typography>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    {row.feedback || '—'}
+                                                                </Typography>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </AccordionDetails>
+                                </Accordion>
                             );
                         })}
-                    </Box>
-                </Paper>
-            )}
-
-            {/* Detailed breakdown */}
-            <Paper elevation={2} sx={{ p: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6" fontWeight="bold">Assessment Breakdown</Typography>
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Filter by Course</InputLabel>
-                        <Select value={filterCourse} label="Filter by Course"
-                            onChange={e => setFilterCourse(e.target.value)}>
-                            <MenuItem value="all">All Courses</MenuItem>
-                            {enrolledCourses.map(c => (
-                                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
                 </Box>
-
-                {gradesLoading ? (
-                    <Box display="flex" justifyContent="center" py={6}>
-                        <CircularProgress />
-                    </Box>
-                ) : filteredRows.length === 0 ? (
-                    <Box textAlign="center" py={6}>
-                        <Typography color="text.secondary">
-                            No grades recorded yet. Your teacher will enter scores here.
-                        </Typography>
-                    </Box>
-                ) : (
-                    <TableContainer>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                                    <TableCell><strong>Course</strong></TableCell>
-                                    <TableCell><strong>Category</strong></TableCell>
-                                    <TableCell align="center"><strong>Score</strong></TableCell>
-                                    <TableCell align="center"><strong>Weight</strong></TableCell>
-                                    <TableCell align="center"><strong>Grade</strong></TableCell>
-                                    <TableCell><strong>Feedback</strong></TableCell>
-                                    <TableCell><strong>Date</strong></TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredRows.map(row => {
-                                    const course = enrolledCourses.find(c => c.id === row.courseId);
-                                    const letter = scoreToGrade(row.percentage ?? row.score);
-                                    return (
-                                        <TableRow key={row.id} hover>
-                                            <TableCell>
-                                                <Typography variant="body2">
-                                                    {course?.name || '—'}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={CATEGORY_LABELS[row.category] || row.category}
-                                                    size="small" variant="outlined" />
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <Typography variant="body2" fontWeight="bold">
-                                                    {row.score}/{row.maxMark}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {row.percentage}%
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {row.weight}%
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <Chip label={letter} size="small" color={gradeColor(letter)} />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {row.feedback || '—'}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {row.date}
-                                                </Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                )}
-            </Paper>
+            )}
         </Box>
     );
 };
