@@ -23,6 +23,7 @@ import StudentGrades from './pages/student/Grades';
 import StudentEvents from './pages/student/Events';
 import StudentProfile from './pages/student/Profile';
 import StudentAttendance from './pages/student/Attendance';
+import StudentAssignments from './pages/student/Assignments';
 
 // Teacher Pages
 import TeacherDashboardHome from './pages/teacher/Dashboard';
@@ -78,6 +79,7 @@ function App() {
               <Route path="grades" element={<StudentGrades />} />
               <Route path="events" element={<StudentEvents />} />
               <Route path="attendance" element={<StudentAttendance />} />
+              <Route path="assignments" element={<StudentAssignments />} />
               <Route path="profile" element={<StudentProfile />} />
             </Route>
 

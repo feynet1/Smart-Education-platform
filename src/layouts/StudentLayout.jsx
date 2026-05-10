@@ -36,6 +36,7 @@ import {
     Event as EventIcon,
     Person as PersonIcon,
     FactCheck as AttendanceIcon,
+    Assignment as AssignmentIcon,
     Notifications as NotificationsIcon,
     AccountCircle,
     Add as AddIcon
@@ -86,12 +87,13 @@ const StudentLayout = () => {
     };
 
     const menuItems = [
-        { text: 'Dashboard',  icon: <DashboardIcon />,  path: '/student/dashboard' },
-        { text: 'My Courses', icon: <SchoolIcon />,     path: '/student/courses' },
-        { text: 'Grades',     icon: <GradeIcon />,      path: '/student/grades' },
-        { text: 'Attendance', icon: <AttendanceIcon />, path: '/student/attendance' },
-        { text: 'Events',     icon: <EventIcon />,      path: '/student/events' },
-        { text: 'Profile',    icon: <PersonIcon />,     path: '/student/profile' },
+        { text: 'Dashboard',   icon: <DashboardIcon />,   path: '/student/dashboard' },
+        { text: 'My Courses',  icon: <SchoolIcon />,      path: '/student/courses' },
+        { text: 'Assignments', icon: <AssignmentIcon />,  path: '/student/assignments' },
+        { text: 'Grades',      icon: <GradeIcon />,       path: '/student/grades' },
+        { text: 'Attendance',  icon: <AttendanceIcon />,  path: '/student/attendance' },
+        { text: 'Events',      icon: <EventIcon />,       path: '/student/events' },
+        { text: 'Profile',     icon: <PersonIcon />,      path: '/student/profile' },
     ];
 
     const drawer = (
