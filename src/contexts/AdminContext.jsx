@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { scoreToGrade } from '../utils/gradeUtils';
+import { scoreToGrade, DEFAULT_WEIGHTS, DEFAULT_MAX_MARKS } from '../utils/gradeUtils';
 
 const AdminContext = createContext();
 
@@ -55,21 +55,21 @@ export const AdminProvider = ({ children }) => {
             if (entriesErr) throw entriesErr;
             if (weightsErr) throw weightsErr;
 
-            // Build weights map: courseId → weights
+            // Build weights map: courseId → weights row
             const weightsMap = {};
             (weightsData || []).forEach(w => { weightsMap[w.course_id] = w; });
 
-            // Group entries by (course_id, student_id) to compute weighted totals
+            // Group entries by (course_id, student_id)
             const studentCourseMap = {};
             (entries || []).forEach(e => {
                 const key = `${e.course_id}__${e.student_id}`;
                 if (!studentCourseMap[key]) {
                     studentCourseMap[key] = {
-                        courseId: e.course_id,
-                        studentId: e.student_id,
+                        courseId:    e.course_id,
+                        studentId:   e.student_id,
                         studentName: e.student_name,
-                        entries: {},
-                        latestDate: e.graded_at,
+                        entries:     {},
+                        latestDate:  e.graded_at,
                     };
                 }
                 studentCourseMap[key].entries[e.category] = parseFloat(e.score);
@@ -78,25 +78,46 @@ export const AdminProvider = ({ children }) => {
                 }
             });
 
-            // Compute weighted total for each student-course pair
+            // Compute weighted total using raw marks + max marks
             const gradeRows = Object.values(studentCourseMap).map(sc => {
                 const w = weightsMap[sc.courseId];
-                let weightedSum = 0, totalWeight = 0;
-                Object.entries(sc.entries).forEach(([cat, score]) => {
-                    const weight = w?.[cat] ?? 0;
-                    weightedSum += (score * weight) / 100;
-                    totalWeight += weight;
+
+                // Max marks per category (from course_weights or defaults)
+                const maxMarks = {
+                    homework:   w?.hw_max     ?? DEFAULT_MAX_MARKS.homework,
+                    assignment: w?.assign_max ?? DEFAULT_MAX_MARKS.assignment,
+                    quiz:       w?.quiz_max   ?? DEFAULT_MAX_MARKS.quiz,
+                    midterm:    w?.mid_max    ?? DEFAULT_MAX_MARKS.midterm,
+                    project:    w?.proj_max   ?? DEFAULT_MAX_MARKS.project,
+                    final_exam: w?.final_max  ?? DEFAULT_MAX_MARKS.final_exam,
+                };
+
+                // Weighted contribution: (raw/max * 100) * weight / 100
+                let weightedSum = 0;
+                Object.entries(sc.entries).forEach(([cat, raw]) => {
+                    const weight = w?.[cat] ?? DEFAULT_WEIGHTS[cat] ?? 0;
+                    const max    = maxMarks[cat] ?? 1;
+                    const pct    = Math.min((raw / max) * 100, 100);
+                    weightedSum += (pct * weight) / 100;
                 });
-                const total = totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 0;
+
+                const total  = Math.min(parseFloat(weightedSum.toFixed(2)), 100);
                 const letter = scoreToGrade(total);
+
+                // Build display entries: show raw/max for each category
+                const displayEntries = {};
+                Object.entries(sc.entries).forEach(([cat, raw]) => {
+                    displayEntries[cat] = { raw, max: maxMarks[cat] };
+                });
+
                 return {
-                    id:          `${sc.courseId}-${sc.studentId}`,
-                    courseId:    sc.courseId,
-                    studentName: sc.studentName,
-                    entries:     sc.entries,
-                    score:       parseFloat(total.toFixed(2)),
-                    grade:       letter,
-                    date:        sc.latestDate,
+                    id:             `${sc.courseId}-${sc.studentId}`,
+                    courseId:       sc.courseId,
+                    studentName:    sc.studentName,
+                    entries:        displayEntries,
+                    score:          total,
+                    grade:          letter,
+                    date:           sc.latestDate,
                 };
             }).sort((a, b) => b.score - a.score);
 

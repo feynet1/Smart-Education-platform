@@ -160,7 +160,9 @@ const GradesAnalytics = () => {
                                                 <TableCell key={cat} align="center">
                                                     <Typography variant="caption"
                                                         color={g.entries?.[cat] != null ? 'text.primary' : 'text.disabled'}>
-                                                        {g.entries?.[cat] != null ? `${g.entries[cat]}%` : '—'}
+                                                        {g.entries?.[cat] != null
+                                                            ? `${g.entries[cat].raw}/${g.entries[cat].max}`
+                                                            : '—'}
                                                     </Typography>
                                                 </TableCell>
                                             ))}
