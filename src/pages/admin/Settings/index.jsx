@@ -8,8 +8,9 @@ import {
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     CircularProgress,
 } from '@mui/material';
-import { Save, Restore, School, Security, Notifications, Warning } from '@mui/icons-material';
+import { Save, Restore, School, Security, Notifications, Warning, Lock } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
+import ChangePasswordDialog from '../../../components/ChangePasswordDialog';
 
 // ── Confirmation dialog ───────────────────────────────────────
 const ConfirmDialog = ({ open, title, description, confirmLabel, confirmColor, onConfirm, onCancel, loading }) => (
@@ -41,6 +42,7 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
     const [formData, setFormData] = useState(initialSettings);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [dialog, setDialog] = useState({ type: null, loading: false });
+    const [pwDialog, setPwDialog] = useState(false);
 
     const showSnack = (message, severity = 'success') =>
         setSnackbar({ open: true, message, severity });
@@ -193,8 +195,29 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
                     </Card>
                 </Grid>
 
-                {/* Notification Settings */}
-                <Grid item size={{ xs: 12 }}>
+                {/* Admin Account Security */}
+                <Grid item size={{ xs: 12, md: 6 }}>
+                    <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }}>
+                        <CardContent>
+                            <Box display="flex" alignItems="center" gap={1} mb={3}>
+                                <Lock color="primary" />
+                                <Typography variant="h6" fontWeight="bold">Admin Account</Typography>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" mb={2}>
+                                Manage your admin account security settings.
+                            </Typography>
+                            <Button
+                                variant="outlined"
+                                startIcon={<Lock />}
+                                onClick={() => setPwDialog(true)}
+                                fullWidth>
+                                Change Password
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Notification Settings */}                <Grid item size={{ xs: 12 }}>
                     <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
                         <CardContent>
                             <Box display="flex" alignItems="center" gap={1} mb={3}>
@@ -259,9 +282,14 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
                 </Grid>
             </Grid>
 
+            <ChangePasswordDialog
+                open={pwDialog}
+                onClose={() => setPwDialog(false)}
+                onSuccess={msg => showSnack(msg)}
+            />
+
             {/* Snackbar */}
-            <Snackbar
-                open={snackbar.open}
+            <Snackbar                open={snackbar.open}
                 autoHideDuration={4000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}
             >

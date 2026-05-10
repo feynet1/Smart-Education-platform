@@ -4,9 +4,10 @@ import {
     Chip, List, ListItem, ListItemAvatar, ListItemText,
     Snackbar, Alert, CircularProgress, Divider,
 } from '@mui/material';
-import { Save, School, EmojiEvents, CheckCircle, Edit } from '@mui/icons-material';
+import { Save, School, EmojiEvents, CheckCircle, Edit, Lock } from '@mui/icons-material';
 import useAuth from '../../../hooks/useAuth';
 import { useStudent } from '../../../contexts/StudentContext';
+import ChangePasswordDialog from '../../../components/ChangePasswordDialog';
 
 const Profile = () => {
     const { profile, updateProfile } = useAuth();
@@ -17,6 +18,7 @@ const Profile = () => {
         profile?.phone && profile.phone !== '—' ? profile.phone : ''
     );
     const [saving,  setSaving]  = useState(false);
+    const [pwDialog, setPwDialog] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const showSnack = (message, severity = 'success') =>
@@ -157,7 +159,13 @@ const Profile = () => {
                             </Grid>
                         </Grid>
 
-                        <Box mt={3} display="flex" justifyContent="flex-end">
+                        <Box mt={3} display="flex" justifyContent="space-between" alignItems="center">
+                            <Button
+                                variant="outlined"
+                                startIcon={<Lock />}
+                                onClick={() => setPwDialog(true)}>
+                                Change Password
+                            </Button>
                             <Button
                                 variant="contained"
                                 size="large"
@@ -239,6 +247,12 @@ const Profile = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <ChangePasswordDialog
+                open={pwDialog}
+                onClose={() => setPwDialog(false)}
+                onSuccess={msg => showSnack(msg)}
+            />
 
             <Snackbar open={snackbar.open} autoHideDuration={4000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
