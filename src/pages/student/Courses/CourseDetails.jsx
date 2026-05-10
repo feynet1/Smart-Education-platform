@@ -5,7 +5,6 @@ import {
     ListItemText, IconButton, Chip, Button, Tabs, Tab,
     CircularProgress, Checkbox, Tooltip,
 } from '@mui/material';
-import { QRCodeSVG } from 'qrcode.react';
 import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon } from '@mui/icons-material';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 import { useStudent } from '../../../contexts/StudentContext';
@@ -23,7 +22,7 @@ const getDueDateColor = (dueDate) => {
 
 const CourseDetails = () => {
     const { id } = useParams();
-    const { enrolledCourses } = useStudent();
+    const { enrolledCourses, activeSessions, joinSession } = useStudent();
     const { user } = useAuth();
     const course = enrolledCourses.find(c => c.id === id);
 
@@ -33,6 +32,7 @@ const CourseDetails = () => {
     const [notes, setNotes] = useState([]);
     const [loadingAssignments, setLoadingAssignments] = useState(false);
     const [loadingNotes, setLoadingNotes] = useState(false);
+    const [joinMsg, setJoinMsg] = useState(null);
 
     // Fetch assignments + student completions
     useEffect(() => {
@@ -238,20 +238,32 @@ const CourseDetails = () => {
                     </Paper>
                 </Grid>
 
-                {/* Right — Join Code */}
+                {/* Right — Assignment progress + live session */}
                 <Grid item xs={12} md={4}>
-                    <Paper elevation={2} sx={{ p: 3, textAlign: 'center', mb: 2 }}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>Join Code</Typography>
-                        <Typography variant="h3" color="primary" sx={{ letterSpacing: 4, fontWeight: 'bold' }} gutterBottom>
-                            {course.joinCode}
-                        </Typography>
-                        <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
-                            <QRCodeSVG value={course.joinCode} size={140} />
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
-                            Share this code with classmates
-                        </Typography>
-                    </Paper>
+                    {/* Live session join */}
+                    {activeSessions[id] && (
+                        <Paper elevation={2} sx={{ p: 3, mb: 2, border: '2px solid #2e7d32', borderRadius: 2 }}>
+                            <Typography variant="h6" fontWeight="bold" color="success.main" gutterBottom>
+                                🟢 Live Session Active
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" mb={2}>
+                                Your teacher has started a live session. Join now to mark your attendance.
+                            </Typography>
+                            <Button
+                                fullWidth variant="contained" color="success"
+                                onClick={async () => {
+                                    const result = await joinSession(id);
+                                    setJoinMsg({ text: result.message, severity: result.success ? (result.status === 'Late' ? 'warning' : 'success') : 'error' });
+                                }}>
+                                Join Live Session
+                            </Button>
+                            {joinMsg && (
+                                <Typography variant="caption" color={`${joinMsg.severity}.main`} display="block" mt={1} textAlign="center">
+                                    {joinMsg.text}
+                                </Typography>
+                            )}
+                        </Paper>
+                    )}
 
                     {/* Assignment progress */}
                     {assignments.length > 0 && (

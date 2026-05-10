@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
-import { scoreToGrade, gradeToPoints } from '../utils/gradeUtils';
+import { scoreToGrade, gradeToPoints, DEFAULT_WEIGHTS } from '../utils/gradeUtils';
 
 const StudentContext = createContext();
 
@@ -270,40 +270,37 @@ export const StudentProvider = ({ children }) => {
             const gradeRows = [];
             Object.entries(byCourse).forEach(([cid, courseEntries]) => {
                 const w = weightsMap[cid];
-                const scoreMap = {};
-                courseEntries.forEach(e => { scoreMap[e.category] = e.score; });
 
                 // One row per category
                 courseEntries.forEach(e => {
                     gradeRows.push({
                         id:         e.id,
                         courseId:   e.course_id,
-                        subject:    e.category, // used as subject label
+                        subject:    e.category,
                         assessment: e.category,
                         category:   e.category,
                         score:      parseFloat(e.score),
                         feedback:   e.feedback || '',
                         date:       e.graded_at,
-                        weight:     w?.[e.category] ?? 0,
+                        // Use actual weight if set, otherwise fall back to DEFAULT_WEIGHTS
+                        weight:     w?.[e.category] ?? DEFAULT_WEIGHTS[e.category] ?? 0,
                     });
                 });
 
-                // Compute weighted total for this course (denominator = 100, not just entered weights)
+                // Compute weighted total — use DEFAULT_WEIGHTS if no course_weights row exists
                 let weightedSum = 0;
                 courseEntries.forEach(e => {
-                    const weight = w?.[e.category] ?? 0;
+                    const weight = w?.[e.category] ?? DEFAULT_WEIGHTS[e.category] ?? 0;
                     weightedSum += (parseFloat(e.score) * weight) / 100;
                 });
-                // weightedSum is already the weighted total out of 100
                 if (weightedSum > 0) {
-                    const total = weightedSum;
                     gradeRows.push({
                         id:         `total-${cid}`,
                         courseId:   cid,
                         subject:    'Weighted Total',
                         assessment: 'Final',
                         category:   'total',
-                        score:      parseFloat(total.toFixed(2)),
+                        score:      parseFloat(weightedSum.toFixed(2)),
                         feedback:   '',
                         date:       '',
                         weight:     100,
