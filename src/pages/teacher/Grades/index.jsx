@@ -73,16 +73,27 @@ const TeacherGrades = () => {
         const fetchEnrolled = async () => {
             setEnrolledLoading(true);
             try {
-                const { data, error } = await supabase
+                // Step 1: get student IDs
+                const { data: enrollData, error: enrollErr } = await supabase
                     .from('enrollments')
-                    .select('student_id, profiles(id, name, email)')
+                    .select('student_id')
                     .eq('course_id', courseId);
-                if (error) throw error;
-                const list = (data || []).map(e => ({
-                    id: e.student_id,
-                    name: e.profiles?.name || e.profiles?.email?.split('@')[0] || 'Unknown',
-                }));
-                setEnrolledStudents(list);
+                if (enrollErr) throw enrollErr;
+                if (!enrollData || enrollData.length === 0) {
+                    setEnrolledStudents([]);
+                    return;
+                }
+                // Step 2: fetch profiles
+                const studentIds = enrollData.map(e => e.student_id);
+                const { data: profileData, error: profileErr } = await supabase
+                    .from('profiles')
+                    .select('id, name, email')
+                    .in('id', studentIds);
+                if (profileErr) throw profileErr;
+                setEnrolledStudents((profileData || []).map(p => ({
+                    id:   p.id,
+                    name: p.name || p.email?.split('@')[0] || 'Unknown',
+                })));
             } catch (err) {
                 console.error('Failed to fetch enrolled students:', err);
             } finally {

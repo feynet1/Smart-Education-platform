@@ -146,15 +146,27 @@ export const TeacherProvider = ({ children }) => {
     const fetchEnrolledStudents = async (courseId) => {
         setEnrolledLoading(prev => ({ ...prev, [courseId]: true }));
         try {
-            const { data, error } = await supabase
+            // Step 1: get student IDs enrolled in this course
+            const { data: enrollData, error: enrollErr } = await supabase
                 .from('enrollments')
-                .select('student_id, profiles(id, name, email)')
+                .select('student_id')
                 .eq('course_id', courseId);
-            if (error) throw error;
-            const list = (data || []).map(e => ({
-                id:    e.student_id,
-                name:  e.profiles?.name || e.profiles?.email?.split('@')[0] || 'Unknown',
-                email: e.profiles?.email || '',
+            if (enrollErr) throw enrollErr;
+            if (!enrollData || enrollData.length === 0) {
+                setEnrolledStudents(prev => ({ ...prev, [courseId]: [] }));
+                return [];
+            }
+            // Step 2: fetch profiles for those student IDs
+            const studentIds = enrollData.map(e => e.student_id);
+            const { data: profileData, error: profileErr } = await supabase
+                .from('profiles')
+                .select('id, name, email')
+                .in('id', studentIds);
+            if (profileErr) throw profileErr;
+            const list = (profileData || []).map(p => ({
+                id:    p.id,
+                name:  p.name || p.email?.split('@')[0] || 'Unknown',
+                email: p.email || '',
             }));
             setEnrolledStudents(prev => ({ ...prev, [courseId]: list }));
             return list;
@@ -175,25 +187,25 @@ export const TeacherProvider = ({ children }) => {
         const fetchAllEnrolled = async () => {
             try {
                 const courseIds = courses.map(c => c.id);
-                const { data, error } = await supabase
+                // Step 1: get all student IDs enrolled in teacher's courses
+                const { data: enrollData, error: enrollErr } = await supabase
                     .from('enrollments')
-                    .select('student_id, profiles(id, name, email)')
+                    .select('student_id')
                     .in('course_id', courseIds);
-                if (error) throw error;
-                // Deduplicate by student_id
-                const seen = new Set();
-                const list = [];
-                (data || []).forEach(e => {
-                    if (!seen.has(e.student_id)) {
-                        seen.add(e.student_id);
-                        list.push({
-                            id:    e.student_id,
-                            name:  e.profiles?.name || e.profiles?.email?.split('@')[0] || 'Unknown',
-                            email: e.profiles?.email || '',
-                        });
-                    }
-                });
-                setStudents(list);
+                if (enrollErr) throw enrollErr;
+                if (!enrollData || enrollData.length === 0) { setStudents([]); return; }
+                // Step 2: fetch profiles for those student IDs (deduplicated)
+                const uniqueIds = [...new Set(enrollData.map(e => e.student_id))];
+                const { data: profileData, error: profileErr } = await supabase
+                    .from('profiles')
+                    .select('id, name, email')
+                    .in('id', uniqueIds);
+                if (profileErr) throw profileErr;
+                setStudents((profileData || []).map(p => ({
+                    id:    p.id,
+                    name:  p.name || p.email?.split('@')[0] || 'Unknown',
+                    email: p.email || '',
+                })));
             } catch (err) {
                 console.error('Failed to fetch enrolled students:', err);
             }
