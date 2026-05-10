@@ -98,8 +98,9 @@ export const calcWeightedTotal = (entries, weights, maxMarks) => {
         const max    = maxMarks?.[cat] ?? DEFAULT_MAX_MARKS[cat];
 
         if (raw != null && raw !== '') {
-            const pct = (parseFloat(raw) / max) * 100;   // convert to %
-            earned += (pct * weight) / 100;               // apply weight
+            // Cap percentage at 100% — score cannot exceed max marks
+            const pct = Math.min((parseFloat(raw) / max) * 100, 100);
+            earned += (pct * weight) / 100;
             enteredWeight += weight;
             enteredCount++;
         }
@@ -108,7 +109,7 @@ export const calcWeightedTotal = (entries, weights, maxMarks) => {
     if (enteredCount === 0) return null;
 
     return {
-        earned:        parseFloat(earned.toFixed(2)),
+        earned:        parseFloat(Math.min(earned, 100).toFixed(2)), // never exceed 100
         enteredWeight,
         isComplete:    enteredCount === CATEGORIES.length,
     };

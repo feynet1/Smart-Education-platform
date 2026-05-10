@@ -153,18 +153,19 @@ const TeacherGrades = () => {
     const handleSave = async () => {
         const raw = parseFloat(scoreInput);
         const max = maxMarks[dialog.category] ?? 100;
-        if (isNaN(raw) || raw < 0 || raw > max) {
+        if (isNaN(raw) || raw < 0) {
             showSnack(`Score must be between 0 and ${max}`, 'error');
             return;
         }
+        // Cap at max marks
+        const capped = Math.min(raw, max);
         setSaving(true);
-        // Store the raw score — percentage conversion happens at display time
         const result = await saveGradeEntry({
             courseId,
             studentId:   dialog.studentId,
             studentName: dialog.studentName,
             category:    dialog.category,
-            score:       raw,   // raw marks, not percentage
+            score:       capped,
             feedback:    feedbackInput.trim() || null,
         });
         setSaving(false);
@@ -324,12 +325,21 @@ const TeacherGrades = () => {
                             type="number"
                             inputProps={{ min: 0, max: maxMarks[dialog.category] ?? 100, step: 0.5 }}
                             value={scoreInput}
-                            onChange={e => setScoreInput(e.target.value)}
+                            onChange={e => {
+                                const max = maxMarks[dialog.category] ?? 100;
+                                const val = e.target.value;
+                                // Allow typing but cap display
+                                if (val === '' || parseFloat(val) <= max) {
+                                    setScoreInput(val);
+                                } else {
+                                    setScoreInput(String(max));
+                                }
+                            }}
                             helperText={(() => {
                                 const raw = parseFloat(scoreInput);
                                 const max = maxMarks[dialog.category] ?? 100;
                                 if (scoreInput === '' || isNaN(raw)) return `Enter marks out of ${max}`;
-                                const pct = (raw / max) * 100;
+                                const pct = Math.min((raw / max) * 100, 100);
                                 return `${pct.toFixed(1)}% → ${scoreToGrade(pct)} (out of ${max} marks)`;
                             })()} />
                         <TextField
