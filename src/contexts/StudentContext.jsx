@@ -271,17 +271,27 @@ export const StudentProvider = ({ children }) => {
             Object.entries(byCourse).forEach(([cid, courseEntries]) => {
                 const w = weightsMap[cid];
 
+                // Build wMax FIRST before using it
+                const wMax = w ? {
+                    homework:   w.hw_max     ?? DEFAULT_MAX_MARKS.homework,
+                    assignment: w.assign_max ?? DEFAULT_MAX_MARKS.assignment,
+                    quiz:       w.quiz_max   ?? DEFAULT_MAX_MARKS.quiz,
+                    midterm:    w.mid_max    ?? DEFAULT_MAX_MARKS.midterm,
+                    project:    w.proj_max   ?? DEFAULT_MAX_MARKS.project,
+                    final_exam: w.final_max  ?? DEFAULT_MAX_MARKS.final_exam,
+                } : DEFAULT_MAX_MARKS;
+
                 // One row per category
                 courseEntries.forEach(e => {
                     const max = wMax[e.category] ?? DEFAULT_MAX_MARKS[e.category] ?? 100;
-                    const pct = (parseFloat(e.score) / max) * 100;
+                    const pct = Math.min((parseFloat(e.score) / max) * 100, 100);
                     gradeRows.push({
                         id:         e.id,
                         courseId:   e.course_id,
                         subject:    e.category,
                         assessment: e.category,
                         category:   e.category,
-                        score:      parseFloat(e.score),   // raw marks
+                        score:      parseFloat(e.score),
                         maxMark:    max,
                         percentage: parseFloat(pct.toFixed(1)),
                         feedback:   e.feedback || '',
@@ -290,34 +300,27 @@ export const StudentProvider = ({ children }) => {
                     });
                 });
 
-                // Compute weighted total — use DEFAULT_WEIGHTS/MAX_MARKS if no course_weights row exists
+                // Compute weighted total
                 const scoreMap = {};
                 courseEntries.forEach(e => { scoreMap[e.category] = parseFloat(e.score); });
-                const wMax = w ? {
-                    homework:   w.hw_max    ?? DEFAULT_MAX_MARKS.homework,
-                    assignment: w.assign_max ?? DEFAULT_MAX_MARKS.assignment,
-                    quiz:       w.quiz_max  ?? DEFAULT_MAX_MARKS.quiz,
-                    midterm:    w.mid_max   ?? DEFAULT_MAX_MARKS.midterm,
-                    project:    w.proj_max  ?? DEFAULT_MAX_MARKS.project,
-                    final_exam: w.final_max ?? DEFAULT_MAX_MARKS.final_exam,
-                } : DEFAULT_MAX_MARKS;
                 const result = calcWeightedTotal(scoreMap, w || DEFAULT_WEIGHTS, wMax);
                 if (result != null) {
                     gradeRows.push({
-                        id:         `total-${cid}`,
-                        courseId:   cid,
-                        subject:    'Weighted Total',
-                        assessment: 'Final',
-                        category:   'total',
-                        score:      result.earned,
-                        feedback:   '',
-                        date:       '',
-                        weight:     100,
-                        isTotal:    true,
-                        isComplete: result.isComplete,
+                        id:            `total-${cid}`,
+                        courseId:      cid,
+                        subject:       'Weighted Total',
+                        assessment:    'Final',
+                        category:      'total',
+                        score:         result.earned,
+                        feedback:      '',
+                        date:          '',
+                        weight:        100,
+                        isTotal:       true,
+                        isComplete:    result.isComplete,
                         enteredWeight: result.enteredWeight,
                     });
-                }            });
+                }
+            });
 
             setGrades(gradeRows);
         } catch (err) {
