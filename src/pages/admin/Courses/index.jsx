@@ -6,32 +6,16 @@
  */
 import { useState } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Grid,
-    Card,
-    CardContent,
-    CardActions,
-    Button,
-    TextField,
-    InputAdornment,
-    Chip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogContentText,
-    DialogActions,
-    Snackbar,
-    Alert,
-    Avatar,
-    CircularProgress,
+    Box, Typography, Paper, Grid, Card, CardContent, CardActions,
+    Button, TextField, InputAdornment, Chip, Dialog, DialogTitle,
+    DialogContent, DialogContentText, DialogActions, Snackbar, Alert,
+    Avatar, CircularProgress, LinearProgress,
 } from '@mui/material';
-import { Search, School, People, Delete, Visibility, ContentCopy } from '@mui/icons-material';
+import { Search, School, People, Delete, ContentCopy, Refresh } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 
 const CoursesManagement = () => {
-    const { courses, coursesLoading, deleteCourse } = useAdmin();
+    const { courses, coursesLoading, fetchCourses, deleteCourse } = useAdmin();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [deleteDialog, setDeleteDialog] = useState({ open: false, course: null });
@@ -43,6 +27,10 @@ const CoursesManagement = () => {
         course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.subject.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Summary stats
+    const totalEnrollments = courses.reduce((s, c) => s + c.students, 0);
+    const maxEnrollment    = Math.max(...courses.map(c => c.students), 1);
 
     // Copy join code
     const handleCopyCode = (code) => {
@@ -73,10 +61,56 @@ const CoursesManagement = () => {
                         Course Management
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        View and manage all courses on the platform ({coursesLoading ? '…' : `${courses.length} total`})
+                        {coursesLoading ? '…' : `${courses.length} courses · ${totalEnrollments} total enrollments`}
                     </Typography>
                 </Box>
+                <Button variant="outlined"
+                    startIcon={coursesLoading ? <CircularProgress size={16} /> : <Refresh />}
+                    onClick={fetchCourses} disabled={coursesLoading}>
+                    Refresh
+                </Button>
             </Box>
+
+            {/* Enrollment summary */}
+            {!coursesLoading && courses.length > 0 && (
+                <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                    <Typography variant="subtitle2" fontWeight="bold" mb={2}>
+                        Enrollment by Course
+                    </Typography>
+                    <Box display="flex" flexDirection="column" gap={1.5}>
+                        {[...courses]
+                            .sort((a, b) => b.students - a.students)
+                            .slice(0, 5)
+                            .map(c => (
+                                <Box key={c.id} display="flex" alignItems="center" gap={2}>
+                                    <Typography variant="body2" sx={{ minWidth: 160, maxWidth: 160 }} noWrap>
+                                        {c.name}
+                                    </Typography>
+                                    <Box flex={1}>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={maxEnrollment > 0 ? (c.students / maxEnrollment) * 100 : 0}
+                                            sx={{ height: 8, borderRadius: 1 }}
+                                            color="primary" />
+                                    </Box>
+                                    <Chip
+                                        icon={<People sx={{ fontSize: 14 }} />}
+                                        label={`${c.students} student${c.students !== 1 ? 's' : ''}`}
+                                        size="small"
+                                        color={c.students > 0 ? 'primary' : 'default'}
+                                        variant={c.students > 0 ? 'filled' : 'outlined'}
+                                        sx={{ minWidth: 100 }}
+                                    />
+                                </Box>
+                            ))}
+                        {courses.length > 5 && (
+                            <Typography variant="caption" color="text.secondary">
+                                Showing top 5 by enrollment. Scroll down to see all courses.
+                            </Typography>
+                        )}
+                    </Box>
+                </Paper>
+            )}
 
             {/* Search */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
@@ -125,13 +159,14 @@ const CoursesManagement = () => {
                                         <Chip
                                             size="small"
                                             icon={<People />}
-                                            label={`${course.students || 0} students`}
-                                            variant="outlined"
+                                            label={`${course.students} student${course.students !== 1 ? 's' : ''}`}
+                                            color={course.students > 0 ? 'primary' : 'default'}
+                                            variant={course.students > 0 ? 'filled' : 'outlined'}
                                         />
                                         <Chip
                                             size="small"
                                             label={`Grade ${course.grade || 'General'}`}
-                                            color="primary"
+                                            color="secondary"
                                             variant="outlined"
                                         />
                                     </Box>
@@ -164,7 +199,6 @@ const CoursesManagement = () => {
                                     )}
                                 </CardContent>
                                 <CardActions sx={{ px: 2, pb: 2 }}>
-                                    <Button size="small" startIcon={<Visibility />}>View</Button>
                                     <Button
                                         size="small"
                                         color="error"

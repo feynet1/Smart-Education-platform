@@ -168,31 +168,40 @@ export const AdminProvider = ({ children }) => {
     const fetchCourses = async () => {
         setCoursesLoading(true);
         try {
-            // Fetch courses and teacher profiles in parallel
-            const [{ data: coursesData, error: coursesErr }, { data: profilesData, error: profilesErr }] =
+            // Fetch courses, teacher profiles, and enrollment counts in parallel
+            const [{ data: coursesData, error: coursesErr }, { data: profilesData, error: profilesErr },
+                   { data: enrollData }] =
                 await Promise.all([
                     supabase.from('courses').select('*').order('created_at', { ascending: false }),
                     supabase.from('profiles').select('id, name').eq('role', 'Teacher'),
+                    supabase.from('enrollments').select('course_id'),
                 ]);
 
             if (coursesErr) throw coursesErr;
             if (profilesErr) throw profilesErr;
+            // enrollErr is non-fatal — table may not exist yet
 
-            // Build a quick lookup map: teacherId → name
+            // Build teacher name lookup
             const teacherMap = {};
             (profilesData || []).forEach(p => { teacherMap[p.id] = p.name || '—'; });
 
+            // Build enrollment count lookup: { courseId: count }
+            const enrollMap = {};
+            (enrollData || []).forEach(e => {
+                enrollMap[e.course_id] = (enrollMap[e.course_id] || 0) + 1;
+            });
+
             setCourses((coursesData || []).map(c => ({
-                id: c.id,
-                name: c.name,
-                subject: c.subject,
-                grade: c.grade,
+                id:          c.id,
+                name:        c.name,
+                subject:     c.subject,
+                grade:       c.grade,
                 description: c.description,
-                joinCode: c.join_code,
-                teacherId: c.teacher_id,
+                joinCode:    c.join_code,
+                teacherId:   c.teacher_id,
                 teacherName: teacherMap[c.teacher_id] || '—',
-                createdAt: c.created_at,
-                students: 0,
+                createdAt:   c.created_at,
+                students:    enrollMap[c.id] || 0,
             })));
         } catch (err) {
             console.error('Failed to fetch courses:', err);
