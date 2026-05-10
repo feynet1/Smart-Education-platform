@@ -236,8 +236,8 @@ const TeacherGrades = () => {
                                     const e = studentEntries[cat];
                                     if (e) scoreMap[cat] = e.score;
                                 });
-                                const total = calcWeightedTotal(scoreMap, weights);
-                                const letterGrade = total != null ? scoreToGrade(total) : null;
+                                const result = calcWeightedTotal(scoreMap, weights);
+                                const letterGrade = result?.isComplete ? scoreToGrade(result.earned) : null;
 
                                 return (
                                     <TableRow key={student.id} hover>
@@ -258,15 +258,21 @@ const TeacherGrades = () => {
                                             </TableCell>
                                         ))}
                                         <TableCell align="center">
-                                            {total != null ? (
+                                            {result != null ? (
                                                 <Box>
                                                     <Typography variant="body2" fontWeight="bold">
-                                                        {total.toFixed(1)}%
+                                                        {result.earned.toFixed(1)}%
                                                     </Typography>
+                                                    {!result.isComplete && (
+                                                        <Typography variant="caption" color="text.disabled">
+                                                            {result.enteredWeight}% entered
+                                                        </Typography>
+                                                    )}
                                                     <LinearProgress
-                                                        variant="determinate" value={total}
+                                                        variant="determinate"
+                                                        value={result.earned}
                                                         sx={{ height: 4, borderRadius: 1, mt: 0.3 }}
-                                                        color={gradeColor(letterGrade)} />
+                                                        color={result.isComplete ? gradeColor(letterGrade) : 'info'} />
                                                 </Box>
                                             ) : (
                                                 <Typography variant="caption" color="text.disabled">—</Typography>
@@ -275,7 +281,9 @@ const TeacherGrades = () => {
                                         <TableCell align="center">
                                             {letterGrade
                                                 ? <Chip label={letterGrade} size="small" color={gradeColor(letterGrade)} />
-                                                : <Typography variant="caption" color="text.disabled">—</Typography>
+                                                : result != null
+                                                    ? <Typography variant="caption" color="text.disabled">Partial</Typography>
+                                                    : <Typography variant="caption" color="text.disabled">—</Typography>
                                             }
                                         </TableCell>
                                     </TableRow>

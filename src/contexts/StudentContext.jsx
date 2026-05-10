@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
-import { scoreToGrade, gradeToPoints, DEFAULT_WEIGHTS } from '../utils/gradeUtils';
+import { scoreToGrade, gradeToPoints, DEFAULT_WEIGHTS, calcWeightedTotal } from '../utils/gradeUtils';
 
 const StudentContext = createContext();
 
@@ -288,26 +288,25 @@ export const StudentProvider = ({ children }) => {
                 });
 
                 // Compute weighted total — use DEFAULT_WEIGHTS if no course_weights row exists
-                let weightedSum = 0;
-                courseEntries.forEach(e => {
-                    const weight = w?.[e.category] ?? DEFAULT_WEIGHTS[e.category] ?? 0;
-                    weightedSum += (parseFloat(e.score) * weight) / 100;
-                });
-                if (weightedSum > 0) {
+                const scoreMap = {};
+                courseEntries.forEach(e => { scoreMap[e.category] = parseFloat(e.score); });
+                const result = calcWeightedTotal(scoreMap, w || DEFAULT_WEIGHTS);
+                if (result != null) {
                     gradeRows.push({
                         id:         `total-${cid}`,
                         courseId:   cid,
                         subject:    'Weighted Total',
                         assessment: 'Final',
                         category:   'total',
-                        score:      parseFloat(weightedSum.toFixed(2)),
+                        score:      result.earned,
                         feedback:   '',
                         date:       '',
                         weight:     100,
                         isTotal:    true,
+                        isComplete: result.isComplete,
+                        enteredWeight: result.enteredWeight,
                     });
-                }
-            });
+                }            });
 
             setGrades(gradeRows);
         } catch (err) {
@@ -323,10 +322,11 @@ export const StudentProvider = ({ children }) => {
     }, [user?.id]);
 
     const calculateGPA = () => {
-        const totals = grades.filter(g => g.isTotal);
-        if (totals.length === 0) return '0.00';
-        const sum = totals.reduce((acc, g) => acc + gradeToPoints(scoreToGrade(g.score)), 0);
-        return (sum / totals.length).toFixed(2);
+        // Only count courses where all 6 categories have been graded
+        const completeTotals = grades.filter(g => g.isTotal && g.isComplete);
+        if (completeTotals.length === 0) return '0.00';
+        const sum = completeTotals.reduce((acc, g) => acc + gradeToPoints(scoreToGrade(g.score)), 0);
+        return (sum / completeTotals.length).toFixed(2);
     };
 
     const value = {

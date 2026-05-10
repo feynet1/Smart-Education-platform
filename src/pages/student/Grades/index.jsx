@@ -88,7 +88,7 @@ const StudentGrades = () => {
                     <Box display="flex" gap={2} flexWrap="wrap">
                         {filteredTotals.map(t => {
                             const course = enrolledCourses.find(c => c.id === t.courseId);
-                            const letter = scoreToGrade(t.score);
+                            const letter = t.isComplete ? scoreToGrade(t.score) : null;
                             return (
                                 <Box key={t.id} sx={{
                                     p: 2, borderRadius: 2, border: '1px solid #e0e0e0',
@@ -97,15 +97,23 @@ const StudentGrades = () => {
                                     <Typography variant="body2" color="text.secondary" gutterBottom>
                                         {course?.name || 'Course'}
                                     </Typography>
-                                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                    <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                                         <Typography variant="h5" fontWeight="bold">
                                             {t.score.toFixed(1)}%
                                         </Typography>
-                                        <Chip label={letter} size="small" color={gradeColor(letter)} />
+                                        {letter
+                                            ? <Chip label={letter} size="small" color={gradeColor(letter)} />
+                                            : <Chip label="Partial" size="small" variant="outlined" color="info" />
+                                        }
                                     </Box>
+                                    {!t.isComplete && (
+                                        <Typography variant="caption" color="text.disabled">
+                                            {t.enteredWeight}% of grade entered
+                                        </Typography>
+                                    )}
                                     <LinearProgress variant="determinate" value={t.score}
-                                        sx={{ height: 6, borderRadius: 1 }}
-                                        color={gradeColor(letter)} />
+                                        sx={{ height: 6, borderRadius: 1, mt: 0.5 }}
+                                        color={letter ? gradeColor(letter) : 'info'} />
                                 </Box>
                             );
                         })}

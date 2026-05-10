@@ -61,20 +61,38 @@ export const CATEGORIES = Object.keys(DEFAULT_WEIGHTS);
 /**
  * Calculate weighted total score from a map of { category: score }
  * and a weights object { category: weight }.
+ *
+ * Returns:
+ *   { earned, totalWeight, isComplete, display }
+ *   - earned:      sum of (score × weight / 100) for entered categories
+ *   - totalWeight: sum of weights for entered categories
+ *   - isComplete:  true when all 6 categories have scores
+ *   - display:     null if nothing entered, otherwise the earned points
+ *
  * Returns null if no entries exist.
  */
 export const calcWeightedTotal = (entries, weights) => {
-    let weightedSum = 0;
-    let totalWeight = 0;
+    let earned = 0;
+    let enteredWeight = 0;
+    let enteredCount = 0;
+
     CATEGORIES.forEach(cat => {
         const score = entries[cat];
         const weight = weights?.[cat] ?? DEFAULT_WEIGHTS[cat];
         if (score != null && score !== '') {
-            weightedSum += (parseFloat(score) * weight) / 100;
-            totalWeight += weight;
+            earned += (parseFloat(score) * weight) / 100;
+            enteredWeight += weight;
+            enteredCount++;
         }
     });
-    if (totalWeight === 0) return null;
-    // Scale to 100 based on entered categories only
-    return (weightedSum / totalWeight) * 100;
+
+    if (enteredCount === 0) return null;
+
+    return {
+        earned:       parseFloat(earned.toFixed(2)),   // points earned out of 100
+        enteredWeight,                                  // how much of the grade is covered
+        isComplete:   enteredCount === CATEGORIES.length,
+        // Projected score if remaining categories score 0
+        projected:    parseFloat(earned.toFixed(2)),
+    };
 };
