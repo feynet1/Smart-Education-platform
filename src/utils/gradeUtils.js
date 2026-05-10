@@ -46,6 +46,21 @@ export const DEFAULT_WEIGHTS = {
     final_exam: 25,
 };
 
+/**
+ * Default maximum marks per category.
+ * Teacher enters actual score (e.g. 8) out of this max (e.g. 10).
+ * System converts: percentage = (score / maxMark) * 100
+ * then applies weight.
+ */
+export const DEFAULT_MAX_MARKS = {
+    homework:   10,
+    assignment: 20,
+    quiz:       10,
+    midterm:    50,
+    project:    30,
+    final_exam: 100,
+};
+
 /** Human-readable labels for each category */
 export const CATEGORY_LABELS = {
     homework:   'Homework',
@@ -59,28 +74,32 @@ export const CATEGORY_LABELS = {
 export const CATEGORIES = Object.keys(DEFAULT_WEIGHTS);
 
 /**
- * Calculate weighted total score from a map of { category: score }
- * and a weights object { category: weight }.
+ * Calculate weighted total from raw scores.
  *
- * Returns:
- *   { earned, totalWeight, isComplete, display }
- *   - earned:      sum of (score × weight / 100) for entered categories
- *   - totalWeight: sum of weights for entered categories
- *   - isComplete:  true when all 6 categories have scores
- *   - display:     null if nothing entered, otherwise the earned points
+ * @param entries   { category: rawScore }  — actual marks entered by teacher
+ * @param weights   { category: weight% }   — from course_weights or DEFAULT_WEIGHTS
+ * @param maxMarks  { category: maxMark }   — from course_weights or DEFAULT_MAX_MARKS
  *
- * Returns null if no entries exist.
+ * Returns null if nothing entered, otherwise:
+ *   {
+ *     earned:        weighted points earned out of 100,
+ *     enteredWeight: sum of weights for entered categories,
+ *     isComplete:    true when all 6 categories have scores,
+ *   }
  */
-export const calcWeightedTotal = (entries, weights) => {
+export const calcWeightedTotal = (entries, weights, maxMarks) => {
     let earned = 0;
     let enteredWeight = 0;
     let enteredCount = 0;
 
     CATEGORIES.forEach(cat => {
-        const score = entries[cat];
-        const weight = weights?.[cat] ?? DEFAULT_WEIGHTS[cat];
-        if (score != null && score !== '') {
-            earned += (parseFloat(score) * weight) / 100;
+        const raw    = entries[cat];
+        const weight = weights?.[cat]  ?? DEFAULT_WEIGHTS[cat];
+        const max    = maxMarks?.[cat] ?? DEFAULT_MAX_MARKS[cat];
+
+        if (raw != null && raw !== '') {
+            const pct = (parseFloat(raw) / max) * 100;   // convert to %
+            earned += (pct * weight) / 100;               // apply weight
             enteredWeight += weight;
             enteredCount++;
         }
@@ -89,10 +108,8 @@ export const calcWeightedTotal = (entries, weights) => {
     if (enteredCount === 0) return null;
 
     return {
-        earned:       parseFloat(earned.toFixed(2)),   // points earned out of 100
-        enteredWeight,                                  // how much of the grade is covered
-        isComplete:   enteredCount === CATEGORIES.length,
-        // Projected score if remaining categories score 0
-        projected:    parseFloat(earned.toFixed(2)),
+        earned:        parseFloat(earned.toFixed(2)),
+        enteredWeight,
+        isComplete:    enteredCount === CATEGORIES.length,
     };
 };

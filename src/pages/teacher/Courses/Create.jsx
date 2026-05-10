@@ -2,36 +2,34 @@ import { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, TextField, MenuItem, Grid, CircularProgress,
-    Typography, Box, Divider, Alert,
+    Typography, Box, Divider, Alert, Table, TableBody,
+    TableCell, TableHead, TableRow,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { useTeacher } from '../../../contexts/TeacherContext';
-import { DEFAULT_WEIGHTS, CATEGORY_LABELS, CATEGORIES } from '../../../utils/gradeUtils';
+import { DEFAULT_WEIGHTS, DEFAULT_MAX_MARKS, CATEGORY_LABELS, CATEGORIES } from '../../../utils/gradeUtils';
 
 const GRADE_LEVELS = ['1','2','3','4','5','6','7','8','9','10','11','12','University'];
 
 const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
     const { addCourse, saveWeights } = useTeacher();
     const [saving, setSaving] = useState(false);
-    const [weights, setWeights] = useState({ ...DEFAULT_WEIGHTS });
+    const [weights,  setWeights]  = useState({ ...DEFAULT_WEIGHTS });
+    const [maxMarks, setMaxMarks] = useState({ ...DEFAULT_MAX_MARKS });
     const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
     const weightTotal = CATEGORIES.reduce((s, c) => s + (parseFloat(weights[c]) || 0), 0);
     const weightValid = Math.abs(weightTotal - 100) < 0.01;
-
-    const handleWeightChange = (cat, val) => {
-        setWeights(w => ({ ...w, [cat]: val === '' ? '' : parseFloat(val) || 0 }));
-    };
 
     const onSubmit = async (data) => {
         if (!weightValid) return;
         setSaving(true);
         const result = await addCourse(data);
         if (result?.success) {
-            // Save weights for the new course
-            await saveWeights(result.course.id, weights);
+            await saveWeights(result.course.id, weights, maxMarks);
             reset();
             setWeights({ ...DEFAULT_WEIGHTS });
+            setMaxMarks({ ...DEFAULT_MAX_MARKS });
             onClose();
             onSuccess?.('Course created successfully');
         } else {
@@ -41,7 +39,7 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>Create New Course</DialogTitle>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <DialogContent>
@@ -75,16 +73,16 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
                                 {...register('description')} />
                         </Grid>
 
-                        {/* Assessment weights */}
+                        {/* Assessment weights + max marks */}
                         <Grid item xs={12}>
                             <Divider sx={{ my: 1 }} />
                             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                                 <Typography variant="subtitle2" fontWeight="bold">
-                                    Assessment Weights
+                                    Assessment Setup
                                 </Typography>
                                 <Typography variant="caption"
                                     color={weightValid ? 'success.main' : 'error.main'} fontWeight={600}>
-                                    Total: {weightTotal.toFixed(0)}% {weightValid ? '✓' : '(must equal 100%)'}
+                                    Weight Total: {weightTotal.toFixed(0)}% {weightValid ? '✓' : '(must equal 100%)'}
                                 </Typography>
                             </Box>
                             {!weightValid && (
@@ -92,19 +90,42 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
                                     Weights must add up to exactly 100%
                                 </Alert>
                             )}
-                            <Grid container spacing={1.5}>
-                                {CATEGORIES.map(cat => (
-                                    <Grid item xs={6} sm={4} key={cat}>
-                                        <TextField
-                                            fullWidth size="small"
-                                            label={`${CATEGORY_LABELS[cat]} (%)`}
-                                            type="number"
-                                            inputProps={{ min: 0, max: 100, step: 1 }}
-                                            value={weights[cat]}
-                                            onChange={e => handleWeightChange(cat, e.target.value)} />
-                                    </Grid>
-                                ))}
-                            </Grid>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                                        <TableCell><strong>Category</strong></TableCell>
+                                        <TableCell align="center"><strong>Max Marks</strong></TableCell>
+                                        <TableCell align="center"><strong>Weight (%)</strong></TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {CATEGORIES.map(cat => (
+                                        <TableRow key={cat}>
+                                            <TableCell>{CATEGORY_LABELS[cat]}</TableCell>
+                                            <TableCell align="center" sx={{ width: 140 }}>
+                                                <TextField
+                                                    size="small" type="number"
+                                                    inputProps={{ min: 1, step: 1 }}
+                                                    value={maxMarks[cat]}
+                                                    onChange={e => setMaxMarks(m => ({
+                                                        ...m, [cat]: e.target.value === '' ? '' : parseFloat(e.target.value) || 1
+                                                    }))}
+                                                    sx={{ width: 100 }} />
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ width: 140 }}>
+                                                <TextField
+                                                    size="small" type="number"
+                                                    inputProps={{ min: 0, max: 100, step: 1 }}
+                                                    value={weights[cat]}
+                                                    onChange={e => setWeights(w => ({
+                                                        ...w, [cat]: e.target.value === '' ? '' : parseFloat(e.target.value) || 0
+                                                    }))}
+                                                    sx={{ width: 100 }} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </Grid>
                     </Grid>
                 </DialogContent>

@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
-import { scoreToGrade, gradeToPoints, DEFAULT_WEIGHTS, calcWeightedTotal } from '../utils/gradeUtils';
+import { scoreToGrade, gradeToPoints, DEFAULT_WEIGHTS, DEFAULT_MAX_MARKS, calcWeightedTotal } from '../utils/gradeUtils';
 
 const StudentContext = createContext();
 
@@ -273,24 +273,35 @@ export const StudentProvider = ({ children }) => {
 
                 // One row per category
                 courseEntries.forEach(e => {
+                    const max = wMax[e.category] ?? DEFAULT_MAX_MARKS[e.category] ?? 100;
+                    const pct = (parseFloat(e.score) / max) * 100;
                     gradeRows.push({
                         id:         e.id,
                         courseId:   e.course_id,
                         subject:    e.category,
                         assessment: e.category,
                         category:   e.category,
-                        score:      parseFloat(e.score),
+                        score:      parseFloat(e.score),   // raw marks
+                        maxMark:    max,
+                        percentage: parseFloat(pct.toFixed(1)),
                         feedback:   e.feedback || '',
                         date:       e.graded_at,
-                        // Use actual weight if set, otherwise fall back to DEFAULT_WEIGHTS
                         weight:     w?.[e.category] ?? DEFAULT_WEIGHTS[e.category] ?? 0,
                     });
                 });
 
-                // Compute weighted total — use DEFAULT_WEIGHTS if no course_weights row exists
+                // Compute weighted total — use DEFAULT_WEIGHTS/MAX_MARKS if no course_weights row exists
                 const scoreMap = {};
                 courseEntries.forEach(e => { scoreMap[e.category] = parseFloat(e.score); });
-                const result = calcWeightedTotal(scoreMap, w || DEFAULT_WEIGHTS);
+                const wMax = w ? {
+                    homework:   w.hw_max    ?? DEFAULT_MAX_MARKS.homework,
+                    assignment: w.assign_max ?? DEFAULT_MAX_MARKS.assignment,
+                    quiz:       w.quiz_max  ?? DEFAULT_MAX_MARKS.quiz,
+                    midterm:    w.mid_max   ?? DEFAULT_MAX_MARKS.midterm,
+                    project:    w.proj_max  ?? DEFAULT_MAX_MARKS.project,
+                    final_exam: w.final_max ?? DEFAULT_MAX_MARKS.final_exam,
+                } : DEFAULT_MAX_MARKS;
+                const result = calcWeightedTotal(scoreMap, w || DEFAULT_WEIGHTS, wMax);
                 if (result != null) {
                     gradeRows.push({
                         id:         `total-${cid}`,

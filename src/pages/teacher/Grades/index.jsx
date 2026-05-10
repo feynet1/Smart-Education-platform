@@ -11,24 +11,24 @@ import { useTeacher } from '../../../contexts/TeacherContext';
 import { supabase } from '../../../supabaseClient';
 import {
     scoreToGrade, gradeColor, calcWeightedTotal,
-    CATEGORIES, CATEGORY_LABELS, DEFAULT_WEIGHTS,
+    CATEGORIES, CATEGORY_LABELS, DEFAULT_WEIGHTS, DEFAULT_MAX_MARKS,
 } from '../../../utils/gradeUtils';
 
 // ── Inline score cell — click to edit ────────────────────────
-const ScoreCell = ({ entry, onEdit }) => {
+const ScoreCell = ({ entry, onEdit, max }) => {
     if (!entry) {
         return (
             <Tooltip title="Click to enter score">
                 <Box
                     onClick={onEdit}
                     sx={{
-                        minWidth: 56, height: 32, borderRadius: 1,
+                        minWidth: 60, height: 32, borderRadius: 1,
                         border: '1.5px dashed #ccc', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: '#bbb', fontSize: 12,
                         '&:hover': { borderColor: 'primary.main', color: 'primary.main', bgcolor: '#f0f4ff' },
                     }}>
-                    —
+                    —/{max}
                 </Box>
             </Tooltip>
         );
@@ -38,12 +38,14 @@ const ScoreCell = ({ entry, onEdit }) => {
             <Box
                 onClick={onEdit}
                 sx={{
-                    minWidth: 56, height: 32, borderRadius: 1,
+                    minWidth: 60, height: 32, borderRadius: 1,
                     border: '1.5px solid transparent', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
                     '&:hover': { borderColor: 'primary.main', bgcolor: '#f0f4ff' },
                 }}>
-                <Typography variant="body2" fontWeight="bold">{entry.score}%</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                    {entry.score}/{max}
+                </Typography>
                 <Edit sx={{ fontSize: 11, color: 'text.disabled' }} />
             </Box>
         </Tooltip>
@@ -61,7 +63,17 @@ const TeacherGrades = () => {
 
     const course = courses.find(c => c.id === courseId);
     const isLoading = gradesLoading[courseId] ?? false;
-    const weights = courseWeights[courseId] || DEFAULT_WEIGHTS;
+    const weights  = courseWeights[courseId] || DEFAULT_WEIGHTS;
+    const maxMarks = courseWeights[courseId]
+        ? {
+            homework:   courseWeights[courseId].hw_max    ?? DEFAULT_MAX_MARKS.homework,
+            assignment: courseWeights[courseId].assign_max ?? DEFAULT_MAX_MARKS.assignment,
+            quiz:       courseWeights[courseId].quiz_max  ?? DEFAULT_MAX_MARKS.quiz,
+            midterm:    courseWeights[courseId].mid_max   ?? DEFAULT_MAX_MARKS.midterm,
+            project:    courseWeights[courseId].proj_max  ?? DEFAULT_MAX_MARKS.project,
+            final_exam: courseWeights[courseId].final_max ?? DEFAULT_MAX_MARKS.final_exam,
+          }
+        : DEFAULT_MAX_MARKS;
     const entries = gradeEntries[courseId] || {};
 
     // ── Fetch enrolled students for this course ───────────────
@@ -139,18 +151,20 @@ const TeacherGrades = () => {
     };
 
     const handleSave = async () => {
-        const score = parseFloat(scoreInput);
-        if (isNaN(score) || score < 0 || score > 100) {
-            showSnack('Score must be 0 – 100', 'error');
+        const raw = parseFloat(scoreInput);
+        const max = maxMarks[dialog.category] ?? 100;
+        if (isNaN(raw) || raw < 0 || raw > max) {
+            showSnack(`Score must be between 0 and ${max}`, 'error');
             return;
         }
         setSaving(true);
+        // Store the raw score — percentage conversion happens at display time
         const result = await saveGradeEntry({
             courseId,
             studentId:   dialog.studentId,
             studentName: dialog.studentName,
             category:    dialog.category,
-            score,
+            score:       raw,   // raw marks, not percentage
             feedback:    feedbackInput.trim() || null,
         });
         setSaving(false);
@@ -203,7 +217,7 @@ const TeacherGrades = () => {
                                             {CATEGORY_LABELS[cat]}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                            {weights[cat] ?? DEFAULT_WEIGHTS[cat]}%
+                                            {weights[cat] ?? DEFAULT_WEIGHTS[cat]}% / {maxMarks[cat] ?? DEFAULT_MAX_MARKS[cat]} marks
                                         </Typography>
                                     </TableCell>
                                 ))}
@@ -236,7 +250,7 @@ const TeacherGrades = () => {
                                     const e = studentEntries[cat];
                                     if (e) scoreMap[cat] = e.score;
                                 });
-                                const result = calcWeightedTotal(scoreMap, weights);
+                                const result = calcWeightedTotal(scoreMap, weights, maxMarks);
                                 const letterGrade = result?.isComplete ? scoreToGrade(result.earned) : null;
 
                                 return (
@@ -253,6 +267,7 @@ const TeacherGrades = () => {
                                             <TableCell key={cat} align="center" sx={{ px: 0.5 }}>
                                                 <ScoreCell
                                                     entry={studentEntries[cat]}
+                                                    max={maxMarks[cat] ?? DEFAULT_MAX_MARKS[cat]}
                                                     onEdit={() => openEdit(student.id, student.name, cat)}
                                                 />
                                             </TableCell>
@@ -305,15 +320,18 @@ const TeacherGrades = () => {
                     <Box display="flex" flexDirection="column" gap={2} mt={1}>
                         <TextField
                             autoFocus required fullWidth
-                            label="Score (0 – 100)" type="number"
-                            inputProps={{ min: 0, max: 100, step: 0.5 }}
+                            label={`Score (0 – ${maxMarks[dialog.category] ?? 100})`}
+                            type="number"
+                            inputProps={{ min: 0, max: maxMarks[dialog.category] ?? 100, step: 0.5 }}
                             value={scoreInput}
                             onChange={e => setScoreInput(e.target.value)}
-                            helperText={
-                                scoreInput !== '' && !isNaN(parseFloat(scoreInput))
-                                    ? `Letter: ${scoreToGrade(parseFloat(scoreInput))}`
-                                    : 'Enter a number between 0 and 100'
-                            } />
+                            helperText={(() => {
+                                const raw = parseFloat(scoreInput);
+                                const max = maxMarks[dialog.category] ?? 100;
+                                if (scoreInput === '' || isNaN(raw)) return `Enter marks out of ${max}`;
+                                const pct = (raw / max) * 100;
+                                return `${pct.toFixed(1)}% → ${scoreToGrade(pct)} (out of ${max} marks)`;
+                            })()} />
                         <TextField
                             fullWidth multiline rows={2}
                             label="Feedback (optional)"

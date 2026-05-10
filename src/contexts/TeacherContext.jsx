@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
+import { DEFAULT_MAX_MARKS } from '../utils/gradeUtils';
 
 const TeacherContext = createContext();
 
@@ -589,10 +590,20 @@ export const TeacherProvider = ({ children }) => {
         }
     };
 
-    const saveWeights = async (courseId, weights) => {
+    const saveWeights = async (courseId, weights, maxMarks) => {
         if (!user?.id) return { success: false, error: 'Not authenticated' };
         try {
-            const row = { course_id: courseId, ...weights, updated_at: new Date().toISOString() };
+            const row = {
+                course_id:  courseId,
+                ...weights,
+                hw_max:     maxMarks?.homework   ?? DEFAULT_MAX_MARKS.homework,
+                assign_max: maxMarks?.assignment ?? DEFAULT_MAX_MARKS.assignment,
+                quiz_max:   maxMarks?.quiz       ?? DEFAULT_MAX_MARKS.quiz,
+                mid_max:    maxMarks?.midterm    ?? DEFAULT_MAX_MARKS.midterm,
+                proj_max:   maxMarks?.project    ?? DEFAULT_MAX_MARKS.project,
+                final_max:  maxMarks?.final_exam ?? DEFAULT_MAX_MARKS.final_exam,
+                updated_at: new Date().toISOString(),
+            };
             const { data, error } = await supabase
                 .from('course_weights')
                 .upsert(row, { onConflict: 'course_id' })

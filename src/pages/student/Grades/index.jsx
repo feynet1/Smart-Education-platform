@@ -164,7 +164,7 @@ const StudentGrades = () => {
                             <TableBody>
                                 {filteredRows.map(row => {
                                     const course = enrolledCourses.find(c => c.id === row.courseId);
-                                    const letter = scoreToGrade(row.score);
+                                    const letter = scoreToGrade(row.percentage ?? row.score);
                                     return (
                                         <TableRow key={row.id} hover>
                                             <TableCell>
@@ -179,7 +179,10 @@ const StudentGrades = () => {
                                             </TableCell>
                                             <TableCell align="center">
                                                 <Typography variant="body2" fontWeight="bold">
-                                                    {row.score}%
+                                                    {row.score}/{row.maxMark}
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {row.percentage}%
                                                 </Typography>
                                             </TableCell>
                                             <TableCell align="center">
