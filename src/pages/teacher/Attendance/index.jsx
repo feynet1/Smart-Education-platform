@@ -18,26 +18,33 @@ const STATUS_CONFIG = {
 
 const AttendanceHelper = () => {
     const { id: courseId } = useParams();
-    const { courses, students, fetchAttendance, saveAttendance, attendance, attendanceLoading } = useTeacher();
+    const { courses, fetchAttendance, saveAttendance, attendance, attendanceLoading,
+            enrolledStudents, enrolledLoading, fetchEnrolledStudents } = useTeacher();
     const course = courses.find(c => c.id === courseId);
 
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-    // rows: { id, name, status }
     const [rows, setRows] = useState([]);
     const [saving, setSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    // Pre-populate rows with students immediately (default Present)
-    // then overlay with saved attendance from Supabase
+    // Fetch enrolled students for this course on mount
     useEffect(() => {
-        if (students.length === 0) return;
-        // Set default rows instantly so buttons appear right away
-        setRows(students.map(s => ({ id: s.id, name: s.name, status: 'Present' })));
-    }, [students]);
+        if (courseId) fetchEnrolledStudents(courseId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId]);
+
+    const courseStudents = enrolledStudents[courseId] || [];
+    const studentsLoading = enrolledLoading[courseId] ?? false;
+
+    // Pre-populate rows when enrolled students load
+    useEffect(() => {
+        if (courseStudents.length === 0) return;
+        setRows(courseStudents.map(s => ({ id: s.id, name: s.name, status: 'Present' })));
+    }, [courseStudents.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load saved attendance for selected date (overlay on top of defaults)
     useEffect(() => {
-        if (!courseId || !selectedDate || students.length === 0) return;
+        if (!courseId || !selectedDate || courseStudents.length === 0) return;
 
         const load = async () => {
             const existing = attendance[courseId]?.[selectedDate];
@@ -148,7 +155,7 @@ const AttendanceHelper = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {attendanceLoading ? (
+                            {attendanceLoading || studentsLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                                         <CircularProgress size={28} />
@@ -157,7 +164,9 @@ const AttendanceHelper = () => {
                             ) : rows.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                                        <Typography color="text.secondary">No students found</Typography>
+                                        <Typography color="text.secondary">
+                                        No students enrolled in this course yet
+                                    </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : rows.map((row, index) => (

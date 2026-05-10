@@ -138,28 +138,69 @@ export const TeacherProvider = ({ children }) => {
         }
     };
 
-    // ── Students (from Supabase profiles) ────────────────────
+    // ── Enrolled Students per course ─────────────────────────
+    // { courseId: [{ id, name, email }] }
+    const [enrolledStudents, setEnrolledStudents] = useState({});
+    const [enrolledLoading, setEnrolledLoading] = useState({});
+
+    const fetchEnrolledStudents = async (courseId) => {
+        setEnrolledLoading(prev => ({ ...prev, [courseId]: true }));
+        try {
+            const { data, error } = await supabase
+                .from('enrollments')
+                .select('student_id, profiles(id, name, email)')
+                .eq('course_id', courseId);
+            if (error) throw error;
+            const list = (data || []).map(e => ({
+                id:    e.student_id,
+                name:  e.profiles?.name || e.profiles?.email?.split('@')[0] || 'Unknown',
+                email: e.profiles?.email || '',
+            }));
+            setEnrolledStudents(prev => ({ ...prev, [courseId]: list }));
+            return list;
+        } catch (err) {
+            console.error('Failed to fetch enrolled students:', err);
+            return [];
+        } finally {
+            setEnrolledLoading(prev => ({ ...prev, [courseId]: false }));
+        }
+    };
+
+    // Keep a flat list of all students enrolled in any of this teacher's courses
+    // Used for grade entry student selector
     const [students, setStudents] = useState([]);
 
     useEffect(() => {
-        const fetchStudents = async () => {
+        if (courses.length === 0) return;
+        const fetchAllEnrolled = async () => {
             try {
+                const courseIds = courses.map(c => c.id);
                 const { data, error } = await supabase
-                    .from('profiles')
-                    .select('id, name, email')
-                    .eq('role', 'Student');
+                    .from('enrollments')
+                    .select('student_id, profiles(id, name, email)')
+                    .in('course_id', courseIds);
                 if (error) throw error;
-                setStudents((data || []).map(s => ({
-                    id: s.id,
-                    name: s.name || s.email?.split('@')[0] || 'Unknown',
-                    email: s.email,
-                })));
+                // Deduplicate by student_id
+                const seen = new Set();
+                const list = [];
+                (data || []).forEach(e => {
+                    if (!seen.has(e.student_id)) {
+                        seen.add(e.student_id);
+                        list.push({
+                            id:    e.student_id,
+                            name:  e.profiles?.name || e.profiles?.email?.split('@')[0] || 'Unknown',
+                            email: e.profiles?.email || '',
+                        });
+                    }
+                });
+                setStudents(list);
             } catch (err) {
-                console.error('Failed to fetch students:', err);
+                console.error('Failed to fetch enrolled students:', err);
             }
         };
-        fetchStudents();
-    }, []);
+        fetchAllEnrolled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courses.length]);
 
     // ── Teacher Activity Logs ─────────────────────────────────
     const [teacherLogs, setTeacherLogs] = useState([]);
@@ -263,19 +304,16 @@ export const TeacherProvider = ({ children }) => {
         }
     };
 
-    // End session — mark all enrolled students who haven't joined as Absent
+    // End session — mark enrolled students who haven't joined as Absent
     const endSession = async (courseId) => {
         if (!activeSession) return { success: false, error: 'No active session' };
         try {
-            // Get all students
-            const { data: allStudents } = await supabase
-                .from('profiles')
-                .select('id, name')
-                .eq('role', 'Student');
+            // Get only students enrolled in this specific course
+            const enrolled = enrolledStudents[courseId] || await fetchEnrolledStudents(courseId);
 
-            // Find students who haven't joined
+            // Find enrolled students who haven't joined
             const joinedIds = sessionAttendance.map(a => a.student_id);
-            const absentStudents = (allStudents || []).filter(s => !joinedIds.includes(s.id));
+            const absentStudents = enrolled.filter(s => !joinedIds.includes(s.id));
 
             // Insert absent records
             if (absentStudents.length > 0) {
@@ -704,7 +742,7 @@ export const TeacherProvider = ({ children }) => {
     const value = {
         courses, coursesLoading, fetchCourses,
         addCourse, updateCourse, deleteCourse,
-        students,
+        students, enrolledStudents, enrolledLoading, fetchEnrolledStudents,
         attendance, attendanceLoading, fetchAttendance, saveAttendance,
         activeSession, sessionAttendance,
         fetchActiveSession, startSession, endSession, updateAttendanceStatus,

@@ -21,23 +21,17 @@ const StatCard = ({ title, value, icon, color, loading }) => (
 const StatsCards = () => {
     const { courses, coursesLoading, students, activeSession, sessionAttendance } = useTeacher();
 
-    // Total courses this teacher has
-    const totalCourses = courses.length;
-
-    // Active classes = number of courses with an open session right now
+    const totalCourses  = courses.length;
     const activeClasses = activeSession ? 1 : 0;
-
-    // Students today = students who joined any session today
     const studentsToday = activeSession ? sessionAttendance.length : 0;
-
-    // Total students enrolled across all courses (using students list for now)
-    const totalStudents = students.length;
+    // students = deduplicated enrolled students across all this teacher's courses
+    const totalEnrolled = students.length;
 
     const stats = [
-        { title: 'Total Courses',   value: totalCourses,   icon: <School />,     color: 'primary',   loading: coursesLoading },
-        { title: 'Active Classes',  value: activeClasses,  icon: <Class />,      color: 'secondary', loading: false },
-        { title: 'Students Today',  value: studentsToday,  icon: <People />,     color: 'success',   loading: false },
-        { title: 'Total Students',  value: totalStudents,  icon: <Assignment />, color: 'warning',   loading: false },
+        { title: 'Total Courses',    value: totalCourses,   icon: <School />,     color: 'primary',   loading: coursesLoading },
+        { title: 'Active Classes',   value: activeClasses,  icon: <Class />,      color: 'secondary', loading: false },
+        { title: 'Students Today',   value: studentsToday,  icon: <People />,     color: 'success',   loading: false },
+        { title: 'Enrolled Students', value: totalEnrolled, icon: <Assignment />, color: 'warning',   loading: false },
     ];
 
     return (
