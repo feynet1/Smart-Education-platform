@@ -48,17 +48,17 @@ export const DEFAULT_WEIGHTS = {
 
 /**
  * Default maximum marks per category.
- * Teacher enters actual score (e.g. 8) out of this max (e.g. 10).
- * System converts: percentage = (score / maxMark) * 100
- * then applies weight.
+ * Max marks equal the weight value — teacher enters score out of the weight.
+ * Example: Midterm weight=20% → max marks=20, teacher enters 0-20.
+ * System converts: percentage = (score / maxMark) * 100, then applies weight.
  */
 export const DEFAULT_MAX_MARKS = {
     homework:   10,
-    assignment: 20,
+    assignment: 15,
     quiz:       10,
-    midterm:    50,
-    project:    30,
-    final_exam: 100,
+    midterm:    25,
+    project:    15,
+    final_exam: 25,
 };
 
 /** Human-readable labels for each category */

@@ -15,7 +15,8 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
     const { addCourse, saveWeights } = useTeacher();
     const [saving, setSaving] = useState(false);
     const [weights,  setWeights]  = useState({ ...DEFAULT_WEIGHTS });
-    const [maxMarks, setMaxMarks] = useState({ ...DEFAULT_MAX_MARKS });
+    // Default max marks = weight value (e.g. Final 25% → max 25 marks)
+    const [maxMarks, setMaxMarks] = useState({ ...DEFAULT_WEIGHTS });
     const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
     const weightTotal = CATEGORIES.reduce((s, c) => s + (parseFloat(weights[c]) || 0), 0);
@@ -94,14 +95,27 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
                                 <TableHead>
                                     <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                                         <TableCell><strong>Category</strong></TableCell>
-                                        <TableCell align="center"><strong>Max Marks</strong></TableCell>
                                         <TableCell align="center"><strong>Weight (%)</strong></TableCell>
+                                        <TableCell align="center"><strong>Max Marks</strong></TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {CATEGORIES.map(cat => (
                                         <TableRow key={cat}>
                                             <TableCell>{CATEGORY_LABELS[cat]}</TableCell>
+                                            <TableCell align="center" sx={{ width: 140 }}>
+                                                <TextField
+                                                    size="small" type="number"
+                                                    inputProps={{ min: 0, max: 100, step: 1 }}
+                                                    value={weights[cat]}
+                                                    onChange={e => {
+                                                        const val = e.target.value === '' ? '' : parseFloat(e.target.value) || 0;
+                                                        setWeights(w => ({ ...w, [cat]: val }));
+                                                        // Auto-sync max marks to weight value
+                                                        setMaxMarks(m => ({ ...m, [cat]: val }));
+                                                    }}
+                                                    sx={{ width: 100 }} />
+                                            </TableCell>
                                             <TableCell align="center" sx={{ width: 140 }}>
                                                 <TextField
                                                     size="small" type="number"
@@ -112,20 +126,13 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
                                                     }))}
                                                     sx={{ width: 100 }} />
                                             </TableCell>
-                                            <TableCell align="center" sx={{ width: 140 }}>
-                                                <TextField
-                                                    size="small" type="number"
-                                                    inputProps={{ min: 0, max: 100, step: 1 }}
-                                                    value={weights[cat]}
-                                                    onChange={e => setWeights(w => ({
-                                                        ...w, [cat]: e.target.value === '' ? '' : parseFloat(e.target.value) || 0
-                                                    }))}
-                                                    sx={{ width: 100 }} />
-                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
+                            <Typography variant="caption" color="text.secondary" mt={1} display="block">
+                                Max Marks = the highest score a student can get in that category. Defaults to the weight value.
+                            </Typography>
                         </Grid>
                     </Grid>
                 </DialogContent>
