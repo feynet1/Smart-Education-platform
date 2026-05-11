@@ -5,7 +5,8 @@ import {
     ListItemText, IconButton, Chip, Button, Tabs, Tab,
     CircularProgress, Checkbox, Tooltip,
 } from '@mui/material';
-import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon } from '@mui/icons-material';
+import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon, Chat as ChatIcon } from '@mui/icons-material';
+import CourseChat from '../../../components/CourseChat/CourseChat';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 import { useStudent } from '../../../contexts/StudentContext';
 import { supabase } from '../../../supabaseClient';
@@ -23,7 +24,7 @@ const getDueDateColor = (dueDate) => {
 const CourseDetails = () => {
     const { id } = useParams();
     const { enrolledCourses, activeSessions, joinSession } = useStudent();
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const course = enrolledCourses.find(c => c.id === id);
 
     const [tab, setTab] = useState(0);
@@ -33,6 +34,8 @@ const CourseDetails = () => {
     const [loadingAssignments, setLoadingAssignments] = useState(false);
     const [loadingNotes, setLoadingNotes] = useState(false);
     const [joinMsg, setJoinMsg] = useState(null);
+
+    const currentUser = { id: user.id, name: profile?.name || user?.email || 'Student', role: 'Student' };
 
     // Fetch assignments + student completions
     useEffect(() => {
@@ -143,6 +146,7 @@ const CourseDetails = () => {
                         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
                             <Tab label={`Assignments (${assignments.length})`} icon={<AssignmentIcon />} iconPosition="start" />
                             <Tab label={`Notes (${notes.length})`} icon={<Description />} iconPosition="start" />
+                            <Tab label="Chat" icon={<ChatIcon />} iconPosition="start" />
                         </Tabs>
 
                         <Box p={2}>
@@ -234,6 +238,9 @@ const CourseDetails = () => {
                                     </List>
                                 )
                             )}
+
+                            {/* Chat Tab */}
+                            {tab === 2 && <CourseChat courseId={id} currentUser={currentUser} />}
                         </Box>
                     </Paper>
                 </Grid>

@@ -3,13 +3,15 @@ import { useParams } from 'react-router-dom';
 import {
     Box, Typography, Grid, Paper, Button, Avatar, Chip,
     List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction,
-    IconButton, Tooltip, Divider, CircularProgress, Alert, TextField, Snackbar,
+    IconButton, Tooltip, Divider, CircularProgress, Alert, Snackbar,
 } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-    PlayArrow, Stop, Person, Send, Refresh,
+    PlayArrow, Stop, Person, Refresh,
 } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
+import useAuth from '../../../hooks/useAuth';
+import CourseChat from '../../../components/CourseChat/CourseChat';
 
 const STATUS_COLORS = { Present: 'success', Absent: 'error', Late: 'warning' };
 const STATUS_CYCLE = { Present: 'Late', Late: 'Absent', Absent: 'Present' };
@@ -21,12 +23,13 @@ const ClassroomHelper = () => {
         activeSession, sessionAttendance,
         fetchActiveSession, startSession, endSession, updateAttendanceStatus,
     } = useTeacher();
+    const { user, profile } = useAuth();
 
     const course = courses.find(c => c.id === courseId);
+    const currentUser = { id: user.id, name: profile?.name || user?.email || 'Teacher', role: 'Teacher' };
     const [starting, setStarting] = useState(false);
     const [ending, setEnding] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [message, setMessage] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const handleRefresh = async () => {
@@ -201,30 +204,9 @@ const ClassroomHelper = () => {
                     )}
                 </Grid>
 
-                {/* Right — Chat placeholder */}
+                {/* Right — Chat */}
                 <Grid item xs={12} md={8}>
-                    <Paper elevation={2} sx={{ height: 560, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                            <Typography variant="h6" fontWeight="bold">Class Chat</Typography>
-                        </Box>
-                        <Box sx={{ p: 2, flexGrow: 1, overflowY: 'auto', bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography color="text.secondary" variant="body2">
-                                {activeSession ? 'Chat coming soon…' : 'Start a session to enable chat'}
-                            </Typography>
-                        </Box>
-                        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 1 }}>
-                            <TextField
-                                fullWidth size="small"
-                                placeholder="Type a message…"
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                disabled={!activeSession}
-                            />
-                            <Button variant="contained" endIcon={<Send />} disabled={!activeSession || !message}>
-                                Send
-                            </Button>
-                        </Box>
-                    </Paper>
+                    <CourseChat courseId={courseId} currentUser={currentUser} height={560} />
                 </Grid>
             </Grid>
 
