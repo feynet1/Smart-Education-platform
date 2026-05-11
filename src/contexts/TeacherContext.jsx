@@ -776,7 +776,7 @@ export const TeacherProvider = ({ children }) => {
         fetchWeights, saveWeights,
         // Legacy grade functions (kept for backward compat)
         grades, fetchGrades, saveGrade, deleteGrade,
-        teacherLogs, deleteTeacherLog,
+        teacherLogs, fetchTeacherLogs, deleteTeacherLog,
     };
 
     return (

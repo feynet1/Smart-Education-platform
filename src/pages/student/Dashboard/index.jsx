@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Grid, Paper, Card, CardContent, CardActionArea,
     LinearProgress, Chip, Avatar, List, ListItem, ListItemAvatar,
-    ListItemText, CircularProgress,
+    ListItemText, CircularProgress, Tooltip, IconButton,
 } from '@mui/material';
-import { School, Grade, PlayArrow, Assignment } from '@mui/icons-material';
+import { School, PlayArrow, Assignment, Refresh } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import StatsCards from './StatsCards';
 import UpcomingDeadlines from './UpcomingDeadlines';
@@ -15,91 +15,105 @@ import { formatDistanceToNow } from 'date-fns';
 const StudentDashboardHome = () => {
     const { profile } = useAuth();
     const { user } = useAuth();
-    const { enrolledCourses, enrollments, activeSessions, courseAttendanceStats } = useStudent();
+    const { enrolledCourses, enrollments, activeSessions, courseAttendanceStats,
+            fetchActiveSessions, fetchAttendanceHistory } = useStudent();
     const navigate = useNavigate();
 
     const [notifications, setNotifications] = useState([]);
     const [loadingNotifs, setLoadingNotifs] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
-    // Build real notifications from:
-    // 1. Recently uploaded notes for enrolled courses
-    // 2. Active sessions
-    // 3. Recently created assignments
-    useEffect(() => {
+    const loadNotifications = useCallback(async () => {
         if (!enrollments.length) return;
-        const load = async () => {
-            setLoadingNotifs(true);
-            const notifs = [];
-            try {
-                // Recent notes (last 3 days)
-                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-                const { data: notes } = await supabase
-                    .from('course_notes')
-                    .select('id, file_name, created_at, courses(name)')
-                    .in('course_id', enrollments)
-                    .gte('created_at', threeDaysAgo)
-                    .order('created_at', { ascending: false })
-                    .limit(3);
+        setLoadingNotifs(true);
+        const notifs = [];
+        try {
+            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+            const { data: notes } = await supabase
+                .from('course_notes')
+                .select('id, file_name, created_at, courses(name)')
+                .in('course_id', enrollments)
+                .gte('created_at', threeDaysAgo)
+                .order('created_at', { ascending: false })
+                .limit(3);
 
-                (notes || []).forEach(n => notifs.push({
-                    id: `note-${n.id}`,
-                    text: `New file "${n.file_name}" in ${n.courses?.name}`,
-                    time: formatDistanceToNow(new Date(n.created_at), { addSuffix: true }),
-                    icon: <School color="success" />,
-                }));
+            (notes || []).forEach(n => notifs.push({
+                id: `note-${n.id}`,
+                text: `New file "${n.file_name}" in ${n.courses?.name}`,
+                time: formatDistanceToNow(new Date(n.created_at), { addSuffix: true }),
+                icon: <School color="success" />,
+            }));
 
-                // Recent assignments (last 3 days)
-                const { data: assignments } = await supabase
-                    .from('assignments')
-                    .select('id, title, created_at, courses(name)')
-                    .in('course_id', enrollments)
-                    .gte('created_at', threeDaysAgo)
-                    .order('created_at', { ascending: false })
-                    .limit(3);
+            const { data: assignments } = await supabase
+                .from('assignments')
+                .select('id, title, created_at, courses(name)')
+                .in('course_id', enrollments)
+                .gte('created_at', threeDaysAgo)
+                .order('created_at', { ascending: false })
+                .limit(3);
 
-                (assignments || []).forEach(a => notifs.push({
-                    id: `assign-${a.id}`,
-                    text: `New assignment "${a.title}" in ${a.courses?.name}`,
-                    time: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
-                    icon: <Assignment color="primary" />,
-                }));
+            (assignments || []).forEach(a => notifs.push({
+                id: `assign-${a.id}`,
+                text: `New assignment "${a.title}" in ${a.courses?.name}`,
+                time: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
+                icon: <Assignment color="primary" />,
+            }));
 
-                // Active sessions
-                Object.entries(activeSessions).forEach(([courseId, session]) => {
-                    const course = enrolledCourses.find(c => c.id === courseId);
-                    notifs.push({
-                        id: `session-${session.id}`,
-                        text: `Live session active in ${course?.name || 'a course'}`,
-                        time: formatDistanceToNow(new Date(session.started_at), { addSuffix: true }),
-                        icon: <PlayArrow color="error" />,
-                    });
+            Object.entries(activeSessions).forEach(([courseId, session]) => {
+                const course = enrolledCourses.find(c => c.id === courseId);
+                notifs.push({
+                    id: `session-${session.id}`,
+                    text: `Live session active in ${course?.name || 'a course'}`,
+                    time: formatDistanceToNow(new Date(session.started_at), { addSuffix: true }),
+                    icon: <PlayArrow color="error" />,
                 });
+            });
 
-                // Sort by most recent
-                notifs.sort((a, b) => a.time > b.time ? 1 : -1);
-                setNotifications(notifs.slice(0, 5));
-            } catch (err) {
-                console.error('Failed to load notifications:', err);
-            } finally {
-                setLoadingNotifs(false);
-            }
-        };
-        load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enrollments, activeSessions]);
+            notifs.sort((a, b) => a.time > b.time ? 1 : -1);
+            setNotifications(notifs.slice(0, 5));
+        } catch (err) {
+            console.error('Failed to load notifications:', err);
+        } finally {
+            setLoadingNotifs(false);
+        }
+    }, [enrollments, activeSessions, enrolledCourses]);
+
+    useEffect(() => { loadNotifications(); }, [loadNotifications]);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await Promise.all([
+            fetchActiveSessions(),
+            fetchAttendanceHistory(),
+            loadNotifications(),
+        ]);
+        setRefreshing(false);
+    };
 
     return (
         <Box>
             {/* Welcome */}
             <Paper elevation={0} sx={{ p: 3, mb: 4, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white', borderRadius: 2 }}>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    Welcome back, {profile?.name || user?.email?.split('@')[0]}! 👋
-                </Typography>
-                <Typography variant="body1">
-                    {Object.keys(activeSessions).length > 0
-                        ? `🟢 ${Object.keys(activeSessions).length} live session(s) active right now!`
-                        : 'Your academic journey continues!'}
-                </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                    <Box>
+                        <Typography variant="h4" fontWeight="bold" gutterBottom>
+                            Welcome back, {profile?.name || user?.email?.split('@')[0]}! 👋
+                        </Typography>
+                        <Typography variant="body1">
+                            {Object.keys(activeSessions).length > 0
+                                ? `🟢 ${Object.keys(activeSessions).length} live session(s) active right now!`
+                                : 'Your academic journey continues!'}
+                        </Typography>
+                    </Box>
+                    <Tooltip title="Refresh dashboard">
+                        <IconButton
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.15)', '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' } }}>
+                            {refreshing ? <CircularProgress size={20} color="inherit" /> : <Refresh />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             </Paper>
 
             <StatsCards />

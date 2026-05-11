@@ -1,5 +1,6 @@
-import { Box, Typography, Button, Grid, Paper, Chip, Card, CardContent, CircularProgress } from '@mui/material';
-import { Add, Event } from '@mui/icons-material';
+import { useState } from 'react';
+import { Box, Typography, Button, Grid, Paper, Chip, Card, CardContent, CircularProgress, Tooltip, IconButton } from '@mui/material';
+import { Add, Event, Refresh } from '@mui/icons-material';
 import StatsCards from './StatsCards';
 import RecentActivity from './RecentActivity';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +14,15 @@ const TYPE_COLORS = { academic: 'default', exam: 'error', meeting: 'warning', ho
 const TeacherDashboardHome = () => {
     const navigate = useNavigate();
     const { profile } = useAuth();
-    const { courses, activeSession } = useTeacher();
+    const { courses, activeSession, fetchCourses, fetchTeacherLogs } = useTeacher();
     const { events: upcomingEvents, loading: eventsLoading } = useEvents('teachers');
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await Promise.all([fetchCourses(), fetchTeacherLogs()]);
+        setRefreshing(false);
+    };
 
     return (
         <Box>
@@ -29,10 +37,17 @@ const TeacherDashboardHome = () => {
                         {activeSession ? ' 🟢 A session is currently active.' : ''}
                     </Typography>
                 </Box>
-                <Button variant="contained" startIcon={<Add />}
-                    onClick={() => navigate('/teacher/courses')} size="large">
-                    Create New Course
-                </Button>
+                <Box display="flex" gap={1} alignItems="center">
+                    <Tooltip title="Refresh dashboard">
+                        <IconButton onClick={handleRefresh} disabled={refreshing}>
+                            {refreshing ? <CircularProgress size={20} /> : <Refresh />}
+                        </IconButton>
+                    </Tooltip>
+                    <Button variant="contained" startIcon={<Add />}
+                        onClick={() => navigate('/teacher/courses')} size="large">
+                        Create New Course
+                    </Button>
+                </Box>
             </Box>
 
             <StatsCards />
