@@ -140,9 +140,11 @@ const TeacherAssignments = () => {
 
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" mb={3}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">Assignments</Typography>
+                    <Typography variant="h4" fontWeight="bold"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Assignments</Typography>
                     <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
@@ -162,7 +164,7 @@ const TeacherAssignments = () => {
             </Box>
 
             <Paper elevation={2}>
-                <TableContainer>
+                <TableContainer sx={{ overflowX: 'auto' }}>
                     <Table>
                         <TableHead>
                             <TableRow sx={{ bgcolor: '#f5f5f5' }}>

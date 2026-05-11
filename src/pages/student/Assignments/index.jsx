@@ -200,9 +200,11 @@ const StudentAssignments = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box display="flex" justifyContent="space-between" mb={4}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">Assignments</Typography>
+                    <Typography variant="h4" fontWeight="bold"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Assignments</Typography>
                     <Typography variant="subtitle1" color="text.secondary">
                         Track your work across all courses
                     </Typography>
@@ -243,14 +245,16 @@ const StudentAssignments = () => {
 
             {/* Filter + Tabs */}
             <Paper elevation={2} sx={{ borderRadius: 2 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center"
+                <Box display="flex" justifyContent="space-between"
+                    sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}
                     px={2} pt={1} flexWrap="wrap" gap={1}>
-                    <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+                    <Tabs value={tab} onChange={(_, v) => setTab(v)}
+                        variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
                         <Tab label={`Pending (${pending.length})`} />
                         <Tab label={`Done (${done.length})`} />
                         <Tab label={`All (${byCourse.length})`} />
                     </Tabs>
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <FormControl size="small" sx={{ minWidth: 180, width: { xs: '100%', sm: 'auto' } }}>
                         <InputLabel>Course</InputLabel>
                         <Select value={filterCourse} label="Course"
                             onChange={e => setFilterCourse(e.target.value)}>

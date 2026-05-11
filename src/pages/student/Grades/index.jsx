@@ -60,9 +60,11 @@ const StudentGrades = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box display="flex" justifyContent="space-between" mb={4}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">Grades & Performance</Typography>
+                    <Typography variant="h4" fontWeight="bold"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Grades & Performance</Typography>
                     <Typography variant="subtitle1" color="text.secondary">
                         Your weighted academic results
                     </Typography>
@@ -86,19 +88,19 @@ const StudentGrades = () => {
 
             {/* Summary cards */}
             <Box display="flex" gap={3} mb={4} flexWrap="wrap">
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 140 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 140 } }}>
                     <Typography variant="h4" fontWeight="bold" color="primary.main">
                         {gradesLoading ? '…' : totalRows.length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">Courses Graded</Typography>
                 </Paper>
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 140 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 140 } }}>
                     <Typography variant="h4" fontWeight="bold" color="success.main">
                         {gradesLoading ? '…' : (avgScore ? `${avgScore}%` : '—')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">Avg Score</Typography>
                 </Paper>
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 140 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 140 } }}>
                     <Typography variant="h4" fontWeight="bold" color="warning.main">
                         {gradesLoading ? '…' : gpa}
                     </Typography>
@@ -130,7 +132,7 @@ const StudentGrades = () => {
                                 sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
                                 <AccordionSummary expandIcon={<ExpandMore />}
                                     sx={{ borderRadius: 2 }}>
-                                    <Box display="flex" alignItems="center" gap={2} width="100%" pr={2}>
+                                    <Box display="flex" alignItems="center" gap={2} width="100%" pr={2} flexWrap="wrap">
                                         {/* Course name */}
                                         <Typography variant="h6" fontWeight="bold" sx={{ minWidth: 120 }}>
                                             {course?.name || 'Course'}
@@ -139,7 +141,8 @@ const StudentGrades = () => {
                                             {course?.subject}
                                         </Typography>
                                         {/* Total score */}
-                                        <Box display="flex" alignItems="center" gap={1.5} mr={2}>
+                                        <Box display="flex" alignItems="center" gap={1.5} mr={2}
+                                            sx={{ display: { xs: 'none', sm: 'flex' } }}>
                                             <Box sx={{ width: 120 }}>
                                                 <LinearProgress variant="determinate"
                                                     value={total.score}

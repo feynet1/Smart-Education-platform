@@ -154,9 +154,11 @@ const AttendanceHelper = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
+            <Box display="flex" justifyContent="space-between" mb={3} flexWrap="wrap" gap={2}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">Attendance</Typography>
+                    <Typography variant="h4" fontWeight="bold"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Attendance</Typography>
                     <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
                 </Box>
                 <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
@@ -189,7 +191,8 @@ const AttendanceHelper = () => {
 
             {/* Tabs */}
             <Paper elevation={0} sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}
+                    variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
                     <Tab icon={<EditCalendar />} iconPosition="start" label="Mark Attendance" />
                     <Tab icon={<History />} iconPosition="start" label="Student History" />
                 </Tabs>
@@ -253,20 +256,24 @@ const AttendanceHelper = () => {
                                                         color={STATUS_CONFIG[row.status]?.color || 'default'} />
                                                 </TableCell>
                                                 <TableCell align="center">
-                                                    <ButtonGroup size="small" variant="outlined">
+                                                    <ButtonGroup size="small" variant="outlined"
+                                                        sx={{ flexWrap: 'wrap', justifyContent: 'center' }}>
                                                         <Button color="success"
                                                             variant={row.status === 'Present' ? 'contained' : 'outlined'}
-                                                            onClick={() => setStatus(row.id, 'Present')}>
+                                                            onClick={() => setStatus(row.id, 'Present')}
+                                                            sx={{ fontSize: { xs: '0.65rem', sm: '0.8125rem' }, px: { xs: 0.5, sm: 1 } }}>
                                                             Present
                                                         </Button>
                                                         <Button color="warning"
                                                             variant={row.status === 'Late' ? 'contained' : 'outlined'}
-                                                            onClick={() => setStatus(row.id, 'Late')}>
+                                                            onClick={() => setStatus(row.id, 'Late')}
+                                                            sx={{ fontSize: { xs: '0.65rem', sm: '0.8125rem' }, px: { xs: 0.5, sm: 1 } }}>
                                                             Late
                                                         </Button>
                                                         <Button color="error"
                                                             variant={row.status === 'Absent' ? 'contained' : 'outlined'}
-                                                            onClick={() => setStatus(row.id, 'Absent')}>
+                                                            onClick={() => setStatus(row.id, 'Absent')}
+                                                            sx={{ fontSize: { xs: '0.65rem', sm: '0.8125rem' }, px: { xs: 0.5, sm: 1 } }}>
                                                             Absent
                                                         </Button>
                                                     </ButtonGroup>

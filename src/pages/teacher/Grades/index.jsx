@@ -207,16 +207,30 @@ const TeacherGrades = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" mb={3}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">Grades</Typography>
+                    <Typography variant="h4" fontWeight="bold"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Grades</Typography>
                     <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
                 </Box>
-                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center"
+                    sx={{ display: { xs: 'none', sm: 'flex' } }}>
                     {CATEGORIES.map(cat => (
                         <Chip key={cat} size="small" variant="outlined"
                             label={`${CATEGORY_LABELS[cat]}: ${weights[cat] ?? DEFAULT_WEIGHTS[cat]}%`} />
                     ))}
+                    <Tooltip title="Refresh">
+                        <span>
+                            <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                                {refreshing
+                                    ? <CircularProgress size={20} color="inherit" />
+                                    : <Refresh />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                </Box>
+                <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center' }}>
                     <Tooltip title="Refresh">
                         <span>
                             <IconButton onClick={handleRefresh} disabled={refreshing} size="small">

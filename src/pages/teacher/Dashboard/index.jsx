@@ -27,9 +27,11 @@ const TeacherDashboardHome = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box display="flex" justifyContent="space-between" mb={4}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom
+                        sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                         Welcome back, {profile?.name || 'Teacher'} 👋
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
@@ -44,8 +46,9 @@ const TeacherDashboardHome = () => {
                         </IconButton>
                     </Tooltip>
                     <Button variant="contained" startIcon={<Add />}
-                        onClick={() => navigate('/teacher/courses')} size="large">
-                        Create New Course
+                        onClick={() => navigate('/teacher/courses')} size="small">
+                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Create New Course</Box>
+                        <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>New Course</Box>
                     </Button>
                 </Box>
             </Box>

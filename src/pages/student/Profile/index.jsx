@@ -98,9 +98,11 @@ const Profile = () => {
 
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box display="flex" justifyContent="space-between" mb={4}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">Profile & Settings</Typography>
+                    <Typography variant="h4" fontWeight="bold"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Profile & Settings</Typography>
                     <Typography variant="subtitle1" color="text.secondary">
                         Manage your account information
                     </Typography>
@@ -193,11 +195,14 @@ const Profile = () => {
                             </Grid>
                         </Grid>
 
-                        <Box mt={3} display="flex" justifyContent="space-between" alignItems="center">
+                        <Box mt={3} display="flex" gap={2} flexWrap="wrap"
+                            sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' } }}>
                             <Button
                                 variant="outlined"
                                 startIcon={<Lock />}
-                                onClick={() => setPwDialog(true)}>
+                                onClick={() => setPwDialog(true)}
+                                fullWidth={false}
+                                sx={{ width: { xs: '100%', sm: 'auto' } }}>
                                 Change Password
                             </Button>
                             <Button
@@ -205,7 +210,8 @@ const Profile = () => {
                                 size="large"
                                 startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <Save />}
                                 onClick={handleSave}
-                                disabled={saving}>
+                                disabled={saving}
+                                sx={{ width: { xs: '100%', sm: 'auto' } }}>
                                 {saving ? 'Saving…' : 'Save Changes'}
                             </Button>
                         </Box>

@@ -62,8 +62,10 @@ const CourseList = () => {
 
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-                <Typography variant="h4" fontWeight="bold">My Courses</Typography>
+            <Box display="flex" justifyContent="space-between" mb={4}
+                sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
+                <Typography variant="h4" fontWeight="bold"
+                    sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>My Courses</Typography>
                 <Box display="flex" alignItems="center" gap={1}>
                     <Tooltip title="Refresh">
                         <span>

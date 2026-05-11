@@ -80,7 +80,8 @@ const NotesHelper = () => {
     return (
         <Box>
             <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">Course Notes</Typography>
+                <Typography variant="h4" fontWeight="bold"
+                    sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Course Notes</Typography>
                 <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
             </Box>
 

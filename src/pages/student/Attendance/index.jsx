@@ -51,9 +51,11 @@ const StudentAttendance = () => {
 
     return (
         <Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Box display="flex" justifyContent="space-between" mb={4}
+            sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
             <Box>
-                <Typography variant="h4" fontWeight="bold">Attendance</Typography>
+                <Typography variant="h4" fontWeight="bold"
+                    sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Attendance</Typography>
                 <Typography variant="subtitle1" color="text.secondary">
                     Your attendance record across all courses
                 </Typography>
@@ -71,7 +73,7 @@ const StudentAttendance = () => {
 
             {/* Overall summary */}
             <Box display="flex" gap={3} mb={4} flexWrap="wrap">
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 130 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 130 } }}>
                     <Typography variant="h4" fontWeight="bold"
                         color={attendancePercentage == null ? 'text.secondary'
                              : attendancePercentage >= 75 ? 'success.main'
@@ -80,19 +82,19 @@ const StudentAttendance = () => {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">Overall Rate</Typography>
                 </Paper>
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 130 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 130 } }}>
                     <Typography variant="h4" fontWeight="bold" color="success.main">
                         {attendanceLoading ? '…' : attendanceRecords.filter(r => r.status === 'Present').length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">Present</Typography>
                 </Paper>
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 130 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 130 } }}>
                     <Typography variant="h4" fontWeight="bold" color="warning.main">
                         {attendanceLoading ? '…' : attendanceRecords.filter(r => r.status === 'Late').length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">Late</Typography>
                 </Paper>
-                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: 130 }}>
+                <Paper elevation={2} sx={{ p: 3, borderRadius: 2, textAlign: 'center', minWidth: { xs: 'calc(50% - 12px)', sm: 130 } }}>
                     <Typography variant="h4" fontWeight="bold" color="error.main">
                         {attendanceLoading ? '…' : attendanceRecords.filter(r => r.status === 'Absent').length}
                     </Typography>
@@ -148,7 +150,8 @@ const StudentAttendance = () => {
 
             {/* Detailed records table */}
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box display="flex" justifyContent="space-between" mb={2}
+                    sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1 }}>
                     <Box>
                         <Typography variant="h6" fontWeight="bold">Session Records</Typography>
                         {pct != null && (
@@ -157,7 +160,7 @@ const StudentAttendance = () => {
                             </Typography>
                         )}
                     </Box>
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <FormControl size="small" sx={{ minWidth: 200, width: { xs: '100%', sm: 200 } }}>
                         <InputLabel>Filter by Course</InputLabel>
                         <Select value={filterCourse} label="Filter by Course"
                             onChange={e => setFilterCourse(e.target.value)}>

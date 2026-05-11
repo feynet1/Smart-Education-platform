@@ -94,9 +94,11 @@ const StudentDashboardHome = () => {
         <Box>
             {/* Welcome */}
             <Paper elevation={0} sx={{ p: 3, mb: 4, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white', borderRadius: 2 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start"
+                    sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                     <Box>
-                        <Typography variant="h4" fontWeight="bold" gutterBottom>
+                        <Typography variant="h4" fontWeight="bold" gutterBottom
+                            sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                             Welcome back, {profile?.name || user?.email?.split('@')[0]}! 👋
                         </Typography>
                         <Typography variant="body1">

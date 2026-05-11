@@ -9,7 +9,8 @@ const CourseSelector = ({ basePath, title }) => {
     return (
         <Box>
             <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">
+                <Typography variant="h4" fontWeight="bold"
+                    sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                     {title}
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
