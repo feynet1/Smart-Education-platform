@@ -143,10 +143,23 @@ const CourseDetails = () => {
                 <Grid item xs={12} md={8}>
                     {/* Tabs */}
                     <Paper elevation={2} sx={{ mb: 3 }}>
-                        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                            <Tab label={`Assignments (${assignments.length})`} icon={<AssignmentIcon />} iconPosition="start" />
-                            <Tab label={`Notes (${notes.length})`} icon={<Description />} iconPosition="start" />
-                            <Tab label="Chat" icon={<ChatIcon />} iconPosition="start" />
+                        <Tabs value={tab} onChange={(_, v) => setTab(v)}
+                            sx={{ borderBottom: 1, borderColor: 'divider' }}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            allowScrollButtonsMobile>
+                            <Tab label={`Assignments (${assignments.length})`}
+                                icon={<AssignmentIcon />} iconPosition="start"
+                                sx={{ minWidth: { xs: 'auto', sm: 160 }, px: { xs: 1, sm: 2 },
+                                      '& .MuiTab-iconWrapper': { display: { xs: 'none', sm: 'inline-flex' } } }} />
+                            <Tab label={`Notes (${notes.length})`}
+                                icon={<Description />} iconPosition="start"
+                                sx={{ minWidth: { xs: 'auto', sm: 120 }, px: { xs: 1, sm: 2 },
+                                      '& .MuiTab-iconWrapper': { display: { xs: 'none', sm: 'inline-flex' } } }} />
+                            <Tab label="Chat"
+                                icon={<ChatIcon />} iconPosition="start"
+                                sx={{ minWidth: { xs: 'auto', sm: 100 }, px: { xs: 1, sm: 2 },
+                                      '& .MuiTab-iconWrapper': { display: { xs: 'none', sm: 'inline-flex' } } }} />
                         </Tabs>
 
                         <Box p={2}>

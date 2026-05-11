@@ -77,11 +77,13 @@ const ClassroomHelper = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+                flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold">
+                    <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                         {course.name}
-                        <Typography component="span" variant="h5" color="text.secondary" ml={1}>
+                        <Typography component="span" variant="h5" color="text.secondary" ml={1}
+                            sx={{ fontSize: { xs: '1rem', sm: '1.5rem' } }}>
                             ({course.subject})
                         </Typography>
                     </Typography>
@@ -91,7 +93,7 @@ const ClassroomHelper = () => {
                 </Box>
 
                 {activeSession ? (
-                    <Box display="flex" alignItems="center" gap={2}>
+                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                         <Chip label="Session Active" color="success" variant="filled" />
                         <Tooltip title="Refresh">
                             <span>
@@ -111,7 +113,7 @@ const ClassroomHelper = () => {
                         </Button>
                     </Box>
                 ) : (
-                    <Box display="flex" alignItems="center" gap={2}>
+                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                         <Tooltip title="Refresh">
                             <span>
                                 <IconButton onClick={handleRefresh} disabled={refreshing}>
@@ -206,7 +208,7 @@ const ClassroomHelper = () => {
 
                 {/* Right — Chat */}
                 <Grid item xs={12} md={8}>
-                    <CourseChat courseId={courseId} currentUser={currentUser} height={560} />
+                    <CourseChat courseId={courseId} currentUser={currentUser} />
                 </Grid>
             </Grid>
 

@@ -63,7 +63,7 @@ function MessageBubble({ message, currentUser }) {
         </Avatar>
       )}
 
-      <Box sx={{ maxWidth: '70%', display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
+      <Box sx={{ maxWidth: { xs: '90%', sm: '75%', md: '70%' }, display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
         {/* Teacher badge — shown above the bubble */}
         {isTeacher && (
           <Chip
@@ -325,7 +325,7 @@ function MessageInput({ onSend, disabled = false }) {
 export default function CourseChat({
   courseId,
   currentUser,
-  height = 560,
+  height,
   reconnectError: reconnectErrorProp = null,
   retryConnection: retryConnectionProp = () => {},
 }) {
@@ -355,7 +355,9 @@ export default function CourseChat({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height,
+        // On mobile: fill viewport height minus header space; on desktop: fixed height
+        height: height ?? { xs: 'calc(100dvh - 200px)', sm: 520, md: 560 },
+        minHeight: 320,
         overflow: 'hidden',
         borderRadius: 2,
       }}
