@@ -3,16 +3,16 @@ import {
     Box, Button, Grid, Card, CardContent, CardActions,
     Typography, Chip, IconButton, Dialog, DialogTitle,
     DialogContent, DialogContentText, DialogActions,
-    Snackbar, Alert, CircularProgress,
+    Snackbar, Alert, CircularProgress, Tooltip,
 } from '@mui/material';
-import { Add, Edit, Delete, Visibility } from '@mui/icons-material';
+import { Add, Edit, Delete, Visibility, Refresh } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
 import { useNavigate } from 'react-router-dom';
 import CreateCourse from './Create';
 import EditCourse from './Edit';
 
 const CourseList = () => {
-    const { courses, coursesLoading, deleteCourse } = useTeacher();
+    const { courses, coursesLoading, deleteCourse, fetchCourses } = useTeacher();
     const navigate = useNavigate();
 
     const [createOpen, setCreateOpen] = useState(false);
@@ -21,10 +21,23 @@ const CourseList = () => {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const showSnack = (message, severity = 'success') =>
         setSnackbar({ open: true, message, severity });
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await fetchCourses();
+            showSnack('Courses refreshed');
+        } catch {
+            showSnack('Refresh failed', 'error');
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const handleEdit = (course) => {
         setSelectedCourse(course);
@@ -51,9 +64,20 @@ const CourseList = () => {
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
                 <Typography variant="h4" fontWeight="bold">My Courses</Typography>
-                <Button variant="contained" startIcon={<Add />} onClick={() => setCreateOpen(true)}>
-                    Create Course
-                </Button>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Tooltip title="Refresh">
+                        <span>
+                            <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                                {refreshing
+                                    ? <CircularProgress size={20} color="inherit" />
+                                    : <Refresh />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Button variant="contained" startIcon={<Add />} onClick={() => setCreateOpen(true)}>
+                        Create Course
+                    </Button>
+                </Box>
             </Box>
 
             {coursesLoading ? (
@@ -145,7 +169,8 @@ const CourseList = () => {
             </Dialog>
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>

@@ -1,14 +1,31 @@
+import { useState } from 'react';
 import {
     Box, Typography, Paper, Button, Chip, CircularProgress,
     LinearProgress, Accordion, AccordionSummary, AccordionDetails,
     Table, TableBody, TableCell, TableRow,
+    IconButton, Tooltip, Snackbar, Alert,
 } from '@mui/material';
-import { Download, ExpandMore } from '@mui/icons-material';
+import { Download, ExpandMore, Refresh } from '@mui/icons-material';
 import { useStudent } from '../../../contexts/StudentContext';
 import { gradeColor, scoreToGrade, CATEGORY_LABELS } from '../../../utils/gradeUtils';
 
 const StudentGrades = () => {
-    const { grades, gradesLoading, enrolledCourses, gpa } = useStudent();
+    const { grades, gradesLoading, enrolledCourses, gpa, fetchGrades } = useStudent();
+
+    const [refreshing, setRefreshing] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await fetchGrades();
+            setSnackbar({ open: true, message: 'Grades refreshed', severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     // Separate totals from category rows
     const categoryRows = grades.filter(g => !g.isTotal);
@@ -50,10 +67,21 @@ const StudentGrades = () => {
                         Your weighted academic results
                     </Typography>
                 </Box>
-                <Button variant="outlined" startIcon={<Download />} onClick={handleExport}
-                    disabled={categoryRows.length === 0}>
-                    Export CSV
-                </Button>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Tooltip title="Refresh">
+                        <span>
+                            <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                                {refreshing
+                                    ? <CircularProgress size={20} color="inherit" />
+                                    : <Refresh />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Button variant="outlined" startIcon={<Download />} onClick={handleExport}
+                        disabled={categoryRows.length === 0}>
+                        Export CSV
+                    </Button>
+                </Box>
             </Box>
 
             {/* Summary cards */}
@@ -237,6 +265,16 @@ const StudentGrades = () => {
                         })}
                 </Box>
             )}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

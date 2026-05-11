@@ -2,15 +2,29 @@ import { useState } from 'react';
 import {
     Box, Typography, Grid, Card, CardContent, CardActionArea,
     CardActions, Chip, Button, Snackbar, Alert,
+    IconButton, Tooltip, CircularProgress,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { Login as JoinIcon } from '@mui/icons-material';
+import { Login as JoinIcon, Refresh } from '@mui/icons-material';
 import { useStudent } from '../../../contexts/StudentContext';
 
 const StudentCoursesList = () => {
-    const { enrolledCourses, activeSessions, joinSession, studentGrade } = useStudent();
+    const { enrolledCourses, activeSessions, joinSession, studentGrade, fetchEnrollments, fetchAllCourses } = useStudent();
     const navigate = useNavigate();
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await Promise.all([fetchEnrollments(), fetchAllCourses()]);
+            setSnackbar({ open: true, message: 'Courses refreshed', severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const handleJoinSession = async (e, courseId) => {
         e.stopPropagation(); // prevent card navigation
@@ -24,13 +38,24 @@ const StudentCoursesList = () => {
 
     return (
         <Box>
-            <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">My Courses</Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                    {studentGrade
-                        ? `Showing ${studentGrade === 'University' ? 'University' : `Grade ${studentGrade}`} courses`
-                        : 'View your enrolled courses'}
-                </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                <Box>
+                    <Typography variant="h4" fontWeight="bold">My Courses</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                        {studentGrade
+                            ? `Showing ${studentGrade === 'University' ? 'University' : `Grade ${studentGrade}`} courses`
+                            : 'View your enrolled courses'}
+                    </Typography>
+                </Box>
+                <Tooltip title="Refresh">
+                    <span>
+                        <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                            {refreshing
+                                ? <CircularProgress size={20} color="inherit" />
+                                : <Refresh />}
+                        </IconButton>
+                    </span>
+                </Tooltip>
             </Box>
 
             {enrolledCourses.length === 0 ? (
@@ -93,8 +118,9 @@ const StudentCoursesList = () => {
                 </Grid>
             )}
 
-            <Snackbar open={snackbar.open} autoHideDuration={4000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+            <Snackbar open={snackbar.open} autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>

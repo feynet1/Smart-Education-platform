@@ -3,11 +3,11 @@ import { useParams } from 'react-router-dom';
 import {
     Box, Typography, Grid, Paper, Button, Avatar, Chip,
     List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction,
-    IconButton, Tooltip, Divider, CircularProgress, Alert, TextField,
+    IconButton, Tooltip, Divider, CircularProgress, Alert, TextField, Snackbar,
 } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-    PlayArrow, Stop, Person, Send,
+    PlayArrow, Stop, Person, Send, Refresh,
 } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
 
@@ -25,7 +25,21 @@ const ClassroomHelper = () => {
     const course = courses.find(c => c.id === courseId);
     const [starting, setStarting] = useState(false);
     const [ending, setEnding] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [message, setMessage] = useState('');
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await fetchActiveSession(courseId);
+            setSnackbar({ open: true, message: 'Classroom data refreshed', severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     // Load active session on mount
     useEffect(() => {
@@ -76,6 +90,13 @@ const ClassroomHelper = () => {
                 {activeSession ? (
                     <Box display="flex" alignItems="center" gap={2}>
                         <Chip label="Session Active" color="success" variant="filled" />
+                        <Tooltip title="Refresh">
+                            <span>
+                                <IconButton onClick={handleRefresh} disabled={refreshing}>
+                                    {refreshing ? <CircularProgress size={20} /> : <Refresh />}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
                         <Button
                             variant="contained"
                             color="error"
@@ -87,16 +108,25 @@ const ClassroomHelper = () => {
                         </Button>
                     </Box>
                 ) : (
-                    <Button
-                        variant="contained"
-                        color="success"
-                        startIcon={starting ? <CircularProgress size={16} color="inherit" /> : <PlayArrow />}
-                        onClick={handleStartSession}
-                        disabled={starting}
-                        size="large"
-                    >
-                        {starting ? 'Starting…' : 'Start Session'}
-                    </Button>
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Tooltip title="Refresh">
+                            <span>
+                                <IconButton onClick={handleRefresh} disabled={refreshing}>
+                                    {refreshing ? <CircularProgress size={20} /> : <Refresh />}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            startIcon={starting ? <CircularProgress size={16} color="inherit" /> : <PlayArrow />}
+                            onClick={handleStartSession}
+                            disabled={starting}
+                            size="large"
+                        >
+                            {starting ? 'Starting…' : 'Start Session'}
+                        </Button>
+                    </Box>
                 )}
             </Box>
 
@@ -197,6 +227,17 @@ const ClassroomHelper = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

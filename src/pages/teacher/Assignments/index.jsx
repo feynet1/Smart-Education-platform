@@ -7,7 +7,7 @@ import {
     TableContainer, TableHead, TableRow, Tooltip,
     Snackbar, Alert, CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete, Assignment as AssignmentIcon } from '@mui/icons-material';
+import { Add, Edit, Delete, Assignment as AssignmentIcon, Refresh } from '@mui/icons-material';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 import { supabase } from '../../../supabaseClient';
 import { useTeacher } from '../../../contexts/TeacherContext';
@@ -37,6 +37,7 @@ const TeacherAssignments = () => {
 
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [dialog, setDialog] = useState({ open: false, mode: 'create', item: null });
     const [form, setForm] = useState(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
@@ -65,6 +66,18 @@ const TeacherAssignments = () => {
     }, [courseId]);
 
     useEffect(() => { fetchAssignments(); }, [fetchAssignments]);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await fetchAssignments();
+            showSnack('Assignments refreshed', 'success');
+        } catch {
+            showSnack('Refresh failed', 'error');
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const openCreate = () => {
         setForm(EMPTY_FORM);
@@ -132,9 +145,20 @@ const TeacherAssignments = () => {
                     <Typography variant="h4" fontWeight="bold">Assignments</Typography>
                     <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
                 </Box>
-                <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
-                    New Assignment
-                </Button>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Tooltip title="Refresh">
+                        <span>
+                            <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                                {refreshing
+                                    ? <CircularProgress size={20} color="inherit" />
+                                    : <Refresh />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
+                        New Assignment
+                    </Button>
+                </Box>
             </Box>
 
             <Paper elevation={2}>
@@ -252,7 +276,8 @@ const TeacherAssignments = () => {
             </Dialog>
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>

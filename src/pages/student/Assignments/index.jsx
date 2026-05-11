@@ -3,10 +3,11 @@ import {
     Box, Typography, Paper, Chip, CircularProgress, Tabs, Tab,
     List, ListItem, ListItemText, Checkbox, Tooltip, FormControl,
     InputLabel, Select, MenuItem, LinearProgress, Avatar,
+    IconButton, Snackbar, Alert,
 } from '@mui/material';
 import {
     Assignment as AssignmentIcon, CheckCircle, AccessTime,
-    Cancel, School,
+    Cancel, School, Refresh,
 } from '@mui/icons-material';
 import { format, differenceInDays, isPast, isToday } from 'date-fns';
 import { supabase } from '../../../supabaseClient';
@@ -46,6 +47,8 @@ const StudentAssignments = () => {
     const [completions, setCompletions] = useState({});
     const [loading, setLoading] = useState(false);
     const [toggling, setToggling] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const load = useCallback(async () => {
         if (!enrollments.length || !user?.id) return;
@@ -74,6 +77,18 @@ const StudentAssignments = () => {
     }, [enrollments, user?.id]);
 
     useEffect(() => { load(); }, [load]);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await load();
+            setSnackbar({ open: true, message: 'Assignments refreshed', severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const toggleDone = async (assignmentId) => {
         const current = completions[assignmentId]?.status || 'pending';
@@ -185,11 +200,22 @@ const StudentAssignments = () => {
     return (
         <Box>
             {/* Header */}
-            <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">Assignments</Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Track your work across all courses
-                </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                <Box>
+                    <Typography variant="h4" fontWeight="bold">Assignments</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                        Track your work across all courses
+                    </Typography>
+                </Box>
+                <Tooltip title="Refresh">
+                    <span>
+                        <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                            {refreshing
+                                ? <CircularProgress size={20} color="inherit" />
+                                : <Refresh />}
+                        </IconButton>
+                    </span>
+                </Tooltip>
             </Box>
 
             {/* Progress summary */}
@@ -257,6 +283,17 @@ const StudentAssignments = () => {
                     )}
                 </Box>
             </Paper>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

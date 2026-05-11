@@ -30,7 +30,8 @@ import {
     Grade as GradeIcon,
     Settings as SettingsIcon,
     Notifications as NotificationsIcon,
-    AccountCircle
+    AccountCircle,
+    Event as EventIcon,
 } from '@mui/icons-material';
 import useAuth from '../hooks/useAuth';
 
@@ -70,6 +71,7 @@ const TeacherLayout = () => {
         { text: 'Attendance',  icon: <AttendanceIcon />, path: '/teacher/attendance' },
         { text: 'Assignments', icon: <NoteIcon />,       path: '/teacher/assignments' },
         { text: 'Grades',      icon: <GradeIcon />,      path: '/teacher/grades' },
+        { text: 'Events',      icon: <EventIcon />,      path: '/teacher/events' },
         { text: 'Notes',       icon: <NoteIcon />,       path: '/teacher/notes' },
         { text: 'Settings',    icon: <SettingsIcon />,   path: '/teacher/settings' },
     ];

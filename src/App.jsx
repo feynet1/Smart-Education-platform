@@ -26,6 +26,7 @@ import StudentAttendance from './pages/student/Attendance';
 import StudentAssignments from './pages/student/Assignments';
 
 // Teacher Pages
+import TeacherEvents from './pages/teacher/Events';
 import TeacherDashboardHome from './pages/teacher/Dashboard';
 import CourseList from './pages/teacher/Courses';
 import ClassroomHelper from './pages/teacher/Classroom';
@@ -107,6 +108,7 @@ function App() {
               <Route path="assignments/:id" element={<TeacherAssignments />} />
               <Route path="grades" element={<CourseSelector basePath="/teacher/grades" title="Grades" />} />
               <Route path="grades/:id" element={<TeacherGrades />} />
+              <Route path="events" element={<TeacherEvents />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

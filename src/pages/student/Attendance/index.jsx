@@ -3,8 +3,9 @@ import {
     Box, Typography, Paper, Chip, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, CircularProgress,
     MenuItem, Select, FormControl, InputLabel, LinearProgress,
-    Grid,
+    Grid, IconButton, Tooltip, Snackbar, Alert,
 } from '@mui/material';
+import { Refresh } from '@mui/icons-material';
 import { useStudent } from '../../../contexts/StudentContext';
 
 const statusColor = (status) => {
@@ -20,9 +21,24 @@ const StudentAttendance = () => {
         attendancePercentage,
         courseAttendanceStats,
         enrolledCourses,
+        fetchAttendanceHistory,
     } = useStudent();
 
     const [filterCourse, setFilterCourse] = useState('all');
+    const [refreshing, setRefreshing] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await fetchAttendanceHistory();
+            setSnackbar({ open: true, message: 'Attendance refreshed', severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const filteredRecords = filterCourse === 'all'
         ? attendanceRecords
@@ -35,12 +51,23 @@ const StudentAttendance = () => {
 
     return (
         <Box>
-            <Box mb={4}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box>
                 <Typography variant="h4" fontWeight="bold">Attendance</Typography>
                 <Typography variant="subtitle1" color="text.secondary">
                     Your attendance record across all courses
                 </Typography>
             </Box>
+            <Tooltip title="Refresh">
+                <span>
+                    <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                        {refreshing
+                            ? <CircularProgress size={20} color="inherit" />
+                            : <Refresh />}
+                    </IconButton>
+                </span>
+            </Tooltip>
+        </Box>
 
             {/* Overall summary */}
             <Box display="flex" gap={3} mb={4} flexWrap="wrap">
@@ -189,6 +216,16 @@ const StudentAttendance = () => {
                     </TableContainer>
                 )}
             </Paper>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

@@ -4,8 +4,9 @@ import { supabase } from '../supabaseClient';
 /**
  * Fetch upcoming events from Supabase filtered by target role.
  * @param {'all' | 'students' | 'teachers'} role
+ * @param {number} [refreshKey=0] - Increment to trigger a re-fetch
  */
-const useEvents = (role) => {
+const useEvents = (role, refreshKey = 0) => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,7 +33,7 @@ const useEvents = (role) => {
             }
         };
         fetch();
-    }, [role]);
+    }, [role, refreshKey]);
 
     return { events, loading };
 };

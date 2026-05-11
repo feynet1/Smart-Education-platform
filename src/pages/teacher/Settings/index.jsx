@@ -4,7 +4,8 @@ import {
     FormControlLabel, Grid, Avatar, Snackbar, Alert, CircularProgress,
     Dialog, DialogTitle, DialogContent, DialogActions, InputAdornment, IconButton,
 } from '@mui/material';
-import { Save, Visibility, VisibilityOff, Lock } from '@mui/icons-material';
+import { Save, Visibility, VisibilityOff, Lock, Refresh } from '@mui/icons-material';
+import { Tooltip } from '@mui/material';
 import useAuth from '../../../hooks/useAuth';
 import { supabase } from '../../../supabaseClient';
 
@@ -14,7 +15,30 @@ const Settings = () => {
     const [name, setName] = useState(profile?.name || user?.name || '');
     const [phone, setPhone] = useState(profile?.phone || '');
     const [saving, setSaving] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleRefresh = async () => {
+        if (!user?.id) return;
+        setRefreshing(true);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            if (error) throw error;
+            if (data) {
+                setName(data.name || '');
+                setPhone(data.phone || '');
+            }
+            setSnackbar({ open: true, message: 'Profile refreshed', severity: 'success' });
+        } catch (err) {
+            setSnackbar({ open: true, message: err.message || 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const [notifications, setNotifications] = useState({
         email: true,
@@ -80,11 +104,22 @@ const Settings = () => {
 
     return (
         <Box>
-            <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">Settings</Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Manage your profile and preferences
-                </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                <Box>
+                    <Typography variant="h4" fontWeight="bold">Settings</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                        Manage your profile and preferences
+                    </Typography>
+                </Box>
+                <Tooltip title="Refresh">
+                    <span>
+                        <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                            {refreshing
+                                ? <CircularProgress size={20} color="inherit" />
+                                : <Refresh />}
+                        </IconButton>
+                    </span>
+                </Tooltip>
             </Box>
 
             <Grid container spacing={3}>
@@ -198,7 +233,8 @@ const Settings = () => {
             </Grid>
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
 

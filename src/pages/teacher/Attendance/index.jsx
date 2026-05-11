@@ -5,9 +5,9 @@ import {
     Snackbar, Alert, CircularProgress, Chip,
     Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Avatar, ButtonGroup, Tabs, Tab,
-    LinearProgress,
+    LinearProgress, IconButton, Tooltip,
 } from '@mui/material';
-import { Download, Save, Person, History, EditCalendar } from '@mui/icons-material';
+import { Download, Save, Person, History, EditCalendar, Refresh } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { supabase } from '../../../supabaseClient';
 import { useTeacher } from '../../../contexts/TeacherContext';
@@ -28,6 +28,7 @@ const AttendanceHelper = () => {
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [rows, setRows] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // ── History state ─────────────────────────────────────────
@@ -51,6 +52,18 @@ const AttendanceHelper = () => {
             setHistoryLoading(false);
         }
     }, [courseId]);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await Promise.all([fetchEnrolledStudents(courseId), fetchHistory()]);
+            setSnackbar({ open: true, message: 'Data refreshed', severity: 'success' });
+        } catch {
+            setSnackbar({ open: true, message: 'Refresh failed', severity: 'error' });
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         if (courseId) {
@@ -146,21 +159,32 @@ const AttendanceHelper = () => {
                     <Typography variant="h4" fontWeight="bold">Attendance</Typography>
                     <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
                 </Box>
-                {tab === 0 && (
-                    <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-                        <TextField type="date" size="small" value={selectedDate}
-                            onChange={e => setSelectedDate(e.target.value)}
-                            InputLabelProps={{ shrink: true }} />
-                        <Button variant="outlined" startIcon={<Download />} onClick={handleExport}>
-                            Export CSV
-                        </Button>
-                        <Button variant="contained"
-                            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                            onClick={handleSave} disabled={saving || rows.length === 0}>
-                            {saving ? 'Saving…' : 'Save'}
-                        </Button>
-                    </Box>
-                )}
+                <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+                    <Tooltip title="Refresh">
+                        <span>
+                            <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                                {refreshing
+                                    ? <CircularProgress size={20} color="inherit" />
+                                    : <Refresh />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    {tab === 0 && (
+                        <>
+                            <TextField type="date" size="small" value={selectedDate}
+                                onChange={e => setSelectedDate(e.target.value)}
+                                InputLabelProps={{ shrink: true }} />
+                            <Button variant="outlined" startIcon={<Download />} onClick={handleExport}>
+                                Export CSV
+                            </Button>
+                            <Button variant="contained"
+                                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save />}
+                                onClick={handleSave} disabled={saving || rows.length === 0}>
+                                {saving ? 'Saving…' : 'Save'}
+                            </Button>
+                        </>
+                    )}
+                </Box>
             </Box>
 
             {/* Tabs */}
@@ -329,7 +353,8 @@ const AttendanceHelper = () => {
             </Paper>
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>

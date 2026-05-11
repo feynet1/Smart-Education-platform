@@ -4,9 +4,9 @@ import {
     Box, Typography, Paper, Chip, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Tooltip, Snackbar, Alert,
     CircularProgress, Avatar, Dialog, DialogTitle, DialogContent,
-    DialogActions, Button, TextField, LinearProgress,
+    DialogActions, Button, TextField, LinearProgress, IconButton,
 } from '@mui/material';
-import { Edit, Grade as GradeIcon } from '@mui/icons-material';
+import { Edit, Grade as GradeIcon, Refresh } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
 import { supabase } from '../../../supabaseClient';
 import {
@@ -124,6 +124,20 @@ const TeacherGrades = () => {
 
     const showSnack = (msg, sev = 'success') => setSnackbar({ open: true, message: msg, severity: sev });
 
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await Promise.all([fetchGradeEntries(courseId), fetchWeights(courseId)]);
+            showSnack('Data refreshed');
+        } catch {
+            showSnack('Refresh failed', 'error');
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
     useEffect(() => {
         if (courseId) {
             fetchGradeEntries(courseId);
@@ -198,11 +212,20 @@ const TeacherGrades = () => {
                     <Typography variant="h4" fontWeight="bold">Grades</Typography>
                     <Typography variant="subtitle1" color="text.secondary">{course.name}</Typography>
                 </Box>
-                <Box display="flex" gap={1} flexWrap="wrap">
+                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
                     {CATEGORIES.map(cat => (
                         <Chip key={cat} size="small" variant="outlined"
                             label={`${CATEGORY_LABELS[cat]}: ${weights[cat] ?? DEFAULT_WEIGHTS[cat]}%`} />
                     ))}
+                    <Tooltip title="Refresh">
+                        <span>
+                            <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                                {refreshing
+                                    ? <CircularProgress size={20} color="inherit" />
+                                    : <Refresh />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
                 </Box>
             </Box>
 
@@ -366,7 +389,8 @@ const TeacherGrades = () => {
             </Dialog>
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>

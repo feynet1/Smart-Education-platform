@@ -361,6 +361,9 @@ export const StudentProvider = ({ children }) => {
         joinSession,
         fetchActiveSessions,
         fetchAttendanceHistory,
+        fetchGrades,
+        fetchAllCourses,
+        fetchEnrollments,
     };
 
     return (

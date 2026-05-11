@@ -3,26 +3,49 @@ import {
     Box, Typography, Paper, Grid, Avatar, TextField, Button,
     Chip, List, ListItem, ListItemAvatar, ListItemText,
     Snackbar, Alert, CircularProgress, Divider,
+    IconButton, Tooltip,
 } from '@mui/material';
-import { Save, School, EmojiEvents, CheckCircle, Edit, Lock } from '@mui/icons-material';
+import { Save, School, EmojiEvents, CheckCircle, Edit, Lock, Refresh } from '@mui/icons-material';
 import useAuth from '../../../hooks/useAuth';
 import { useStudent } from '../../../contexts/StudentContext';
 import ChangePasswordDialog from '../../../components/ChangePasswordDialog';
+import { supabase } from '../../../supabaseClient';
 
 const Profile = () => {
-    const { profile, updateProfile } = useAuth();
+    const { user, profile, updateProfile } = useAuth();
     const { enrolledCourses, gpa, attendancePercentage, attendanceRecords } = useStudent();
 
     const [name,  setName]  = useState(profile?.name || '');
     const [phone, setPhone] = useState(
         profile?.phone && profile.phone !== '—' ? profile.phone : ''
     );
-    const [saving,  setSaving]  = useState(false);
-    const [pwDialog, setPwDialog] = useState(false);
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [saving,     setSaving]     = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [pwDialog,   setPwDialog]   = useState(false);
+    const [snackbar,   setSnackbar]   = useState({ open: false, message: '', severity: 'success' });
 
     const showSnack = (message, severity = 'success') =>
         setSnackbar({ open: true, message, severity });
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            if (error) throw error;
+            // Sync editable fields with freshly fetched profile data
+            setName(data?.name || '');
+            setPhone(data?.phone && data.phone !== '—' ? data.phone : '');
+            showSnack('Profile refreshed', 'success');
+        } catch {
+            showSnack('Refresh failed', 'error');
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -75,11 +98,22 @@ const Profile = () => {
 
     return (
         <Box>
-            <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold">Profile & Settings</Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                    Manage your account information
-                </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                <Box>
+                    <Typography variant="h4" fontWeight="bold">Profile & Settings</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                        Manage your account information
+                    </Typography>
+                </Box>
+                <Tooltip title="Refresh">
+                    <span>
+                        <IconButton onClick={handleRefresh} disabled={refreshing} size="small">
+                            {refreshing
+                                ? <CircularProgress size={20} color="inherit" />
+                                : <Refresh />}
+                        </IconButton>
+                    </span>
+                </Tooltip>
             </Box>
 
             <Grid container spacing={3}>
@@ -254,8 +288,9 @@ const Profile = () => {
                 onSuccess={msg => showSnack(msg)}
             />
 
-            <Snackbar open={snackbar.open} autoHideDuration={4000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+            <Snackbar open={snackbar.open} autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert severity={snackbar.severity}
                     onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
                     {snackbar.message}
