@@ -88,16 +88,16 @@ const ReportsAndLogs = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                         Reports & Activity Logs
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                         Live system activity from Supabase ({systemLogs.length} total entries)
                     </Typography>
                 </Box>
-                <Box display="flex" gap={1}>
+                <Box display="flex" gap={1} flexWrap="wrap">
                     <Button
                         variant="outlined"
                         startIcon={logsLoading ? <CircularProgress size={16} /> : <Refresh />}
@@ -114,7 +114,7 @@ const ReportsAndLogs = () => {
 
             {/* Summary Cards */}
             <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <Box display="flex" gap={4} flexWrap="wrap">
+                <Box display="grid" gridTemplateColumns={{ xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }} gap={2}>
                     <Box textAlign="center">
                         <Typography variant="h4" fontWeight="bold" color="primary.main">
                             {systemLogs.length}
@@ -152,13 +152,13 @@ const ReportsAndLogs = () => {
 
             {/* Filters */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <Box display="flex" gap={2} flexWrap="wrap">
+                <Box display="flex" gap={2} flexWrap="wrap" flexDirection={{ xs: 'column', sm: 'row' }}>
                     <TextField
                         size="small"
                         placeholder="Search by action or user..."
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
-                        sx={{ minWidth: 260 }}
+                        sx={{ width: { xs: '100%', sm: 260 } }}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -167,7 +167,7 @@ const ReportsAndLogs = () => {
                             ),
                         }}
                     />
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <FormControl size="small" sx={{ width: { xs: '100%', sm: 160 } }}>
                         <InputLabel>Action Type</InputLabel>
                         <Select
                             value={actionFilter}
@@ -185,7 +185,7 @@ const ReportsAndLogs = () => {
 
             {/* Logs Table */}
             <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <TableContainer>
+                <TableContainer sx={{ overflowX: 'auto' }}>
                     <Table>
                         <TableHead>
                             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
@@ -256,6 +256,7 @@ const ReportsAndLogs = () => {
                         setPage(0);
                     }}
                     rowsPerPageOptions={[5, 10, 25, 50]}
+                    sx={{ overflowX: 'auto' }}
                 />
             </Paper>
 

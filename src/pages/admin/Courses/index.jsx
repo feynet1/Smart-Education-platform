@@ -55,9 +55,9 @@ const CoursesManagement = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                         Course Management
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -83,7 +83,7 @@ const CoursesManagement = () => {
                             .slice(0, 5)
                             .map(c => (
                                 <Box key={c.id} display="flex" alignItems="center" gap={2}>
-                                    <Typography variant="body2" sx={{ minWidth: 160, maxWidth: 160 }} noWrap>
+                                    <Typography variant="body2" sx={{ minWidth: { xs: 100, sm: 160 }, maxWidth: { xs: 100, sm: 160 } }} noWrap>
                                         {c.name}
                                     </Typography>
                                     <Box flex={1}>

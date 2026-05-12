@@ -67,9 +67,9 @@ const AttendanceMonitoring = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                         Attendance Monitoring
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -122,7 +122,7 @@ const AttendanceMonitoring = () => {
 
             {/* Filter */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <FormControl size="small" sx={{ minWidth: 260 }}>
+                <FormControl size="small" sx={{ width: { xs: '100%', sm: 260 } }}>
                     <InputLabel>Filter by Course</InputLabel>
                     <Select value={selectedCourse} label="Filter by Course"
                         onChange={e => setSelectedCourse(e.target.value)}>
@@ -136,7 +136,7 @@ const AttendanceMonitoring = () => {
 
             {/* Per-course table */}
             <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <TableContainer>
+                <TableContainer sx={{ overflowX: 'auto' }}>
                     <Table>
                         <TableHead>
                             <TableRow sx={{ bgcolor: '#f5f5f5' }}>

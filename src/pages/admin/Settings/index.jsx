@@ -106,14 +106,14 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>Platform Settings</Typography>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>Platform Settings</Typography>
                     <Typography variant="body2" color="text.secondary">
                         Configure platform-wide settings and preferences
                     </Typography>
                 </Box>
-                <Box display="flex" gap={1}>
+                <Box display="flex" gap={1} flexWrap="wrap">
                     <Button variant="outlined" startIcon={<Restore />} onClick={handleReset}>Reset</Button>
                     <Button variant="contained" startIcon={<Save />} onClick={handleSave}>Save Changes</Button>
                 </Box>
@@ -259,6 +259,7 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
                             <Button
                                 variant="outlined"
                                 color="error"
+                                sx={{ width: { xs: '100%', sm: 'auto' } }}
                                 onClick={() => setDialog({ type: 'clear_logs', loading: false })}
                             >
                                 Clear All Logs
@@ -266,6 +267,7 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
                             <Button
                                 variant="outlined"
                                 color="error"
+                                sx={{ width: { xs: '100%', sm: 'auto' } }}
                                 onClick={() => setDialog({ type: 'reset_data', loading: false })}
                             >
                                 Reset All Data
@@ -273,6 +275,7 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
                             <Button
                                 variant="outlined"
                                 color="primary"
+                                sx={{ width: { xs: '100%', sm: 'auto' } }}
                                 onClick={() => setDialog({ type: 'export', loading: false })}
                             >
                                 Export Database

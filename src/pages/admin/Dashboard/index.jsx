@@ -24,7 +24,7 @@ const StatCard = ({ title, value, icon, color, subtitle }) => (
         <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box>
                 <Typography variant="body2" color="text.secondary" gutterBottom>{title}</Typography>
-                <Typography variant="h4" fontWeight="bold" color={color}>{value}</Typography>
+                <Typography variant="h4" fontWeight="bold" color={color} sx={{ fontSize: { xs: '1.6rem', sm: '2.125rem' } }}>{value}</Typography>
                 {subtitle && <Typography variant="caption" color="text.secondary">{subtitle}</Typography>}
             </Box>
             <Avatar sx={{ bgcolor: `${color}20`, color, width: 56, height: 56 }}>{icon}</Avatar>
@@ -75,7 +75,7 @@ const AdminDashboard = () => {
         <Box>
             {/* Header */}
             <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>Dashboard Overview</Typography>
+                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>Dashboard Overview</Typography>
                 <Typography variant="body1" color="text.secondary">
                     Welcome back! Here&apos;s what&apos;s happening on your platform.
                 </Typography>
@@ -176,7 +176,7 @@ const AdminDashboard = () => {
                         ) : (
                             <Box>
                                 {/* Average score */}
-                                <Box display="flex" gap={3} mb={3}>
+                                <Box display="flex" gap={3} mb={3} flexWrap="wrap">
                                     <Box textAlign="center">
                                         <Typography variant="h4" fontWeight="bold" color="primary.main">
                                             {avgScore}%

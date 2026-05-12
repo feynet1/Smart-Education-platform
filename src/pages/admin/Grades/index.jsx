@@ -42,9 +42,9 @@ const GradesAnalytics = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
                         Grades Analytics
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -111,7 +111,7 @@ const GradesAnalytics = () => {
                         <Typography variant="h6" fontWeight="bold" mb={2}>
                             Student Weighted Results
                         </Typography>
-                        <TableContainer>
+                        <TableContainer sx={{ overflowX: 'auto' }}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ bgcolor: '#f5f5f5' }}>

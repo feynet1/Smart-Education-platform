@@ -171,14 +171,14 @@ const UsersManagement = () => {
     return (
         <Box>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
                 <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>User Management</Typography>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>User Management</Typography>
                     <Typography variant="body2" color="text.secondary">
                         {usersLoading ? 'Loading…' : `${users.length} users on the platform`}
                     </Typography>
                 </Box>
-                <Box display="flex" gap={1}>
+                <Box display="flex" gap={1} flexWrap="wrap">
                     <Button variant="outlined" startIcon={usersLoading ? <CircularProgress size={16} /> : <Refresh />}
                         onClick={fetchUsers} disabled={usersLoading}>
                         Refresh
@@ -191,14 +191,14 @@ const UsersManagement = () => {
 
             {/* Filters */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <Box display="flex" gap={2} flexWrap="wrap">
+                <Box display="flex" gap={2} flexWrap="wrap" flexDirection={{ xs: 'column', sm: 'row' }}>
                     <TextField size="small" placeholder="Search by name or email…"
                         value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                        sx={{ minWidth: 260 }}
+                        sx={{ width: { xs: '100%', sm: 260 } }}
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><Search /></InputAdornment>
                         }} />
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <FormControl size="small" sx={{ width: { xs: '100%', sm: 150 } }}>
                         <InputLabel>Role</InputLabel>
                         <Select value={roleFilter} label="Role" onChange={(e) => setRoleFilter(e.target.value)}>
                             <MenuItem value="all">All Roles</MenuItem>
@@ -211,7 +211,7 @@ const UsersManagement = () => {
             </Paper>
 
             {/* Users Table */}
-            <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0', overflowX: 'auto' }}>
                 <DataGrid
                     rows={filteredUsers}
                     columns={columns}
@@ -228,10 +228,10 @@ const UsersManagement = () => {
             </Paper>
 
             {/* ── Edit User Dialog ── */}
-            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })}>
+            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })} fullWidth maxWidth="xs">
                 <DialogTitle>Edit User</DialogTitle>
-                <DialogContent sx={{ minWidth: 340 }}>
-                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                <DialogContent>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1} sx={{ width: '100%' }}>
                         <TextField label="Full Name" fullWidth required
                             value={selectedName}
                             onChange={(e) => setSelectedName(e.target.value)} />
@@ -259,13 +259,13 @@ const UsersManagement = () => {
             </Dialog>
 
             {/* ── Invite User Dialog ── */}
-            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)}>
+            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)} fullWidth maxWidth="xs">
                 <DialogTitle>Invite New User</DialogTitle>
-                <DialogContent sx={{ minWidth: 400 }}>
+                <DialogContent>
                     <Typography variant="body2" color="text.secondary" mb={2}>
                         An invitation email will be sent. The user sets their own password via the link.
                     </Typography>
-                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1} sx={{ width: '100%' }}>
                         <TextField label="Full Name" fullWidth required
                             value={addFormData.name}
                             onChange={(e) => setAddFormData(f => ({ ...f, name: e.target.value }))} />
