@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Paper, Chip, CircularProgress, Tabs, Tab,
-    List, ListItem, ListItemText, Checkbox, Tooltip, FormControl,
+    List, ListItem, ListItemText, Tooltip, FormControl,
     InputLabel, Select, MenuItem, LinearProgress, Avatar,
-    IconButton, Snackbar, Alert,
+    IconButton, Snackbar, Alert, Button,
 } from '@mui/material';
 import {
     Assignment as AssignmentIcon, CheckCircle, AccessTime,
-    Cancel, School, Refresh,
+    Cancel, School, Refresh, CloudUpload,
 } from '@mui/icons-material';
 import { format, differenceInDays, isPast, isToday } from 'date-fns';
 import { supabase } from '../../../supabaseClient';
 import { useStudent } from '../../../contexts/StudentContext';
 import useAuth from '../../../hooks/useAuth';
+import SubmissionDialog from '../../../components/SubmissionDialog';
+import { isLate } from '../../../utils/submissionUtils';
 
 const TYPE_COLORS = {
     assignment: 'primary',
@@ -46,9 +48,10 @@ const StudentAssignments = () => {
     const [assignments, setAssignments] = useState([]);
     const [completions, setCompletions] = useState({});
     const [loading, setLoading] = useState(false);
-    const [toggling, setToggling] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedAssignment, setSelectedAssignment] = useState(null);
 
     const load = useCallback(async () => {
         if (!enrollments.length || !user?.id) return;
@@ -62,7 +65,7 @@ const StudentAssignments = () => {
                     .order('due_date', { ascending: true }),
                 supabase
                     .from('student_assignments')
-                    .select('assignment_id, status, completed_at')
+                    .select('assignment_id, status, file_path, file_name, file_size, submitted_at')
                     .eq('student_id', user.id),
             ]);
             setAssignments(aData || []);
@@ -90,33 +93,6 @@ const StudentAssignments = () => {
         }
     };
 
-    const toggleDone = async (assignmentId) => {
-        const current = completions[assignmentId]?.status || 'pending';
-        const next = current === 'done' ? 'pending' : 'done';
-        setToggling(assignmentId);
-        // Optimistic
-        setCompletions(prev => ({
-            ...prev,
-            [assignmentId]: { ...prev[assignmentId], status: next },
-        }));
-        try {
-            await supabase.from('student_assignments').upsert({
-                assignment_id: assignmentId,
-                student_id:    user.id,
-                status:        next,
-                completed_at:  next === 'done' ? new Date().toISOString() : null,
-            }, { onConflict: 'assignment_id,student_id' });
-        } catch (err) {
-            console.error('Failed to toggle:', err);
-            setCompletions(prev => ({
-                ...prev,
-                [assignmentId]: { ...prev[assignmentId], status: current },
-            }));
-        } finally {
-            setToggling(null);
-        }
-    };
-
     // Filter by course
     const byCourse = filterCourse === 'all'
         ? assignments
@@ -136,18 +112,21 @@ const StudentAssignments = () => {
 
     const renderItem = (item) => {
         const isDone    = completions[item.id]?.status === 'done';
-        const isToggling = toggling === item.id;
+        const hasSubmission = completions[item.id]?.file_path != null;
         const course    = enrolledCourses.find(c => c.id === item.course_id);
 
         return (
             <ListItem key={item.id} divider sx={{ px: 0, alignItems: 'flex-start' }}
                 secondaryAction={
-                    <Tooltip title={isDone ? 'Mark as pending' : 'Mark as done'}>
-                        {isToggling
-                            ? <CircularProgress size={20} sx={{ mt: 1 }} />
-                            : <Checkbox checked={isDone} onChange={() => toggleDone(item.id)} color="success" />
-                        }
-                    </Tooltip>
+                    hasSubmission
+                        ? <Button variant="contained" size="small" color="success"
+                            onClick={() => { setSelectedAssignment(item); setDialogOpen(true); }}>
+                            Resubmit
+                          </Button>
+                        : <Button variant="outlined" size="small"
+                            onClick={() => { setSelectedAssignment(item); setDialogOpen(true); }}>
+                            Submit
+                          </Button>
                 }>
                 <Box display="flex" alignItems="flex-start" gap={1.5} flex={1} pr={5}>
                     <Avatar sx={{ width: 36, height: 36, bgcolor: isDone ? 'success.light' : 'primary.light',
@@ -180,9 +159,12 @@ const StudentAssignments = () => {
                                     variant="outlined"
                                 />
                             )}
-                            {isDone && completions[item.id]?.completed_at && (
+                            {isLate(completions[item.id]?.submitted_at, item.due_date) && (
+                                <Chip label="Late" color="warning" size="small" />
+                            )}
+                            {hasSubmission && completions[item.id]?.submitted_at && (
                                 <Typography variant="caption" color="success.main">
-                                    ✓ Completed {format(new Date(completions[item.id].completed_at), 'MMM dd')}
+                                    ✓ {completions[item.id]?.file_name} · {format(new Date(completions[item.id].submitted_at), 'MMM dd, yyyy h:mm a')}
                                 </Typography>
                             )}
                         </Box>
@@ -287,6 +269,33 @@ const StudentAssignments = () => {
                     )}
                 </Box>
             </Paper>
+
+            <SubmissionDialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                assignment={selectedAssignment}
+                studentId={user?.id}
+                existingSubmission={selectedAssignment && completions[selectedAssignment.id]?.file_path ? {
+                    fileName: completions[selectedAssignment.id].file_name,
+                    fileSize: completions[selectedAssignment.id].file_size,
+                    submittedAt: completions[selectedAssignment.id].submitted_at,
+                    filePath: completions[selectedAssignment.id].file_path,
+                } : null}
+                onSuccess={(record) => {
+                    setCompletions(prev => ({
+                        ...prev,
+                        [selectedAssignment.id]: {
+                            ...prev[selectedAssignment.id],
+                            status: 'done',
+                            file_path: record.file_path,
+                            file_name: record.file_name,
+                            file_size: record.file_size,
+                            submitted_at: record.submitted_at,
+                        }
+                    }));
+                    setDialogOpen(false);
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

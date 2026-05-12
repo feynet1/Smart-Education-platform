@@ -7,7 +7,8 @@ import {
     TableContainer, TableHead, TableRow, Tooltip,
     Snackbar, Alert, CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete, Assignment as AssignmentIcon, Refresh } from '@mui/icons-material';
+import { Add, Edit, Delete, Assignment as AssignmentIcon, Refresh, Visibility } from '@mui/icons-material';
+import SubmissionsPanel from '../../../components/SubmissionsPanel';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 import { supabase } from '../../../supabaseClient';
 import { useTeacher } from '../../../contexts/TeacherContext';
@@ -43,9 +44,16 @@ const TeacherAssignments = () => {
     const [saving, setSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState({ open: false, item: null });
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [panelOpen, setPanelOpen] = useState(false);
+    const [selectedAssignment, setSelectedAssignment] = useState(null);
 
     const showSnack = (message, severity = 'success') =>
         setSnackbar({ open: true, message, severity });
+
+    const openSubmissionsPanel = (item) => {
+        setSelectedAssignment(item);
+        setPanelOpen(true);
+    };
 
     const fetchAssignments = useCallback(async () => {
         if (!courseId) return;
@@ -172,7 +180,7 @@ const TeacherAssignments = () => {
                                 <TableCell><strong>Type</strong></TableCell>
                                 <TableCell><strong>Due Date</strong></TableCell>
                                 <TableCell><strong>Description</strong></TableCell>
-                                <TableCell align="center" width={100}><strong>Actions</strong></TableCell>
+                                <TableCell align="center" width={140}><strong>Actions</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -213,6 +221,11 @@ const TeacherAssignments = () => {
                                         </Typography>
                                     </TableCell>
                                     <TableCell align="center">
+                                        <Tooltip title="View Submissions">
+                                            <IconButton size="small" onClick={() => openSubmissionsPanel(item)}>
+                                                <Visibility fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                         <Tooltip title="Edit">
                                             <IconButton size="small" onClick={() => openEdit(item)}>
                                                 <Edit fontSize="small" />
@@ -276,6 +289,13 @@ const TeacherAssignments = () => {
                     <Button variant="contained" color="error" onClick={handleDelete}>Delete</Button>
                 </DialogActions>
             </Dialog>
+
+            <SubmissionsPanel
+                open={panelOpen}
+                onClose={() => setPanelOpen(false)}
+                assignment={selectedAssignment}
+                courseId={courseId}
+            />
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}
