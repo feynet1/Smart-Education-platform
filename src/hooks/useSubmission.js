@@ -187,17 +187,10 @@ export function useSubmission() {
    * @returns {Promise<Array>}
    */
   async function fetchSubmissions(assignmentId) {
+    // Fetch student_assignments rows for this assignment
     const { data, error: fetchError } = await supabase
       .from('student_assignments')
-      .select(`
-        student_id,
-        status,
-        file_path,
-        file_name,
-        file_size,
-        submitted_at,
-        profiles:student_id ( full_name )
-      `)
+      .select('student_id, status, file_path, file_name, file_size, submitted_at')
       .eq('assignment_id', assignmentId);
 
     if (fetchError) {
@@ -205,15 +198,29 @@ export function useSubmission() {
       return [];
     }
 
-    return (data ?? []).map((row) => ({
-      studentId: row.student_id,
-      studentName: row.profiles?.full_name ?? 'Unknown',
-      status: row.status,
-      filePath: row.file_path,
-      fileName: row.file_name,
-      fileSize: row.file_size,
-      submittedAt: row.submitted_at,
-    }));
+    if (!data || data.length === 0) return [];
+
+    // Fetch profile names separately to avoid join syntax issues
+    const studentIds = data.map((r) => r.student_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', studentIds);
+
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+    return data.map((row) => {
+      const profile = profileMap.get(row.student_id);
+      return {
+        studentId: row.student_id,
+        studentName: profile?.name || profile?.email || 'Unknown',
+        status: row.status,
+        filePath: row.file_path,
+        fileName: row.file_name,
+        fileSize: row.file_size,
+        submittedAt: row.submitted_at,
+      };
+    });
   }
 
   return {
