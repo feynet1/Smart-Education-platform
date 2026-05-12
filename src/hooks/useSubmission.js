@@ -157,6 +157,22 @@ export function useSubmission() {
   async function download(filePath, fileName) {
     setError(null);
 
+    // Try signed URL first (works regardless of RLS read policies)
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('assignment-submissions')
+      .createSignedUrl(filePath, 60); // 60 second expiry
+
+    if (!signedError && signedData?.signedUrl) {
+      const a = document.createElement('a');
+      a.href = signedData.signedUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return { ok: true };
+    }
+
+    // Fallback: direct download
     const { data, error: downloadError } = await supabase.storage
       .from('assignment-submissions')
       .download(filePath);

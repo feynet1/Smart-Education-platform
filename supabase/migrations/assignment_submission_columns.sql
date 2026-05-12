@@ -74,9 +74,11 @@ CREATE POLICY "Teachers can read course submissions"
     bucket_id = 'assignment-submissions'
     AND EXISTS (
       SELECT 1
-      FROM public.assignments a
+      FROM public.student_assignments sa
+      JOIN public.assignments a ON a.id = sa.assignment_id
       JOIN public.courses c ON c.id = a.course_id
-      WHERE a.id::text = (string_to_array(name, '/'))[1]
+      WHERE sa.file_path = (storage.objects.bucket_id || '/' || storage.objects.name)
+         OR sa.file_path = storage.objects.name
         AND c.teacher_id = auth.uid()
     )
   );
