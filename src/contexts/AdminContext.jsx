@@ -107,6 +107,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { fetchAdminAttendance(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     // ── Grades (Supabase grade_entries) ──────────────────────
@@ -202,6 +203,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { fetchAdminGrades(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     // ── Users (Supabase profiles) ─────────────────────────────
@@ -290,6 +292,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { fetchCourses(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     const deleteCourse = async (courseId) => {
@@ -311,6 +314,7 @@ export const AdminProvider = ({ children }) => {
     useEffect(() => {
         localStorage.removeItem('admin_users');
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUserRole, currentUserBranchId, activeBranchFilter]); 
 
     const [events, setEvents] = useState([]);
@@ -335,6 +339,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { fetchEvents(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     const [systemLogs, setSystemLogs] = useState([]);

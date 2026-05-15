@@ -10,7 +10,6 @@ import {
     Grade, CheckCircle, Cancel, AccessTime,
 } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
-import useAuth from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { scoreToGrade, gradeColor } from '../../../utils/gradeUtils';
@@ -35,7 +34,6 @@ const StatCard = ({ title, value, icon, color, subtitle }) => (
 
 const AdminDashboard = () => {
     const { stats, users, systemLogs, events, attendance, grades, branches, currentUserRole, activeBranchFilter, currentUserBranchId } = useAdmin();
-    const { profile } = useAuth();
     const navigate = useNavigate();
 
     const isSuperAdmin = currentUserRole === 'Super Admin';
@@ -137,7 +135,6 @@ const AdminDashboard = () => {
                             const branchUsers = users.filter(u => u.branch_id === branch.id);
                             const bStudents = branchUsers.filter(u => u.role === 'Student').length;
                             const bTeachers = branchUsers.filter(u => u.role === 'Teacher').length;
-                            const bCourses = stats.totalCourses; // Currently we don't have courses filtered by branch id readily available in stats, we'll omit course count or use filtered users.
                             return (
                                 <Grid item xs={12} sm={6} md={4} key={branch.id}>
                                     <Paper elevation={0} sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 2 }}>
