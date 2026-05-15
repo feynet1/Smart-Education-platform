@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
     Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent,
-    DialogActions, TextField, Chip, Tooltip
+    DialogActions, TextField, Chip, Tooltip, Snackbar, Alert
 } from '@mui/material';
 import { Edit, Delete, Add } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
@@ -19,6 +19,10 @@ const Branches = () => {
     const [deleteDialog, setDeleteDialog] = useState(false);
     const [branchToDelete, setBranchToDelete] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    const showSuccess = (msg) => setSnackbar({ open: true, message: msg, severity: 'success' });
+    const showError = (msg) => setSnackbar({ open: true, message: msg, severity: 'error' });
 
     const handleOpenDialog = (branch = null) => {
         if (branch) {
@@ -41,13 +45,20 @@ const Branches = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
+        let result;
         if (isEditing) {
-            await updateBranch(currentBranch.id, formData);
+            result = await updateBranch(currentBranch.id, formData);
         } else {
-            await addBranch(formData);
+            result = await addBranch(formData);
         }
         setSubmitting(false);
-        handleCloseDialog();
+        
+        if (result?.success) {
+            showSuccess(isEditing ? 'Branch updated successfully!' : 'Branch created successfully!');
+            handleCloseDialog();
+        } else {
+            showError(result?.error || 'An error occurred. Make sure your database RLS policies are set up.');
+        }
     };
 
     const handleDeleteClick = (branch) => {
@@ -208,6 +219,12 @@ const Branches = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
