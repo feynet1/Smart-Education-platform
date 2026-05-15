@@ -20,6 +20,7 @@ const UsersManagement = () => {
     const {
         users, usersLoading, fetchUsers,
         updateUserRole, toggleUserStatus, addUser, deleteUser,
+        branches, currentUserBranchId
     } = useAdmin();
 
     const { profile } = useAuth();
@@ -30,7 +31,7 @@ const UsersManagement = () => {
     const [editDialog, setEditDialog]     = useState({ open: false, user: null });
     const [addDialog, setAddDialog]       = useState(false);
     const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
-    const [addFormData, setAddFormData]   = useState({ name: '', email: '', role: 'Student' });
+    const [addFormData, setAddFormData]   = useState({ name: '', email: '', role: 'Student', branch_id: '' });
     const [selectedRole, setSelectedRole] = useState('');
     const [selectedName, setSelectedName] = useState('');
     const [saving, setSaving]             = useState(false);
@@ -73,13 +74,21 @@ const UsersManagement = () => {
 
     const handleInviteUser = async () => {
         if (!addFormData.name.trim() || !addFormData.email.trim()) return;
+        if (isSuperAdmin && !addFormData.branch_id) {
+            showError('Please select a branch to assign the user');
+            return;
+        }
         setInviting(true);
-        const result = await addUser(addFormData);
+        const payload = { ...addFormData };
+        if (!isSuperAdmin) {
+            payload.branch_id = currentUserBranchId;
+        }
+        const result = await addUser(payload);
         setInviting(false);
         if (result?.success) {
             showSuccess('Invitation sent successfully');
             setAddDialog(false);
-            setAddFormData({ name: '', email: '', role: 'Student' });
+            setAddFormData({ name: '', email: '', role: 'Student', branch_id: '' });
         } else {
             showError(result.error || 'Failed to send invitation');
         }
@@ -114,6 +123,14 @@ const UsersManagement = () => {
         },
         { field: 'name',  headerName: 'Name',  flex: 1, minWidth: 140 },
         { field: 'email', headerName: 'Email', flex: 1, minWidth: 190 },
+        {
+            field: 'branch_id', headerName: 'Branch', width: 140,
+            renderCell: (params) => (
+                <Typography variant="body2" color="text.secondary">
+                    {branches.find(b => b.id === params.value)?.name || (params.value ? 'Unknown Branch' : '—')}
+                </Typography>
+            )
+        },
         {
             field: 'role', headerName: 'Role', width: 130,
             renderCell: (params) => (
@@ -300,6 +317,17 @@ const UsersManagement = () => {
                                 <MenuItem value="Student">Student</MenuItem>
                             </Select>
                         </FormControl>
+                        {isSuperAdmin && (
+                            <FormControl fullWidth required>
+                                <InputLabel>Assign Branch</InputLabel>
+                                <Select value={addFormData.branch_id} label="Assign Branch"
+                                    onChange={(e) => setAddFormData(f => ({ ...f, branch_id: e.target.value }))}>
+                                    {branches.map(b => (
+                                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>

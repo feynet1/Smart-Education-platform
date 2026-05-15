@@ -34,7 +34,7 @@ serve(async (req: Request) => {
     if (action === 'invite') {
       const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(payload.email, {
         redirectTo: payload.redirectTo,
-        data: { name: payload.name, role: payload.role }
+        data: { name: payload.name, role: payload.role, branch_id: payload.branch_id || null }
       })
       if (error) throw error
       return new Response(JSON.stringify({ user: data.user }), {
@@ -49,6 +49,7 @@ serve(async (req: Request) => {
       const currentMeta = existing.user?.user_metadata ?? {}
       const updatedMeta: Record<string, string> = { ...currentMeta, role: payload.role }
       if (payload.name) updatedMeta.name = payload.name
+      if (payload.branch_id !== undefined) updatedMeta.branch_id = payload.branch_id
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(payload.userId, {
         user_metadata: updatedMeta
       })

@@ -41,6 +41,7 @@ import Settings from './pages/teacher/Settings';
 import { AdminProvider } from './contexts/AdminContext';
 import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
+import AdminBranches from './pages/admin/Branches';
 import AdminUsers from './pages/admin/Users';
 import AdminCourses from './pages/admin/Courses';
 import AdminAttendance from './pages/admin/Attendance';
@@ -125,6 +126,11 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="branches" element={
+                <ProtectedRoute allowedRoles={['Super Admin']}>
+                  <AdminBranches />
+                </ProtectedRoute>
+              } />
               <Route path="users" element={<AdminUsers />} />
               <Route path="courses" element={<AdminCourses />} />
               <Route path="attendance" element={<AdminAttendance />} />

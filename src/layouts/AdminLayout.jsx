@@ -19,7 +19,10 @@ import {
     CssBaseline,
     useTheme,
     useMediaQuery,
-    Chip
+    useMediaQuery,
+    Chip,
+    FormControl,
+    Select
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -35,7 +38,9 @@ import {
     AdminPanelSettings,
     SupervisorAccount as SuperAdminIcon,
 } from '@mui/icons-material';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import useAuth from '../hooks/useAuth';
+import { useAdmin } from '../contexts/AdminContext';
 
 const drawerWidth = 260;
 
@@ -43,6 +48,7 @@ const drawerWidth = 260;
 const superAdminMenuItems = [
     { text: 'Dashboard',  icon: <DashboardIcon />,  path: '/admin/dashboard'  },
     { text: 'Users',      icon: <PeopleIcon />,      path: '/admin/users'      },
+    { text: 'Branches',   icon: <AccountTreeIcon />, path: '/admin/branches'   },
     { text: 'Courses',    icon: <SchoolIcon />,      path: '/admin/courses'    },
     { text: 'Attendance', icon: <AttendanceIcon />,  path: '/admin/attendance' },
     { text: 'Grades',     icon: <GradeIcon />,       path: '/admin/grades'     },
@@ -63,6 +69,7 @@ const adminMenuItems = [
 
 const AdminLayout = () => {
     const { user, profile, logout } = useAuth();
+    const { branches, activeBranchFilter, setActiveBranchFilter, currentUserBranchId } = useAdmin();
     const navigate  = useNavigate();
     const location  = useLocation();
     const theme     = useTheme();
@@ -100,6 +107,11 @@ const AdminLayout = () => {
                     <Typography variant="caption" color="text.secondary">
                         EduPlatform
                     </Typography>
+                    {!isSuperAdmin && currentUserBranchId && (
+                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: roleColor, fontWeight: 'bold' }}>
+                            {branches.find(b => b.id === currentUserBranchId)?.name || 'Loading Branch...'}
+                        </Typography>
+                    )}
                 </Box>
             </Toolbar>
             <Divider />
@@ -183,6 +195,23 @@ const AdminLayout = () => {
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
                         {isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard'}
                     </Typography>
+
+                    {/* Branch Filter for Super Admin */}
+                    {isSuperAdmin && (
+                        <FormControl size="small" sx={{ minWidth: 160, mr: 2 }}>
+                            <Select
+                                value={activeBranchFilter || ''}
+                                onChange={(e) => setActiveBranchFilter(e.target.value || null)}
+                                displayEmpty
+                                sx={{ bgcolor: 'white', height: 36, fontSize: '0.875rem' }}
+                            >
+                                <MenuItem value=""><em>All Branches</em></MenuItem>
+                                {branches.map(b => (
+                                    <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
 
                     {/* Role chip in AppBar */}
                     <Chip

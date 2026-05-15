@@ -10,6 +10,7 @@ import {
     Grade, CheckCircle, Cancel, AccessTime,
 } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
+import useAuth from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { scoreToGrade, gradeColor } from '../../../utils/gradeUtils';
@@ -33,8 +34,11 @@ const StatCard = ({ title, value, icon, color, subtitle }) => (
 );
 
 const AdminDashboard = () => {
-    const { stats, users, systemLogs, events, attendance, grades } = useAdmin();
+    const { stats, users, systemLogs, events, attendance, grades, branches, currentUserRole, activeBranchFilter, currentUserBranchId } = useAdmin();
+    const { profile } = useAuth();
     const navigate = useNavigate();
+
+    const isSuperAdmin = currentUserRole === 'Super Admin';
 
     const recentLogs = systemLogs.slice(0, 5);
     const upcomingEvents = events
@@ -74,11 +78,29 @@ const AdminDashboard = () => {
     return (
         <Box>
             {/* Header */}
-            <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>Dashboard Overview</Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Welcome back! Here&apos;s what&apos;s happening on your platform.
-                </Typography>
+            <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
+                <Box>
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
+                        Dashboard Overview
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Welcome back! Here&apos;s what&apos;s happening on your platform.
+                    </Typography>
+                </Box>
+                {!isSuperAdmin && currentUserBranchId && (
+                    <Chip 
+                        label={`Branch: ${branches.find(b => b.id === currentUserBranchId)?.name || 'Loading...'}`}
+                        color="primary"
+                        sx={{ fontWeight: 'bold', fontSize: '1rem', p: 1 }}
+                    />
+                )}
+                {isSuperAdmin && activeBranchFilter && (
+                    <Chip 
+                        label={`Filtering by Branch: ${branches.find(b => b.id === activeBranchFilter)?.name || 'Loading...'}`}
+                        color="secondary"
+                        sx={{ fontWeight: 'bold', fontSize: '1rem', p: 1 }}
+                    />
+                )}
             </Box>
 
             {/* Top Stats */}
@@ -105,6 +127,36 @@ const AdminDashboard = () => {
                         subtitle={`${totalAttendance} total records`} />
                 </Grid>
             </Grid>
+
+            {/* Per-Branch Breakdown (Super Admin only, when no filter is active) */}
+            {isSuperAdmin && !activeBranchFilter && branches.length > 0 && (
+                <Box mb={5}>
+                    <Typography variant="h5" fontWeight="bold" gutterBottom>Per-Branch Breakdown</Typography>
+                    <Grid container spacing={2}>
+                        {branches.map(branch => {
+                            const branchUsers = users.filter(u => u.branch_id === branch.id);
+                            const bStudents = branchUsers.filter(u => u.role === 'Student').length;
+                            const bTeachers = branchUsers.filter(u => u.role === 'Teacher').length;
+                            const bCourses = stats.totalCourses; // Currently we don't have courses filtered by branch id readily available in stats, we'll omit course count or use filtered users.
+                            return (
+                                <Grid item xs={12} sm={6} md={4} key={branch.id}>
+                                    <Paper elevation={0} sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                                        <Typography variant="h6" fontWeight="bold" color="secondary" gutterBottom>{branch.name}</Typography>
+                                        <Box display="flex" justifyContent="space-between" mt={1}>
+                                            <Typography variant="body2" color="text.secondary">Students</Typography>
+                                            <Typography variant="body2" fontWeight="bold">{bStudents}</Typography>
+                                        </Box>
+                                        <Box display="flex" justifyContent="space-between" mt={1}>
+                                            <Typography variant="body2" color="text.secondary">Teachers</Typography>
+                                            <Typography variant="body2" fontWeight="bold">{bTeachers}</Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                            );
+                        })}
+                    </Grid>
+                </Box>
+            )}
 
             {/* Middle row: Attendance + Grades */}
             <Grid container spacing={3} mb={3}>

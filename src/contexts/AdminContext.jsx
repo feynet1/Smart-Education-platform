@@ -2,12 +2,80 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { scoreToGrade, DEFAULT_WEIGHTS, DEFAULT_MAX_MARKS } from '../utils/gradeUtils';
+import useAuth from '../hooks/useAuth';
 
 const AdminContext = createContext();
 
 export const useAdmin = () => useContext(AdminContext);
 
 export const AdminProvider = ({ children }) => {
+    const { profile } = useAuth();
+    const currentUserRole = profile?.role;
+    const currentUserBranchId = profile?.branch_id;
+
+    const [branches, setBranches] = useState([]);
+    const [branchesLoading, setBranchesLoading] = useState(false);
+    const [activeBranchFilter, setActiveBranchFilter] = useState(null);
+
+    const applyBranchFilter = (query) => {
+        if (currentUserRole === 'Admin') {
+            return query.eq('branch_id', currentUserBranchId);
+        } else if (currentUserRole === 'Super Admin' && activeBranchFilter) {
+            return query.eq('branch_id', activeBranchFilter);
+        }
+        return query;
+    };
+
+    const fetchBranches = async () => {
+        setBranchesLoading(true);
+        try {
+            const { data, error } = await supabase.from('branches').select('*').order('name');
+            if (error) throw error;
+            setBranches(data || []);
+        } catch (err) {
+            console.error('Failed to fetch branches:', err);
+        } finally {
+            setBranchesLoading(false);
+        }
+    };
+    useEffect(() => { fetchBranches(); }, [currentUserRole]);
+
+    const addBranch = async (branchData) => {
+        try {
+            const { data, error } = await supabase.from('branches').insert({
+                ...branchData,
+                created_by: profile?.id
+            }).select().single();
+            if (error) throw error;
+            setBranches(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    const updateBranch = async (id, branchData) => {
+        try {
+            const { error } = await supabase.from('branches').update(branchData).eq('id', id);
+            if (error) throw error;
+            setBranches(prev => prev.map(b => b.id === id ? { ...b, ...branchData } : b));
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    const deleteBranch = async (id) => {
+        try {
+            const { error } = await supabase.from('branches').delete().eq('id', id);
+            if (error) throw error;
+            setBranches(prev => prev.filter(b => b.id !== id));
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
     const getTeacherNotes = () => {
         const saved = localStorage.getItem('teacher_notes');
         return saved ? JSON.parse(saved) : {};
@@ -24,10 +92,12 @@ export const AdminProvider = ({ children }) => {
     const fetchAdminAttendance = async () => {
         setAttendanceLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('attendance')
-                .select('id, course_id, student_id, student_name, date, status, session_id')
+                .select('id, course_id, student_id, student_name, date, status, session_id, branch_id')
                 .order('date', { ascending: false });
+            query = applyBranchFilter(query);
+            const { data, error } = await query;
             if (error) throw error;
             setAdminAttendance(data || []);
         } catch (err) {
@@ -37,7 +107,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => { fetchAdminAttendance(); }, []);
+    useEffect(() => { fetchAdminAttendance(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     // ── Grades (Supabase grade_entries) ──────────────────────
     const [adminGrades, setAdminGrades] = useState([]);
@@ -46,10 +116,13 @@ export const AdminProvider = ({ children }) => {
     const fetchAdminGrades = async () => {
         setAdminGradesLoading(true);
         try {
+            let entriesQuery = supabase.from('grade_entries').select('*').order('created_at', { ascending: false });
+            entriesQuery = applyBranchFilter(entriesQuery);
+
             // Fetch all grade entries + course weights in parallel
             const [{ data: entries, error: entriesErr }, { data: weightsData, error: weightsErr }] =
                 await Promise.all([
-                    supabase.from('grade_entries').select('*').order('created_at', { ascending: false }),
+                    entriesQuery,
                     supabase.from('course_weights').select('*'),
                 ]);
             if (entriesErr) throw entriesErr;
@@ -129,7 +202,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => { fetchAdminGrades(); }, []);
+    useEffect(() => { fetchAdminGrades(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     // ── Users (Supabase profiles) ─────────────────────────────
     const [users, setUsers] = useState([]);
@@ -138,16 +211,19 @@ export const AdminProvider = ({ children }) => {
     const fetchUsers = async () => {
         setUsersLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('profiles')
-                .select('id, name, email, role, phone, status, grade, created_at')
+                .select('id, name, email, role, phone, status, grade, created_at, branch_id')
                 .order('created_at', { ascending: false });
+            query = applyBranchFilter(query);
+            const { data, error } = await query;
             if (error) throw error;
             setUsers((data || []).map(u => ({
                 id: u.id,
                 name: u.name || u.email?.split('@')[0] || 'Unknown',
                 email: u.email,
                 role: u.role || 'Student',
+                branch_id: u.branch_id,
                 phone: u.phone || '—',
                 grade: u.grade || '—',
                 // Fall back to 'active' if status column does not exist yet
@@ -168,11 +244,14 @@ export const AdminProvider = ({ children }) => {
     const fetchCourses = async () => {
         setCoursesLoading(true);
         try {
+            let coursesQuery = supabase.from('courses').select('*').order('created_at', { ascending: false });
+            coursesQuery = applyBranchFilter(coursesQuery);
+
             // Fetch courses, teacher profiles, and enrollment counts in parallel
             const [{ data: coursesData, error: coursesErr }, { data: profilesData, error: profilesErr },
                    { data: enrollData }] =
                 await Promise.all([
-                    supabase.from('courses').select('*').order('created_at', { ascending: false }),
+                    coursesQuery,
                     supabase.from('profiles').select('id, name').eq('role', 'Teacher'),
                     supabase.from('enrollments').select('course_id'),
                 ]);
@@ -199,6 +278,7 @@ export const AdminProvider = ({ children }) => {
                 description: c.description,
                 joinCode:    c.join_code,
                 teacherId:   c.teacher_id,
+                branchId:    c.branch_id,
                 teacherName: teacherMap[c.teacher_id] || '—',
                 createdAt:   c.created_at,
                 students:    enrollMap[c.id] || 0,
@@ -210,7 +290,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => { fetchCourses(); }, []);
+    useEffect(() => { fetchCourses(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     const deleteCourse = async (courseId) => {
         const course = courses.find(c => c.id === courseId);
@@ -231,7 +311,7 @@ export const AdminProvider = ({ children }) => {
     useEffect(() => {
         localStorage.removeItem('admin_users');
         fetchUsers();
-    }, []); 
+    }, [currentUserRole, currentUserBranchId, activeBranchFilter]); 
 
     const [events, setEvents] = useState([]);
     const [eventsLoading, setEventsLoading] = useState(false);
@@ -240,10 +320,12 @@ export const AdminProvider = ({ children }) => {
     const fetchEvents = async () => {
         setEventsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('events')
                 .select('*')
                 .order('date', { ascending: true });
+            query = applyBranchFilter(query);
+            const { data, error } = await query;
             if (error) throw error;
             setEvents(data || []);
         } catch (err) {
@@ -253,7 +335,7 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => { fetchEvents(); }, []);
+    useEffect(() => { fetchEvents(); }, [currentUserRole, currentUserBranchId, activeBranchFilter]);
 
     const [systemLogs, setSystemLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
@@ -467,9 +549,19 @@ export const AdminProvider = ({ children }) => {
 
     const addEvent = async (event) => {
         try {
+            const newEvent = { 
+                title: event.title, date: event.date, type: event.type, 
+                target: event.target, description: event.description || null 
+            };
+            if (currentUserRole === 'Admin') {
+                newEvent.branch_id = currentUserBranchId;
+            } else if (currentUserRole === 'Super Admin' && activeBranchFilter) {
+                newEvent.branch_id = activeBranchFilter;
+            }
+
             const { data, error } = await supabase
                 .from('events')
-                .insert({ title: event.title, date: event.date, type: event.type, target: event.target, description: event.description || null })
+                .insert(newEvent)
                 .select()
                 .single();
             if (error) throw error;
@@ -627,6 +719,8 @@ export const AdminProvider = ({ children }) => {
         updateUserRole, toggleUserStatus, addUser, deleteUser,
         addEvent, updateEvent, deleteEvent, updateSettings, addLog, fetchLogs,
         clearAllLogs, resetAllData, exportDatabase,
+        branches, branchesLoading, fetchBranches, addBranch, updateBranch, deleteBranch,
+        activeBranchFilter, setActiveBranchFilter, currentUserBranchId, currentUserRole
     };
 
     return (
