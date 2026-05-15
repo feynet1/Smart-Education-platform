@@ -32,7 +32,31 @@ serve(async (req: Request) => {
 
     // Invite User — sends invite email, user sets their own password
     if (action === 'invite') {
-      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(payload.email, {
+      const emailToInvite = payload.email;
+
+      // 1. Validate Email via Abstract API
+      const abstractApiKey = Deno.env.get('ABSTRACT_API_KEY');
+      if (abstractApiKey) {
+        const validationUrl = `https://emailvalidation.abstractapi.com/v1/?api_key=${abstractApiKey}&email=${encodeURIComponent(emailToInvite)}`;
+        const validationResponse = await fetch(validationUrl);
+        
+        if (validationResponse.ok) {
+          const validationData = await validationResponse.json();
+          // Abstract API returns deliverability: "UNDELIVERABLE", "DELIVERABLE", or "UNKNOWN"
+          // We will block UNDELIVERABLE to prevent Supabase bounces
+          if (validationData.deliverability === 'UNDELIVERABLE') {
+            return new Response(JSON.stringify({ error: `The email address ${emailToInvite} does not exist or cannot receive emails.` }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        } else {
+          console.warn("Abstract API request failed, proceeding without strict validation.");
+        }
+      }
+
+      // 2. Proceed with Supabase Invitation
+      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailToInvite, {
         redirectTo: payload.redirectTo,
         data: { name: payload.name, role: payload.role, branch_id: payload.branch_id || null }
       })
