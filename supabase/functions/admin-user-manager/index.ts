@@ -66,19 +66,31 @@ serve(async (req: Request) => {
       })
     }
 
-    // Update Role & Name — preserves existing user_metadata, updates role and optionally name
+    // Update Role & Name — preserves existing user_metadata, updates role, name, and branch_id
     if (action === 'update-role') {
-      const { data: existing, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(payload.userId)
-      if (fetchError) throw fetchError
-      const currentMeta = existing.user?.user_metadata ?? {}
-      const updatedMeta: Record<string, string> = { ...currentMeta, role: payload.role }
-      if (payload.name) updatedMeta.name = payload.name
-      if (payload.branch_id !== undefined) updatedMeta.branch_id = payload.branch_id
-      const { data, error } = await supabaseAdmin.auth.admin.updateUserById(payload.userId, {
-        user_metadata: updatedMeta
-      })
-      if (error) throw error
-      return new Response(JSON.stringify({ user: data.user }), {
+      const { data: userResp, error: fetchErr } = await supabaseAdmin.auth.admin.getUserById(payload.userId)
+      if (fetchErr) throw fetchErr
+
+      const currentMetadata = userResp.user.user_metadata || {}
+      
+      const newMetadata = {
+        ...currentMetadata,
+        role: payload.role,
+      }
+      
+      if (payload.name) {
+        newMetadata.name = payload.name;
+      }
+      if (payload.branch_id !== undefined) {
+        newMetadata.branch_id = payload.branch_id;
+      }
+
+      const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(
+        payload.userId,
+        { user_metadata: newMetadata }
+      )
+      if (updateErr) throw updateErr
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }

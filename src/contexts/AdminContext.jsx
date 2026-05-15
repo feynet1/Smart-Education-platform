@@ -423,15 +423,16 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    // Update role & name — syncs to profiles table
-    const updateUserRole = async (userId, newRole, newName) => {
+    // Update role, name, and branch — syncs to profiles table
+    const updateUserRole = async (userId, newRole, newName, newBranchId) => {
         const user = users.find(u => u.id === userId);
         const prevRole = user?.role;
         const prevName = user?.name;
+        const prevBranchId = user?.branch_id;
 
         // Optimistic update
         setUsers(prev => prev.map(u => u.id === userId
-            ? { ...u, role: newRole, name: newName || u.name }
+            ? { ...u, role: newRole, name: newName || u.name, branch_id: newBranchId !== undefined ? newBranchId : u.branch_id }
             : u
         ));
         addLog(`Updated user: role=${newRole}${newName ? `, name=${newName}` : ''}`, 'Admin');
@@ -439,6 +440,8 @@ export const AdminProvider = ({ children }) => {
         try {
             const updates = { role: newRole };
             if (newName) updates.name = newName;
+            if (newBranchId !== undefined) updates.branch_id = newBranchId || null;
+            
             const { error } = await supabase
                 .from('profiles')
                 .update(updates)
@@ -447,12 +450,12 @@ export const AdminProvider = ({ children }) => {
 
             // Also sync to auth user_metadata via edge function
             await supabase.functions.invoke('admin-user-manager', {
-                body: { action: 'update-role', payload: { userId, role: newRole, name: newName || prevName } }
+                body: { action: 'update-role', payload: { userId, role: newRole, name: newName || prevName, branch_id: newBranchId !== undefined ? newBranchId || null : prevBranchId } }
             });
             return { success: true };
         } catch (err) {
             // Rollback
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: prevRole, name: prevName } : u));
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: prevRole, name: prevName, branch_id: prevBranchId } : u));
             return { success: false, error: `Failed to update user: ${err.message}` };
         }
     };

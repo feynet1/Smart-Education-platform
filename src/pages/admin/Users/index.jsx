@@ -32,8 +32,9 @@ const UsersManagement = () => {
     const [addDialog, setAddDialog]       = useState(false);
     const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
     const [addFormData, setAddFormData]   = useState({ name: '', email: '', role: 'Student', branch_id: '' });
-    const [selectedRole, setSelectedRole] = useState('');
     const [selectedName, setSelectedName] = useState('');
+    const [selectedRole, setSelectedRole] = useState('');
+    const [selectedBranch, setSelectedBranch] = useState('');
     const [saving, setSaving]             = useState(false);
     const [deleting, setDeleting]         = useState(false);
     const [inviting, setInviting]         = useState(false);
@@ -52,8 +53,13 @@ const UsersManagement = () => {
 
     const handleEditSave = async () => {
         if (!editDialog.user || !selectedRole || !selectedName.trim()) return;
+        if (isSuperAdmin && !selectedBranch && selectedRole !== 'Super Admin') {
+            showError('Please select a branch to assign the user');
+            return;
+        }
         setSaving(true);
-        const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName.trim());
+        const newBranchId = isSuperAdmin ? (selectedBranch || null) : currentUserBranchId;
+        const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName.trim(), newBranchId);
         setSaving(false);
         if (result?.success !== false) {
             showSuccess('User updated successfully');
@@ -168,11 +174,13 @@ const UsersManagement = () => {
                     {/* Edit (role change) — Super Admin only */}
                     {isSuperAdmin && (
                         <Tooltip title="Edit">
-                            <IconButton size="small" onClick={() => {
-                                setEditDialog({ open: true, user: params.row });
-                                setSelectedRole(params.row.role);
-                                setSelectedName(params.row.name);
-                            }}>
+                            <IconButton size="small" color="primary"
+                                onClick={() => {
+                                    setSelectedName(params.row.name);
+                                    setSelectedRole(params.row.role);
+                                    setSelectedBranch(params.row.branch_id || '');
+                                    setEditDialog({ open: true, user: params.row });
+                                }}>
                                 <Edit fontSize="small" />
                             </IconButton>
                         </Tooltip>
@@ -279,6 +287,18 @@ const UsersManagement = () => {
                                 <MenuItem value="Student">Student</MenuItem>
                             </Select>
                         </FormControl>
+                        {isSuperAdmin && (
+                            <FormControl fullWidth required={selectedRole !== 'Super Admin'}>
+                                <InputLabel>Assign Branch</InputLabel>
+                                <Select value={selectedBranch} label="Assign Branch"
+                                    onChange={(e) => setSelectedBranch(e.target.value)}>
+                                    <MenuItem value=""><em>None</em></MenuItem>
+                                    {branches.map(b => (
+                                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
