@@ -19,7 +19,6 @@ import {
     CssBaseline,
     useTheme,
     useMediaQuery,
-    useMediaQuery,
     Chip,
     FormControl,
     Select
