@@ -116,7 +116,7 @@ function App() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute allowedRoles={['Admin']}>
+                <ProtectedRoute allowedRoles={['Admin', 'Super Admin']}>
                   <AdminProvider>
                     <AdminLayout />
                   </AdminProvider>
@@ -130,8 +130,16 @@ function App() {
               <Route path="attendance" element={<AdminAttendance />} />
               <Route path="grades" element={<AdminGrades />} />
               <Route path="events" element={<AdminEvents />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="settings" element={<AdminSettings />} />
+              <Route path="reports" element={
+                <ProtectedRoute allowedRoles={['Super Admin']}>
+                  <AdminReports />
+                </ProtectedRoute>
+              } />
+              <Route path="settings" element={
+                <ProtectedRoute allowedRoles={['Super Admin']}>
+                  <AdminSettings />
+                </ProtectedRoute>
+              } />
             </Route>
 
             {/* Catch all */}

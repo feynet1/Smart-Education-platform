@@ -27,6 +27,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         let dashboard = '/student/dashboard';
         if (profile.role === 'Teacher') dashboard = '/teacher/dashboard';
         else if (profile.role === 'Admin') dashboard = '/admin/dashboard';
+        else if (profile.role === 'Super Admin') dashboard = '/admin/dashboard';
         return <Navigate to={dashboard} replace />;
     }
 

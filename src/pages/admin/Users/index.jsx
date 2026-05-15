@@ -14,12 +14,16 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { Search, Edit, Block, CheckCircle, PersonAdd, Delete, Refresh } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
+import useAuth from '../../../hooks/useAuth';
 
 const UsersManagement = () => {
     const {
         users, usersLoading, fetchUsers,
         updateUserRole, toggleUserStatus, addUser, deleteUser,
     } = useAdmin();
+
+    const { profile } = useAuth();
+    const isSuperAdmin = profile?.role === 'Super Admin';
 
     const [searchTerm, setSearchTerm]     = useState('');
     const [roleFilter, setRoleFilter]     = useState('all');
@@ -100,8 +104,9 @@ const UsersManagement = () => {
             renderCell: (params) => (
                 <Avatar sx={{
                     width: 32, height: 32, fontSize: 14,
-                    bgcolor: params.row.role === 'Admin' ? 'error.main'
-                           : params.row.role === 'Teacher' ? 'success.main' : 'primary.main',
+                    bgcolor: params.row.role === 'Super Admin' ? '#7C3AED'
+                           : params.row.role === 'Admin'       ? 'error.main'
+                           : params.row.role === 'Teacher'     ? 'success.main' : 'primary.main',
                 }}>
                     {params.row.name.charAt(0).toUpperCase()}
                 </Avatar>
@@ -110,10 +115,14 @@ const UsersManagement = () => {
         { field: 'name',  headerName: 'Name',  flex: 1, minWidth: 140 },
         { field: 'email', headerName: 'Email', flex: 1, minWidth: 190 },
         {
-            field: 'role', headerName: 'Role', width: 110,
+            field: 'role', headerName: 'Role', width: 130,
             renderCell: (params) => (
                 <Chip label={params.value} size="small"
-                    color={params.value === 'Admin' ? 'error' : params.value === 'Teacher' ? 'success' : 'primary'} />
+                    color={params.value === 'Super Admin' ? 'secondary'
+                         : params.value === 'Admin'       ? 'error'
+                         : params.value === 'Teacher'     ? 'success' : 'primary'}
+                    sx={params.value === 'Super Admin' ? { bgcolor: '#EDE9FE', color: '#7C3AED', fontWeight: 600 } : {}}
+                />
             ),
         },
         {
@@ -139,15 +148,19 @@ const UsersManagement = () => {
             field: 'actions', headerName: 'Actions', width: 130, sortable: false,
             renderCell: (params) => (
                 <Box display="flex" gap={0.5}>
-                    <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => {
-                            setEditDialog({ open: true, user: params.row });
-                            setSelectedRole(params.row.role);
-                            setSelectedName(params.row.name);
-                        }}>
-                            <Edit fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                    {/* Edit (role change) — Super Admin only */}
+                    {isSuperAdmin && (
+                        <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => {
+                                setEditDialog({ open: true, user: params.row });
+                                setSelectedRole(params.row.role);
+                                setSelectedName(params.row.name);
+                            }}>
+                                <Edit fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {/* Activate / Deactivate — both roles */}
                     <Tooltip title={params.row.status === 'active' ? 'Deactivate' : 'Activate'}>
                         <IconButton size="small"
                             color={params.row.status === 'active' ? 'default' : 'success'}
@@ -157,12 +170,15 @@ const UsersManagement = () => {
                                 : <CheckCircle fontSize="small" />}
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
-                        <IconButton size="small" color="error"
-                            onClick={() => setDeleteDialog({ open: true, user: params.row })}>
-                            <Delete fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+                    {/* Delete — Super Admin only */}
+                    {isSuperAdmin && (
+                        <Tooltip title="Delete">
+                            <IconButton size="small" color="error"
+                                onClick={() => setDeleteDialog({ open: true, user: params.row })}>
+                                <Delete fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </Box>
             ),
         },
@@ -198,10 +214,11 @@ const UsersManagement = () => {
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><Search /></InputAdornment>
                         }} />
-                    <FormControl size="small" sx={{ width: { xs: '100%', sm: 150 } }}>
+                    <FormControl size="small" sx={{ width: { xs: '100%', sm: 170 } }}>
                         <InputLabel>Role</InputLabel>
                         <Select value={roleFilter} label="Role" onChange={(e) => setRoleFilter(e.target.value)}>
                             <MenuItem value="all">All Roles</MenuItem>
+                            <MenuItem value="Super Admin">Super Admin</MenuItem>
                             <MenuItem value="Admin">Admin</MenuItem>
                             <MenuItem value="Teacher">Teacher</MenuItem>
                             <MenuItem value="Student">Student</MenuItem>
@@ -239,6 +256,7 @@ const UsersManagement = () => {
                             <InputLabel>Role</InputLabel>
                             <Select value={selectedRole} label="Role"
                                 onChange={(e) => setSelectedRole(e.target.value)}>
+                                {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
                                 <MenuItem value="Admin">Admin</MenuItem>
                                 <MenuItem value="Teacher">Teacher</MenuItem>
                                 <MenuItem value="Student">Student</MenuItem>
@@ -276,6 +294,7 @@ const UsersManagement = () => {
                             <InputLabel>Role</InputLabel>
                             <Select value={addFormData.role} label="Role"
                                 onChange={(e) => setAddFormData(f => ({ ...f, role: e.target.value }))}>
+                                {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
                                 <MenuItem value="Admin">Admin</MenuItem>
                                 <MenuItem value="Teacher">Teacher</MenuItem>
                                 <MenuItem value="Student">Student</MenuItem>
