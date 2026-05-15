@@ -24,8 +24,9 @@ const Login = () => {
     useEffect(() => {
         if (isAuthenticated && profile) {
             let target = '/student/dashboard';
-            if (profile.role === 'Teacher') target = '/teacher/dashboard';
-            else if (profile.role === 'Admin') target = '/admin/dashboard';
+            if (profile.role === 'Teacher')     target = '/teacher/dashboard';
+            else if (profile.role === 'Admin')       target = '/admin/dashboard';
+            else if (profile.role === 'Super Admin') target = '/admin/dashboard';
             navigate(target, { replace: true });
         }
     }, [isAuthenticated, profile, navigate]);
