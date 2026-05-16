@@ -122,7 +122,7 @@ const Landing = () => {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
             }}>
                 <Box component={RouterLink} to="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}>
-                    <img src="/logo.png" alt="EduPlatform Logo" style={{ height: 40, width: 'auto', borderRadius: '4px' }} />
+                    <img src="/logo.png" alt="GG SCHOOL NETWORK Logo" style={{ height: 40, width: 'auto', borderRadius: '4px' }} />
                     <Box>
                         <Typography variant="subtitle1" fontWeight="bold" color="primary" lineHeight={1.1}>
                             GG SCHOOL NETWORK
@@ -138,7 +138,7 @@ const Landing = () => {
                         color="text.secondary"
                         sx={{ display: { xs: 'none', md: 'block' } }}
                     >
-                        Gerba Guracha&apos;s Smart Education Platform
+                        Gerba Guracha&apos;s Smart GG SCHOOL NETWORK
                     </Typography>
                     <Button component={RouterLink} to="/login" variant="outlined" size="small"
                         sx={{ borderColor: ETH_GREEN, color: ETH_GREEN, '&:hover': { borderColor: ETH_GREEN, bgcolor: '#f0faf0' } }}>
@@ -218,7 +218,7 @@ const Landing = () => {
                                 borderRadius: 10, px: 2, py: 0.8, mb: 3
                             }}>
                                 <Typography variant="body2" color="#fff" fontWeight={600} letterSpacing={0.5}>
-                                    #1 Education Platform in Gerba Guracha
+                                    #1 GG SCHOOL NETWORK in Gerba Guracha
                                 </Typography>
                             </Box>
 
@@ -347,7 +347,7 @@ const Landing = () => {
                                 }}>
                                     <img
                                         src={HERO_IMG}
-                                        alt="Students learning online with EduPlatform"
+                                        alt="Students learning online with GG SCHOOL NETWORK"
                                         style={{
                                             width: '100%',
                                             height: '100%',
@@ -969,7 +969,7 @@ const Landing = () => {
                         ትምህርት ቤትዎን ለመቀየር ዝግጁ ነዎት?
                     </Typography>
                     <Typography variant="body1" sx={{ opacity: 0.85, mb: 4 }}>
-                        Join Ethiopian institutions on EduPlatform and experience seamless, modern education management.
+                        Join Gerba Guracha institutions on GG SCHOOL NETWORK and experience seamless, modern education management.
                     </Typography>
                     <Box display="flex" gap={2} justifyContent="center" flexWrap="wrap">
                         <Button

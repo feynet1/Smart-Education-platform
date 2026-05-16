@@ -707,7 +707,7 @@ export const AdminProvider = ({ children }) => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `eduplatform_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `gg_school_network_export_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             window.URL.revokeObjectURL(url);
             return { success: true };
