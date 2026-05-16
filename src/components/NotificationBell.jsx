@@ -23,13 +23,24 @@ import {
     Event as EventIcon
 } from '@mui/icons-material';
 import { useNotification } from '../contexts/NotificationContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 
 const NotificationBell = () => {
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
     const [anchorEl, setAnchorEl] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Filter to show only unread notifications in the bell
+    const unreadNotifications = notifications.filter(n => !n.is_read);
+
+    // Detect role from current URL to navigate to the correct notifications page
+    const getNotifPath = () => {
+        if (location.pathname.startsWith('/teacher')) return '/teacher/notifications';
+        if (location.pathname.startsWith('/admin'))   return '/admin/notifications';
+        return '/student/notifications';
+    };
 
     const handleOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -90,14 +101,14 @@ const NotificationBell = () => {
                 <Divider />
 
                 <List sx={{ p: 0 }}>
-                    {notifications.length === 0 ? (
+                    {unreadNotifications.length === 0 ? (
                         <Box sx={{ p: 4, textAlign: 'center' }}>
                             <Typography variant="body2" color="text.secondary">
-                                No notifications yet.
+                                No new notifications.
                             </Typography>
                         </Box>
                     ) : (
-                        notifications.map((notif) => (
+                        unreadNotifications.map((notif) => (
                             <ListItem
                                 key={notif.id}
                                 alignItems="flex-start"
@@ -136,8 +147,16 @@ const NotificationBell = () => {
                 </List>
                 {notifications.length > 0 && (
                     <Box sx={{ p: 1, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider' }}>
-                        <Button size="small" fullWidth onClick={handleClose} sx={{ textTransform: 'none', color: 'text.secondary' }}>
-                            Close
+                        <Button
+                            size="small"
+                            fullWidth
+                            onClick={() => {
+                                handleClose();
+                                navigate(getNotifPath());
+                            }}
+                            sx={{ textTransform: 'none', fontWeight: 600 }}
+                        >
+                            View All Notifications
                         </Button>
                     </Box>
                 )}

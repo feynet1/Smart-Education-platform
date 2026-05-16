@@ -36,6 +36,7 @@ import {
     AccountCircle,
     AdminPanelSettings,
     SupervisorAccount as SuperAdminIcon,
+    Notifications as NotificationsIcon,
 } from '@mui/icons-material';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import useAuth from '../hooks/useAuth';
@@ -54,6 +55,7 @@ const superAdminMenuItems = [
     { text: 'Grades',     icon: <GradeIcon />,       path: '/admin/grades'     },
     { text: 'Events',     icon: <EventIcon />,       path: '/admin/events'     },
     { text: 'Reports',    icon: <ReportIcon />,      path: '/admin/reports'    },
+    { text: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { text: 'Settings',   icon: <SettingsIcon />,    path: '/admin/settings'   },
 ];
 
@@ -65,6 +67,7 @@ const adminMenuItems = [
     { text: 'Attendance', icon: <AttendanceIcon />,  path: '/admin/attendance' },
     { text: 'Grades',     icon: <GradeIcon />,       path: '/admin/grades'     },
     { text: 'Events',     icon: <EventIcon />,       path: '/admin/events'     },
+    { text: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
 ];
 
 const AdminLayout = () => {

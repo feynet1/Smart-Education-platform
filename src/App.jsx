@@ -25,6 +25,7 @@ import StudentEvents from './pages/student/Events';
 import StudentProfile from './pages/student/Profile';
 import StudentAttendance from './pages/student/Attendance';
 import StudentAssignments from './pages/student/Assignments';
+import NotificationsPage from './pages/shared/Notifications';
 
 // Teacher Pages
 import TeacherEvents from './pages/teacher/Events';
@@ -85,6 +86,7 @@ function App() {
               <Route path="attendance" element={<StudentAttendance />} />
               <Route path="assignments" element={<StudentAssignments />} />
               <Route path="profile" element={<StudentProfile />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 
             {/* Teacher Routes */}
@@ -113,6 +115,7 @@ function App() {
               <Route path="grades/:id" element={<TeacherGrades />} />
               <Route path="events" element={<TeacherEvents />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 
             {/* Admin Routes */}
@@ -148,6 +151,7 @@ function App() {
                   <AdminSettings />
                 </ProtectedRoute>
               } />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 
             {/* Catch all */}

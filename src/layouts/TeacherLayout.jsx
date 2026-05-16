@@ -74,6 +74,7 @@ const TeacherLayout = () => {
         { text: 'Grades',      icon: <GradeIcon />,      path: '/teacher/grades' },
         { text: 'Events',      icon: <EventIcon />,      path: '/teacher/events' },
         { text: 'Notes',       icon: <NoteIcon />,       path: '/teacher/notes' },
+        { text: 'Notifications', icon: <NotificationsIcon />, path: '/teacher/notifications' },
         { text: 'Settings',    icon: <SettingsIcon />,   path: '/teacher/settings' },
     ];
 

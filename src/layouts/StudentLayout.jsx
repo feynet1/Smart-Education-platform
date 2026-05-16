@@ -96,6 +96,7 @@ const StudentLayout = () => {
         { text: 'Grades',      icon: <GradeIcon />,       path: '/student/grades' },
         { text: 'Attendance',  icon: <AttendanceIcon />,  path: '/student/attendance' },
         { text: 'Events',      icon: <EventIcon />,       path: '/student/events' },
+        { text: 'Notifications', icon: <NotificationsIcon />, path: '/student/notifications' },
         { text: 'Profile',     icon: <PersonIcon />,      path: '/student/profile' },
     ];
 
