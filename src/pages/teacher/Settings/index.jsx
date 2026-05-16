@@ -8,6 +8,7 @@ import { Save, Visibility, VisibilityOff, Lock, Refresh } from '@mui/icons-mater
 import { Tooltip } from '@mui/material';
 import useAuth from '../../../hooks/useAuth';
 import { supabase } from '../../../supabaseClient';
+import ProfilePhotoUpload from '../../../components/ProfilePhotoUpload';
 
 const Settings = () => {
     const { user, profile } = useAuth();
@@ -132,10 +133,15 @@ const Settings = () => {
                             Profile Information
                         </Typography>
                         <Box display="flex" alignItems="center" mb={3}>
-                            <Avatar sx={{ width: 64, height: 64, mr: 2, bgcolor: 'primary.main', fontSize: 28 }}>
-                                {name?.charAt(0)?.toUpperCase() || 'T'}
-                            </Avatar>
-                            <Box>
+                            <ProfilePhotoUpload
+                                userId={user?.id}
+                                name={name}
+                                avatarUrl={profile?.avatar_url}
+                                size={64}
+                                onSuccess={() => setSnackbar({ open: true, message: 'Profile photo updated!', severity: 'success' })}
+                                onError={(msg) => setSnackbar({ open: true, message: msg, severity: 'error' })}
+                            />
+                            <Box ml={2}>
                                 <Typography variant="body2" fontWeight="bold">{name || 'Teacher'}</Typography>
                                 <Typography variant="caption" color="text.secondary">{profile?.role || 'Teacher'}</Typography>
                             </Box>

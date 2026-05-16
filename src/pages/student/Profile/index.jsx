@@ -9,6 +9,7 @@ import { Save, School, EmojiEvents, CheckCircle, Edit, Lock, Refresh } from '@mu
 import useAuth from '../../../hooks/useAuth';
 import { useStudent } from '../../../contexts/StudentContext';
 import ChangePasswordDialog from '../../../components/ChangePasswordDialog';
+import ProfilePhotoUpload from '../../../components/ProfilePhotoUpload';
 import { supabase } from '../../../supabaseClient';
 
 const Profile = () => {
@@ -128,9 +129,14 @@ const Profile = () => {
 
                         {/* Avatar + identity */}
                         <Box display="flex" alignItems="center" mb={3} gap={2}>
-                            <Avatar sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: 28 }}>
-                                {(profile?.name || 'S').charAt(0).toUpperCase()}
-                            </Avatar>
+                            <ProfilePhotoUpload
+                                userId={user?.id}
+                                name={profile?.name}
+                                avatarUrl={profile?.avatar_url}
+                                size={72}
+                                onSuccess={() => showSnack('Profile photo updated!')}
+                                onError={(msg) => showSnack(msg, 'error')}
+                            />
                             <Box>
                                 <Typography variant="h6" fontWeight="bold">
                                     {profile?.name || '—'}

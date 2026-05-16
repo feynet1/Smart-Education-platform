@@ -8,9 +8,11 @@ import {
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     CircularProgress,
 } from '@mui/material';
-import { Save, Restore, School, Security, Notifications, Warning, Lock } from '@mui/icons-material';
+import { Save, Restore, School, Security, Notifications, Warning, Lock, AccountCircle } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 import ChangePasswordDialog from '../../../components/ChangePasswordDialog';
+import ProfilePhotoUpload from '../../../components/ProfilePhotoUpload';
+import useAuth from '../../../hooks/useAuth';
 
 // ── Confirmation dialog ───────────────────────────────────────
 const ConfirmDialog = ({ open, title, description, confirmLabel, confirmColor, onConfirm, onCancel, loading }) => (
@@ -39,6 +41,7 @@ const ConfirmDialog = ({ open, title, description, confirmLabel, confirmColor, o
 
 // ── Settings form ─────────────────────────────────────────────
 const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllData, exportDatabase }) => {
+    const { user, profile } = useAuth();
     const [formData, setFormData] = useState(initialSettings);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [dialog, setDialog] = useState({ type: null, loading: false });
@@ -120,6 +123,33 @@ const SettingsForm = ({ initialSettings, updateSettings, clearAllLogs, resetAllD
             </Box>
 
             <Grid container spacing={3}>
+                {/* Profile Photo */}
+                <Grid item size={{ xs: 12 }}>
+                    <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                        <CardContent>
+                            <Box display="flex" alignItems="center" gap={1} mb={2}>
+                                <AccountCircle color="primary" />
+                                <Typography variant="h6" fontWeight="bold">My Profile Photo</Typography>
+                            </Box>
+                            <Box display="flex" alignItems="center" gap={3}>
+                                <ProfilePhotoUpload
+                                    userId={user?.id}
+                                    name={profile?.name}
+                                    avatarUrl={profile?.avatar_url}
+                                    size={80}
+                                    onSuccess={() => showSnack('Profile photo updated!')}
+                                    onError={(msg) => showSnack(msg, 'error')}
+                                />
+                                <Box>
+                                    <Typography variant="body1" fontWeight="bold">{profile?.name || 'Admin'}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{profile?.email}</Typography>
+                                    <Typography variant="caption" color="text.secondary">Click the camera icon to upload a new photo (max 1MB)</Typography>
+                                </Box>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
                 {/* Academic Settings */}
                 <Grid item size={{ xs: 12, md: 6 }}>
                     <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }}>
