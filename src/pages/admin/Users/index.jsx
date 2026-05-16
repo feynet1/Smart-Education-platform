@@ -296,21 +296,7 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        {isSuperAdmin && (
-                            <Grid item xs={12} sm={6}>
-                                <FormControl fullWidth required={selectedRole !== 'Super Admin'}>
-                                    <InputLabel>Assign Branch</InputLabel>
-                                    <Select value={selectedBranch} label="Assign Branch"
-                                        onChange={(e) => setSelectedBranch(e.target.value)}>
-                                        <MenuItem value=""><em>None</em></MenuItem>
-                                        {branches.map(b => (
-                                            <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                        )}
-                        <Grid item xs={12} sm={isSuperAdmin ? 6 : 12}>
+                        <Grid item xs={12} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Grade Level (Optional)</InputLabel>
                                 <Select value={selectedGrade} label="Grade Level (Optional)"
@@ -326,6 +312,20 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
+                        {isSuperAdmin && (
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth required={selectedRole !== 'Super Admin'}>
+                                    <InputLabel>Assign Branch</InputLabel>
+                                    <Select value={selectedBranch} label="Assign Branch"
+                                        onChange={(e) => setSelectedBranch(e.target.value)}>
+                                        <MenuItem value=""><em>None</em></MenuItem>
+                                        {branches.map(b => (
+                                            <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        )}
                     </Grid>
                 </DialogContent>
                 <DialogActions>
@@ -370,20 +370,7 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        {isSuperAdmin && (
-                            <Grid item xs={12} sm={6}>
-                                <FormControl fullWidth required>
-                                    <InputLabel>Assign Branch</InputLabel>
-                                    <Select value={addFormData.branch_id} label="Assign Branch"
-                                        onChange={(e) => setAddFormData(f => ({ ...f, branch_id: e.target.value }))}>
-                                        {branches.map(b => (
-                                            <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                        )}
-                        <Grid item xs={12} sm={isSuperAdmin ? 12 : 6}>
+                        <Grid item xs={12} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Grade Level (Optional)</InputLabel>
                                 <Select value={addFormData.grade} label="Grade Level (Optional)"
@@ -399,6 +386,19 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
+                        {isSuperAdmin && (
+                            <Grid item xs={12}>
+                                <FormControl fullWidth required>
+                                    <InputLabel>Assign Branch</InputLabel>
+                                    <Select value={addFormData.branch_id} label="Assign Branch"
+                                        onChange={(e) => setAddFormData(f => ({ ...f, branch_id: e.target.value }))}>
+                                        {branches.map(b => (
+                                            <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        )}
                     </Grid>
                 </DialogContent>
                 <DialogActions>
