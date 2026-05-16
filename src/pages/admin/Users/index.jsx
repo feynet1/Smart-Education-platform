@@ -205,8 +205,8 @@ const UsersManagement = () => {
             field: 'actions', headerName: 'Actions', width: 130, sortable: false,
             renderCell: (params) => (
                 <Box display="flex" gap={0.5}>
-                    {/* Edit (role change) — Super Admin only */}
-                    {isSuperAdmin && (
+                    {/* Edit (role change) — Super Admin can edit all, Admin can edit Teacher/Student */}
+                    {(isSuperAdmin || params.row.role === 'Teacher' || params.row.role === 'Student') && (
                         <Tooltip title="Edit">
                             <IconButton size="small" color="primary"
                                 onClick={() => {
