@@ -33,12 +33,11 @@ const StatCard = ({ title, value, icon, color, subtitle }) => (
 );
 
 const AdminDashboard = () => {
-    const { stats, users, systemLogs, events, attendance, grades, branches, currentUserRole, activeBranchFilter, currentUserBranchId } = useAdmin();
+    const { stats, users, events, attendance, grades, branches, currentUserRole, activeBranchFilter, currentUserBranchId } = useAdmin();
     const navigate = useNavigate();
 
     const isSuperAdmin = currentUserRole === 'Super Admin';
 
-    const recentLogs = systemLogs.slice(0, 5);
     const upcomingEvents = events
         .filter(e => new Date(e.date) >= new Date())
         .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -287,48 +286,13 @@ const AdminDashboard = () => {
                 </Grid>
             </Grid>
 
-            {/* Bottom row: Recent Activity + Events + Quick Stats */}
+            {/* Bottom row: Events + Quick Stats */}
             <Grid container spacing={3}>
-                {/* Recent Activity */}
-                <Grid item size={{ xs: 12, md: 8 }}>
-                    <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                            <Typography variant="h6" fontWeight="bold">Recent Activity</Typography>
-                            <Button size="small" onClick={() => navigate('/admin/reports')}>View All</Button>
-                        </Box>
-                        <List>
-                            {recentLogs.length > 0 ? recentLogs.map(log => (
-                                <ListItem key={log.id} divider sx={{ px: 0 }}>
-                                    <ListItemAvatar>
-                                        <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main' }}>
-                                            {log.user.charAt(0).toUpperCase()}
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText
-                                        primary={log.action}
-                                        secondary={
-                                            <Box component="span" display="flex" gap={1} alignItems="center">
-                                                <Typography variant="caption" color="text.secondary">{log.user}</Typography>
-                                                <Typography variant="caption" color="text.disabled">• {log.timestamp}</Typography>
-                                            </Box>
-                                        }
-                                    />
-                                </ListItem>
-                            )) : (
-                                <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
-                                    No recent activity
-                                </Typography>
-                            )}
-                        </List>
-                    </Paper>
-                </Grid>
-
-                {/* Sidebar: Events + Quick Stats */}
-                <Grid item size={{ xs: 12, md: 4 }}>
+                <Grid item size={{ xs: 12 }}>
                     <Grid container spacing={3}>
                         {/* Upcoming Events */}
-                        <Grid item size={{ xs: 12 }}>
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                        <Grid item size={{ xs: 12, md: 6 }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', height: '100%' }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                                     <Typography variant="h6" fontWeight="bold">Upcoming Events</Typography>
                                     <Event color="primary" />
@@ -357,8 +321,8 @@ const AdminDashboard = () => {
                         </Grid>
 
                         {/* Quick Stats */}
-                        <Grid item size={{ xs: 12 }}>
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                        <Grid item size={{ xs: 12, md: 6 }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0', height: '100%' }}>
                                 <Typography variant="h6" fontWeight="bold" mb={2}>Quick Stats</Typography>
                                 <Box display="flex" flexDirection="column" gap={2}>
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
