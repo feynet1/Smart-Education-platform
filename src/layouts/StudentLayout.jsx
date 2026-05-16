@@ -44,6 +44,7 @@ import {
 import useAuth from '../hooks/useAuth';
 import { useStudent } from '../contexts/StudentContext';
 import NotificationBell from '../components/NotificationBell';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 const drawerWidth = 240;
 
@@ -59,6 +60,7 @@ const StudentLayout = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [joinDialogOpen, setJoinDialogOpen] = useState(false);
     const [joinCode, setJoinCode] = useState('');
+    const [scanMode, setScanMode] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const handleDrawerToggle = () => {
@@ -231,23 +233,76 @@ const StudentLayout = () => {
             </Box>
 
             {/* Join Class Dialog */}
-            <Dialog open={joinDialogOpen} onClose={() => setJoinDialogOpen(false)}>
+            <Dialog open={joinDialogOpen} onClose={() => {
+                setJoinDialogOpen(false);
+                setScanMode(false);
+            }}>
                 <DialogTitle>Join a Class</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Enter the class code provided by your teacher.
-                    </Typography>
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        label="Class Code"
-                        value={joinCode}
-                        onChange={(e) => setJoinCode(e.target.value)}
-                        inputProps={{ maxLength: 10, style: { textTransform: 'uppercase' } }}
-                    />
+                    <Box display="flex" gap={2} mb={2} mt={1}>
+                        <Button 
+                            variant={!scanMode ? "contained" : "outlined"} 
+                            onClick={() => setScanMode(false)}
+                            fullWidth
+                            size="small"
+                        >
+                            Enter Code
+                        </Button>
+                        <Button 
+                            variant={scanMode ? "contained" : "outlined"} 
+                            onClick={() => setScanMode(true)}
+                            fullWidth
+                            size="small"
+                        >
+                            Scan QR
+                        </Button>
+                    </Box>
+
+                    {!scanMode ? (
+                        <>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                Enter the class code provided by your teacher.
+                            </Typography>
+                            <TextField
+                                autoFocus
+                                fullWidth
+                                label="Class Code"
+                                value={joinCode}
+                                onChange={(e) => setJoinCode(e.target.value)}
+                                inputProps={{ maxLength: 10, style: { textTransform: 'uppercase' } }}
+                            />
+                        </>
+                    ) : (
+                        <Box sx={{ width: '100%', maxWidth: 400, margin: '0 auto', overflow: 'hidden', borderRadius: 2 }}>
+                            <Scanner
+                                onScan={(result) => {
+                                    if (result && result.length > 0) {
+                                        const code = result[0].rawValue;
+                                        if (code) {
+                                            setJoinCode(code.trim().toUpperCase());
+                                            setScanMode(false); // switch back to let user confirm or we can auto submit
+                                        }
+                                    }
+                                }}
+                                onError={(error) => {
+                                    console.error(error);
+                                }}
+                                components={{
+                                    audio: false,
+                                    finder: true,
+                                }}
+                            />
+                            <Typography variant="caption" color="text.secondary" display="block" textAlign="center" mt={1}>
+                                Point your camera at the teacher's QR code.
+                            </Typography>
+                        </Box>
+                    )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setJoinDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                        setJoinDialogOpen(false);
+                        setScanMode(false);
+                    }}>Cancel</Button>
                     <Button onClick={handleJoinClass} variant="contained" disabled={!joinCode}>Join</Button>
                 </DialogActions>
             </Dialog>
