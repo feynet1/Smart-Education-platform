@@ -9,7 +9,7 @@ import {
     Box, Typography, Paper, Button, Chip, Dialog, DialogTitle,
     DialogContent, DialogActions, FormControl, InputLabel, Select,
     MenuItem, TextField, InputAdornment, IconButton, Snackbar,
-    Alert, Avatar, Tooltip, CircularProgress,
+    Alert, Avatar, Tooltip, CircularProgress, Grid,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { Search, Edit, Block, CheckCircle, PersonAdd, Delete, Refresh } from '@mui/icons-material';
@@ -272,50 +272,58 @@ const UsersManagement = () => {
             </Paper>
 
             {/* ── Edit User Dialog ── */}
-            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })} fullWidth maxWidth="xs">
+            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })} fullWidth maxWidth="sm">
                 <DialogTitle>Edit User</DialogTitle>
                 <DialogContent>
-                    <Box display="flex" flexDirection="column" gap={2} mt={1} sx={{ width: '100%' }}>
-                        <TextField label="Full Name" fullWidth required
-                            value={selectedName}
-                            onChange={(e) => setSelectedName(e.target.value)} />
-                        <FormControl fullWidth>
-                            <InputLabel>Role</InputLabel>
-                            <Select value={selectedRole} label="Role"
-                                onChange={(e) => setSelectedRole(e.target.value)}>
-                                {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
-                                <MenuItem value="Admin">Admin</MenuItem>
-                                <MenuItem value="Teacher">Teacher</MenuItem>
-                                <MenuItem value="Student">Student</MenuItem>
-                            </Select>
-                        </FormControl>
-                        {isSuperAdmin && (
-                            <FormControl fullWidth required={selectedRole !== 'Super Admin'}>
-                                <InputLabel>Assign Branch</InputLabel>
-                                <Select value={selectedBranch} label="Assign Branch"
-                                    onChange={(e) => setSelectedBranch(e.target.value)}>
-                                    <MenuItem value=""><em>None</em></MenuItem>
-                                    {branches.map(b => (
-                                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
-                                    ))}
+                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField label="Full Name" fullWidth required
+                                value={selectedName}
+                                onChange={(e) => setSelectedName(e.target.value)} />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Role</InputLabel>
+                                <Select value={selectedRole} label="Role"
+                                    onChange={(e) => setSelectedRole(e.target.value)}>
+                                    {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
+                                    <MenuItem value="Admin">Admin</MenuItem>
+                                    <MenuItem value="Teacher">Teacher</MenuItem>
+                                    <MenuItem value="Student">Student</MenuItem>
                                 </Select>
                             </FormControl>
+                        </Grid>
+                        {isSuperAdmin && (
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth required={selectedRole !== 'Super Admin'}>
+                                    <InputLabel>Assign Branch</InputLabel>
+                                    <Select value={selectedBranch} label="Assign Branch"
+                                        onChange={(e) => setSelectedBranch(e.target.value)}>
+                                        <MenuItem value=""><em>None</em></MenuItem>
+                                        {branches.map(b => (
+                                            <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
                         )}
-                        <FormControl fullWidth>
-                            <InputLabel>Grade Level (Optional)</InputLabel>
-                            <Select value={selectedGrade} label="Grade Level (Optional)"
-                                onChange={(e) => setSelectedGrade(e.target.value)}>
-                                <MenuItem value=""><em>None</em></MenuItem>
-                                <MenuItem value="1-8">Primary (1-8)</MenuItem>
-                                <MenuItem value="9-10">Secondary (9-10)</MenuItem>
-                                <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
-                                {[...Array(12)].map((_, i) => (
-                                    <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
-                                ))}
-                                <MenuItem value="University">University</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
+                        <Grid item xs={12} sm={isSuperAdmin ? 6 : 12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Grade Level (Optional)</InputLabel>
+                                <Select value={selectedGrade} label="Grade Level (Optional)"
+                                    onChange={(e) => setSelectedGrade(e.target.value)}>
+                                    <MenuItem value=""><em>None</em></MenuItem>
+                                    <MenuItem value="1-8">Primary (1-8)</MenuItem>
+                                    <MenuItem value="9-10">Secondary (9-10)</MenuItem>
+                                    <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
+                                    {[...Array(12)].map((_, i) => (
+                                        <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
+                                    ))}
+                                    <MenuItem value="University">University</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setEditDialog({ open: false, user: null })} disabled={saving}>
@@ -330,55 +338,65 @@ const UsersManagement = () => {
             </Dialog>
 
             {/* ── Invite User Dialog ── */}
-            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)} fullWidth maxWidth="xs">
+            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)} fullWidth maxWidth="sm">
                 <DialogTitle>Invite New User</DialogTitle>
                 <DialogContent>
                     <Typography variant="body2" color="text.secondary" mb={2}>
                         An invitation email will be sent. The user sets their own password via the link.
                     </Typography>
-                    <Box display="flex" flexDirection="column" gap={2} mt={1} sx={{ width: '100%' }}>
-                        <TextField label="Full Name" fullWidth required
-                            value={addFormData.name}
-                            onChange={(e) => setAddFormData(f => ({ ...f, name: e.target.value }))} />
-                        <TextField label="Email" fullWidth required type="email"
-                            value={addFormData.email}
-                            onChange={(e) => setAddFormData(f => ({ ...f, email: e.target.value }))} />
-                        <FormControl fullWidth>
-                            <InputLabel>Role</InputLabel>
-                            <Select value={addFormData.role} label="Role"
-                                onChange={(e) => setAddFormData(f => ({ ...f, role: e.target.value }))}>
-                                {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
-                                <MenuItem value="Admin">Admin</MenuItem>
-                                <MenuItem value="Teacher">Teacher</MenuItem>
-                                <MenuItem value="Student">Student</MenuItem>
-                            </Select>
-                        </FormControl>
-                        {isSuperAdmin && (
-                            <FormControl fullWidth required>
-                                <InputLabel>Assign Branch</InputLabel>
-                                <Select value={addFormData.branch_id} label="Assign Branch"
-                                    onChange={(e) => setAddFormData(f => ({ ...f, branch_id: e.target.value }))}>
-                                    {branches.map(b => (
-                                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
-                                    ))}
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField label="Full Name" fullWidth required
+                                value={addFormData.name}
+                                onChange={(e) => setAddFormData(f => ({ ...f, name: e.target.value }))} />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField label="Email" fullWidth required type="email"
+                                value={addFormData.email}
+                                onChange={(e) => setAddFormData(f => ({ ...f, email: e.target.value }))} />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Role</InputLabel>
+                                <Select value={addFormData.role} label="Role"
+                                    onChange={(e) => setAddFormData(f => ({ ...f, role: e.target.value }))}>
+                                    {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
+                                    <MenuItem value="Admin">Admin</MenuItem>
+                                    <MenuItem value="Teacher">Teacher</MenuItem>
+                                    <MenuItem value="Student">Student</MenuItem>
                                 </Select>
                             </FormControl>
+                        </Grid>
+                        {isSuperAdmin && (
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth required>
+                                    <InputLabel>Assign Branch</InputLabel>
+                                    <Select value={addFormData.branch_id} label="Assign Branch"
+                                        onChange={(e) => setAddFormData(f => ({ ...f, branch_id: e.target.value }))}>
+                                        {branches.map(b => (
+                                            <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
                         )}
-                        <FormControl fullWidth>
-                            <InputLabel>Grade Level (Optional)</InputLabel>
-                            <Select value={addFormData.grade} label="Grade Level (Optional)"
-                                onChange={(e) => setAddFormData(f => ({ ...f, grade: e.target.value }))}>
-                                <MenuItem value=""><em>None</em></MenuItem>
-                                <MenuItem value="1-8">Primary (1-8)</MenuItem>
-                                <MenuItem value="9-10">Secondary (9-10)</MenuItem>
-                                <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
-                                {[...Array(12)].map((_, i) => (
-                                    <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
-                                ))}
-                                <MenuItem value="University">University</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
+                        <Grid item xs={12} sm={isSuperAdmin ? 12 : 6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Grade Level (Optional)</InputLabel>
+                                <Select value={addFormData.grade} label="Grade Level (Optional)"
+                                    onChange={(e) => setAddFormData(f => ({ ...f, grade: e.target.value }))}>
+                                    <MenuItem value=""><em>None</em></MenuItem>
+                                    <MenuItem value="1-8">Primary (1-8)</MenuItem>
+                                    <MenuItem value="9-10">Secondary (9-10)</MenuItem>
+                                    <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
+                                    {[...Array(12)].map((_, i) => (
+                                        <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
+                                    ))}
+                                    <MenuItem value="University">University</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setAddDialog(false)} disabled={inviting}>Cancel</Button>

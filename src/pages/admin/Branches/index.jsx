@@ -88,7 +88,7 @@ const Branches = () => {
 
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={4}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold">Branches</Typography>
                     <Typography color="text.secondary">
