@@ -228,21 +228,14 @@ const Landing = () => {
                                 sx={{
                                     fontSize: { xs: '2.6rem', sm: '3.4rem', md: '4rem', lg: '4.6rem' },
                                     fontWeight: 900,
-                                    color: '#fff',
+                                    color: ETH_YELLOW,
                                     lineHeight: 1.1,
                                     letterSpacing: '-0.5px',
                                     mb: 1.5,
-                                    textShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                                    textShadow: `0 0 40px rgba(252,221,9,0.3)`,
                                 }}
                             >
-                                Manage Education.
-                                <Box component="span" sx={{
-                                    display: 'block',
-                                    color: ETH_YELLOW,
-                                    textShadow: `0 0 40px rgba(252,221,9,0.5)`,
-                                }}>
-                                    Empower Gerba Guracha.
-                                </Box>
+                                Empower Gerba Guracha.
                             </Typography>
 
                             {/* Amharic subtitle */}
