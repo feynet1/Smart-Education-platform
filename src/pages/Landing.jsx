@@ -254,7 +254,7 @@ const Landing = () => {
                                 fontStyle: 'italic',
                                 letterSpacing: 0.3,
                             }}>
-                                ትምህርትን ያስተዳድሩ። ገረባ ጉራቻን ያብቁ።
+                                Barnoota bulchaa. Gerba Gurraacha onnoomsaa.
                             </Typography>
 
                             {/* Description */}
@@ -714,21 +714,21 @@ const Landing = () => {
                             {
                                 icon: <SecurityIcon fontSize="large" />,
                                 role: 'Administrators',
-                                amharic: 'አስተዳዳሪዎች',
+                                afaanOromo: 'Bulchitoota',
                                 color: ETH_RED,
                                 points: ['Manage all users and roles', 'Generate institution-wide reports', 'Control platform settings', 'Publish events & announcements'],
                             },
                             {
                                 icon: <MenuBookIcon fontSize="large" />,
                                 role: 'Teachers',
-                                amharic: 'አስተማሪዎች',
+                                afaanOromo: 'Barsiisota',
                                 color: ETH_GREEN,
                                 points: ['Create and manage courses', 'Track attendance per session', 'Grade assignments & exams', 'Communicate with students'],
                             },
                             {
                                 icon: <EmojiEventsIcon fontSize="large" />,
                                 role: 'Students',
-                                amharic: 'ተማሪዎች',
+                                afaanOromo: 'Barattoota',
                                 color: ETH_BLUE,
                                 points: ['View enrolled courses', 'Check grades in real time', 'Track attendance records', 'Stay updated on events'],
                             },
@@ -762,7 +762,7 @@ const Landing = () => {
                                     </Avatar>
                                     <Typography variant="h6" fontWeight="bold">{r.role}</Typography>
                                     <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-                                        {r.amharic}
+                                        {r.afaanOromo}
                                     </Typography>
                                     <Stack spacing={1}>
                                         {r.points.map(p => (
@@ -784,21 +784,21 @@ const Landing = () => {
                         {
                             icon: <SecurityIcon fontSize="large" />,
                             role: 'Administrators',
-                            amharic: 'አስተዳዳሪዎች',
+                            afaanOromo: 'Bulchitoota',
                             color: ETH_RED,
                             points: ['Manage all users and roles', 'Generate institution-wide reports', 'Control platform settings', 'Publish events & announcements'],
                         },
                         {
                             icon: <MenuBookIcon fontSize="large" />,
                             role: 'Teachers',
-                            amharic: 'አስተማሪዎች',
+                            afaanOromo: 'Barsiisota',
                             color: ETH_GREEN,
                             points: ['Create and manage courses', 'Track attendance per session', 'Grade assignments & exams', 'Communicate with students'],
                         },
                         {
                             icon: <EmojiEventsIcon fontSize="large" />,
                             role: 'Students',
-                            amharic: 'ተማሪዎች',
+                            afaanOromo: 'Barattoota',
                             color: ETH_BLUE,
                             points: ['View enrolled courses', 'Check grades in real time', 'Track attendance records', 'Stay updated on events'],
                         },
@@ -815,7 +815,7 @@ const Landing = () => {
                                     </Avatar>
                                     <Typography variant="h6" fontWeight="bold">{r.role}</Typography>
                                     <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-                                        {r.amharic}
+                                        {r.afaanOromo}
                                     </Typography>
                                     <Stack spacing={1}>
                                         {r.points.map(p => (
@@ -843,7 +843,7 @@ const Landing = () => {
                             A Glimpse of the Experience
                         </Typography>
                         <Typography variant="body2" color="text.secondary" mt={1}>
-                            Empowering students and teachers across Ethiopia
+                            Empowering students and teachers across Gerba Guracha
                         </Typography>
                         {/* Mobile swipe indicator */}
                         <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, mt: 1 }}>
@@ -966,7 +966,7 @@ const Landing = () => {
                         Ready to Transform Your School?
                     </Typography>
                     <Typography variant="body1" sx={{ opacity: 0.9, mb: 1 }}>
-                        ትምህርት ቤትዎን ለመቀየር ዝግጁ ነዎት?
+                        Mana barumsaa keessan jijjiiruuf qophiidhaa?
                     </Typography>
                     <Typography variant="body1" sx={{ opacity: 0.85, mb: 4 }}>
                         Join Gerba Guracha institutions on GG SCHOOL NETWORK and experience seamless, modern education management.
@@ -1040,7 +1040,7 @@ const Landing = () => {
                         <Box sx={{ flex: 1, bgcolor: FLAG_BLACK }} />
                     </Box>
                     <Typography variant="body2" textAlign="center" color="#666">
-                        © {new Date().getFullYear()} GG SCHOOL NETWORK - Gerba Guracha, Kuyu. All rights reserved. | ሁሉም መብቶች የተጠበቁ ናቸው።
+                        © {new Date().getFullYear()} GG SCHOOL NETWORK - Gerba Guracha, Kuyu. All rights reserved. | Mirgi hundi seeraan kan eegame dha.
                     </Typography>
                 </Container>
             </Box>
