@@ -21,14 +21,14 @@ export const ALLOWED_MIME = new Set([
   'image/png',
   'application/zip',
 ]);
-export const MAX_BYTES = 10_485_760; // 10 MB
+export const MAX_BYTES = 1_048_576; // 1 MB
 
 export function validateFile(file) {
   if (!ALLOWED_MIME.has(file.type)) {
     return 'Accepted formats: PDF, DOCX, DOC, JPG, PNG, ZIP';
   }
   if (file.size === 0 || file.size > MAX_BYTES) {
-    return 'File must be between 1 byte and 10 MB';
+    return 'File must be between 1 byte and 1 MB';
   }
   return null;
 }

@@ -46,7 +46,7 @@ const NotesHelper = () => {
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [],
             'application/msword': [],
         },
-        maxSize: 10 * 1024 * 1024, // 10MB
+        maxSize: 1 * 1024 * 1024, // 1MB
         multiple: true,
     });
 
@@ -106,7 +106,7 @@ const NotesHelper = () => {
                             {isDragActive ? 'Drop files here…' : 'Drag & drop files, or click to select'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            PDF, DOCX, Images — max 10MB each
+                            PDF, DOCX, Images — max 1MB each
                         </Typography>
                     </Paper>
 
@@ -204,7 +204,7 @@ const NotesHelper = () => {
                             ))}
                         </Box>
                         <Typography variant="caption" color="text.secondary" display="block" mt={2}>
-                            Max file size: 10MB
+                            Max file size: 1MB
                         </Typography>
                     </Paper>
                 </Grid>

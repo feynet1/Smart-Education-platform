@@ -196,7 +196,7 @@ export default function SubmissionDialog({
         {/* Accepted formats hint */}
         {!selectedFile && (
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-            Accepted: PDF, DOCX, DOC, JPG, PNG, ZIP &mdash; max 10 MB
+            Accepted: PDF, DOCX, DOC, JPG, PNG, ZIP &mdash; max 1 MB
           </Typography>
         )}
       </DialogContent>
