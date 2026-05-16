@@ -589,6 +589,16 @@ export const AdminProvider = ({ children }) => {
             if (error) throw error;
             setEvents(prev => [...prev, data].sort((a, b) => new Date(a.date) - new Date(b.date)));
             addLog(`Created event: ${event.title}`, 'Admin');
+            
+            // Broadcast notification to the target audience
+            broadcastNotification(
+                `New Event: ${event.title}`,
+                `A new event is scheduled for ${new Date(event.date).toLocaleDateString()}.`,
+                'event',
+                null,
+                event.target
+            );
+
             return { success: true };
         } catch (err) {
             console.error('Failed to create event:', err);
@@ -747,7 +757,15 @@ export const AdminProvider = ({ children }) => {
         try {
             let targetUsers = users;
             if (targetRole !== 'all') {
-                targetUsers = users.filter(u => u.role.toLowerCase() === targetRole.toLowerCase());
+                if (targetRole.toLowerCase() === 'admin') {
+                    targetUsers = users.filter(u => u.role === 'Admin' || u.role === 'Super Admin');
+                } else if (targetRole.toLowerCase() === 'students') {
+                    targetUsers = users.filter(u => u.role === 'Student');
+                } else if (targetRole.toLowerCase() === 'teachers') {
+                    targetUsers = users.filter(u => u.role === 'Teacher');
+                } else {
+                    targetUsers = users.filter(u => u.role.toLowerCase() === targetRole.toLowerCase());
+                }
             }
             
             const inserts = targetUsers.map(u => ({
