@@ -12,25 +12,25 @@ export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    const fetchNotifications = async () => {
-        if (!user) return;
-        try {
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(50);
-            
-            if (error) throw error;
-            setNotifications(data || []);
-            setUnreadCount(data ? data.filter(n => !n.is_read).length : 0);
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-        }
-    };
-
     useEffect(() => {
+        const fetchNotifications = async () => {
+            if (!user) return;
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (error) throw error;
+                setNotifications(data || []);
+                setUnreadCount(data ? data.filter(n => !n.is_read).length : 0);
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        };
+
         fetchNotifications();
 
         if (user) {
