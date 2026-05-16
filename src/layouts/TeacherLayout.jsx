@@ -39,7 +39,7 @@ import NotificationBell from '../components/NotificationBell';
 const drawerWidth = 240;
 
 const TeacherLayout = () => {
-    const { user, logout } = useAuth(); // Assuming useAuth exposes user and logout
+    const { user, profile, logout } = useAuth(); // Assuming useAuth exposes user and logout
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
@@ -140,8 +140,11 @@ const TeacherLayout = () => {
                         onClick={handleMenu}
                         color="inherit"
                     >
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                            {user?.name ? user.name.charAt(0) : <AccountCircle />}
+                        <Avatar
+                            src={profile?.avatar_url || undefined}
+                            sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}
+                        >
+                            {!profile?.avatar_url && (user?.name ? user.name.charAt(0) : <AccountCircle />)}
                         </Avatar>
                     </IconButton>
                     <Menu

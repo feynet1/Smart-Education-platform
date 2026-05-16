@@ -236,8 +236,11 @@ const AdminLayout = () => {
                         onClick={handleMenu}
                         color="inherit"
                     >
-                        <Avatar sx={{ width: 36, height: 36, bgcolor: roleColor }}>
-                            {user?.name ? user.name.charAt(0) : <AccountCircle />}
+                        <Avatar
+                            src={profile?.avatar_url || undefined}
+                            sx={{ width: 36, height: 36, bgcolor: roleColor }}
+                        >
+                            {!profile?.avatar_url && (user?.name ? user.name.charAt(0) : <AccountCircle />)}
                         </Avatar>
                     </IconButton>
                     <Menu

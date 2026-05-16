@@ -49,7 +49,7 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 const drawerWidth = 240;
 
 const StudentLayout = () => {
-    const { user, logout } = useAuth();
+    const { user, profile, logout } = useAuth();
     const { enrollInCourse } = useStudent();
     const navigate = useNavigate();
     const location = useLocation();
@@ -172,8 +172,11 @@ const StudentLayout = () => {
                         onClick={handleMenu}
                         color="inherit"
                     >
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                            {user?.name ? user.name.charAt(0) : <AccountCircle />}
+                        <Avatar
+                            src={profile?.avatar_url || undefined}
+                            sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}
+                        >
+                            {!profile?.avatar_url && (user?.name ? user.name.charAt(0) : <AccountCircle />)}
                         </Avatar>
                     </IconButton>
                     <Menu
