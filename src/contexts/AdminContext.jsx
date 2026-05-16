@@ -328,7 +328,13 @@ export const AdminProvider = ({ children }) => {
                 .from('events')
                 .select('*')
                 .order('date', { ascending: true });
-            query = applyBranchFilter(query);
+            
+            if (currentUserRole === 'Admin') {
+                query = query.or(`branch_id.eq.${currentUserBranchId},branch_id.is.null`);
+            } else if (currentUserRole === 'Super Admin' && activeBranchFilter) {
+                query = query.eq('branch_id', activeBranchFilter);
+            }
+
             const { data, error } = await query;
             if (error) throw error;
             setEvents(data || []);

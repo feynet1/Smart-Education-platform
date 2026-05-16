@@ -22,7 +22,7 @@ const TYPE_COLORS = {
 };
 
 const EventsManagement = () => {
-    const { events, eventsLoading, addEvent, updateEvent, deleteEvent } = useAdmin();
+    const { events, eventsLoading, addEvent, updateEvent, deleteEvent, currentUserRole } = useAdmin();
 
     const [dialog, setDialog] = useState({ open: false, mode: 'create', event: null });
     const [form, setForm] = useState(EMPTY_FORM);
@@ -114,12 +114,15 @@ const EventsManagement = () => {
                 </Box>
             ) : upcoming.length > 0 ? (
                 <Grid container spacing={3} mb={4}>
-                    {upcoming.map((event) => (
+                    {upcoming.map((event) => {
+                        const canManage = currentUserRole === 'Super Admin' || event.branch_id !== null;
+                        return (
                         <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={event.id}>
                             <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }}>
                                 <CardContent>
                                     <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
                                         <Chip label={event.type} size="small" color={TYPE_COLORS[event.type] || 'default'} />
+                                        {canManage && (
                                         <Box>
                                             <Tooltip title="Edit">
                                                 <IconButton size="small" onClick={() => openEdit(event)}>
@@ -133,6 +136,7 @@ const EventsManagement = () => {
                                                 </IconButton>
                                             </Tooltip>
                                         </Box>
+                                        )}
                                     </Box>
                                     <Typography variant="h6" fontWeight="bold" gutterBottom>
                                         {event.title}
@@ -148,11 +152,15 @@ const EventsManagement = () => {
                                             {format(new Date(event.date), 'EEEE, MMMM dd, yyyy')}
                                         </Typography>
                                     </Box>
-                                    <Chip label={`For: ${event.target}`} size="small" variant="outlined" sx={{ mt: 1 }} />
+                                     <Chip label={`For: ${event.target}`} size="small" variant="outlined" sx={{ mt: 1 }} />
+                                     {event.branch_id === null && (
+                                         <Chip label="Global Event" size="small" color="secondary" variant="filled" sx={{ mt: 1, ml: 1 }} />
+                                     )}
                                 </CardContent>
                             </Card>
                         </Grid>
-                    ))}
+                        );
+                    })}
                 </Grid>
             ) : (
                 <Paper elevation={0} sx={{ p: 4, textAlign: 'center', mb: 4, borderRadius: 2, border: '1px solid #e0e0e0' }}>
@@ -167,7 +175,9 @@ const EventsManagement = () => {
 
             {past.length > 0 ? (
                 <Grid container spacing={2}>
-                    {past.slice(0, 6).map((event) => (
+                    {past.slice(0, 6).map((event) => {
+                        const canManage = currentUserRole === 'Super Admin' || event.branch_id !== null;
+                        return (
                         <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={event.id}>
                             <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: '1px solid #e0e0e0', opacity: 0.7, bgcolor: '#fafafa' }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -176,20 +186,26 @@ const EventsManagement = () => {
                                         <Typography variant="caption" color="text.secondary">
                                             {format(new Date(event.date), 'MMM dd, yyyy')}
                                         </Typography>
+                                        {event.branch_id === null && (
+                                            <Chip label="Global" size="small" sx={{ ml: 1, height: 16, fontSize: '0.6rem' }} />
+                                        )}
                                     </Box>
                                     <Box display="flex" alignItems="center" gap={0.5}>
                                         <Chip label={event.type} size="small" variant="outlined" />
+                                        {canManage && (
                                         <Tooltip title="Delete">
                                             <IconButton size="small" color="error"
                                                 onClick={() => setDeleteConfirm({ open: true, event })}>
                                                 <Delete fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
+                                        )}
                                     </Box>
                                 </Box>
                             </Paper>
                         </Grid>
-                    ))}
+                        );
+                    })}
                 </Grid>
             ) : (
                 <Typography color="text.disabled">No past events</Typography>
