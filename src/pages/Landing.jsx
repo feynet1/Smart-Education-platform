@@ -210,17 +210,7 @@ const Landing = () => {
 
                         {/* ── Left: Text ── */}
                         <Grid item xs={12} md={6}>
-                            {/* Badge */}
-                            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1,
-                                bgcolor: 'rgba(255,255,255,0.15)',
-                                backdropFilter: 'blur(8px)',
-                                border: '1px solid rgba(255,255,255,0.25)',
-                                borderRadius: 10, px: 2, py: 0.8, mb: 3
-                            }}>
-                                <Typography variant="body2" color="#fff" fontWeight={600} letterSpacing={0.5}>
-                                    #1 GG SCHOOL NETWORK in Gerba Guracha
-                                </Typography>
-                            </Box>
+
 
                             {/* Main headline */}
                             <Typography
@@ -247,7 +237,7 @@ const Landing = () => {
                                 fontStyle: 'italic',
                                 letterSpacing: 0.3,
                             }}>
-                                Barnoota bulchaa. Gerba Gurraacha onnoomsaa.
+                                Gerba Gurraacha onnoomsaa.
                             </Typography>
 
                             {/* Description */}
