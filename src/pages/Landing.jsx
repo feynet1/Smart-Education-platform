@@ -13,7 +13,10 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
-// Ethiopian flag colors
+// Flag colors
+const FLAG_RED = '#DA121A';
+const FLAG_WHITE = '#FFFFFF';
+const FLAG_BLACK = '#000000';
 const ETH_GREEN = '#078930';
 const ETH_YELLOW = '#FCDD09';
 const ETH_RED = '#DA121A';
@@ -103,11 +106,11 @@ const Landing = () => {
     return (
         <Box sx={{ bgcolor: '#fff', minHeight: '100vh', fontFamily: '"Roboto", sans-serif' }}>
 
-            {/* Ethiopian flag stripe */}
-            <Box sx={{ display: 'flex', height: 5 }}>
-                <Box sx={{ flex: 1, bgcolor: ETH_GREEN }} />
-                <Box sx={{ flex: 1, bgcolor: ETH_YELLOW }} />
-                <Box sx={{ flex: 1, bgcolor: ETH_RED }} />
+            {/* Oromia flag stripe */}
+            <Box sx={{ display: 'flex', height: 6 }}>
+                <Box sx={{ flex: 1, bgcolor: FLAG_RED }} />
+                <Box sx={{ flex: 1, bgcolor: FLAG_WHITE }} />
+                <Box sx={{ flex: 1, bgcolor: FLAG_BLACK }} />
             </Box>
 
             {/* Navbar */}
@@ -1000,10 +1003,10 @@ const Landing = () => {
                                 }}>
                                     <SchoolIcon sx={{ color: '#fff', fontSize: 18 }} />
                                 </Box>
-                                <Typography variant="subtitle1" fontWeight="bold" color="#fff">EduPlatform</Typography>
+                                <Typography variant="subtitle1" fontWeight="bold" color="#fff">GG SCHOOL NETWORK</Typography>
                             </Box>
                             <Typography variant="body2" color="#888">
-                                Ethiopia&apos;s modern school management system — connecting every stakeholder in the academic journey.
+                                Gerba Guracha&apos;s modern school management system — connecting every stakeholder in the academic journey.
                             </Typography>
                         </Grid>
                         <Grid item xs={6} md={2}>
@@ -1024,20 +1027,20 @@ const Landing = () => {
                         </Grid>
                         <Grid item xs={12} md={4}>
                             <Typography variant="subtitle2" color="#fff" fontWeight="bold" mb={1}>Contact</Typography>
-                            <Typography variant="body2" color="#888">Addis Ababa, Ethiopia</Typography>
-                            <Typography variant="body2" color="#888">info@eduplatform.et</Typography>
-                            <Typography variant="body2" color="#888">+251 911 000 000</Typography>
+                            <Typography variant="body2" color="#888">Gerba Guracha, Kuyu, Oromia</Typography>
+                            <Typography variant="body2" color="#888">info@ggschool.net</Typography>
+                            <Typography variant="body2" color="#888">+251 900 000 000</Typography>
                         </Grid>
                     </Grid>
                     <Divider sx={{ borderColor: '#2a2a3e', mb: 2 }} />
-                    {/* Ethiopian flag stripe in footer */}
-                    <Box sx={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', mb: 2 }}>
-                        <Box sx={{ flex: 1, bgcolor: ETH_GREEN }} />
-                        <Box sx={{ flex: 1, bgcolor: ETH_YELLOW }} />
-                        <Box sx={{ flex: 1, bgcolor: ETH_RED }} />
+                    {/* Oromia flag stripe in footer */}
+                    <Box sx={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+                        <Box sx={{ flex: 1, bgcolor: FLAG_RED }} />
+                        <Box sx={{ flex: 1, bgcolor: FLAG_WHITE }} />
+                        <Box sx={{ flex: 1, bgcolor: FLAG_BLACK }} />
                     </Box>
                     <Typography variant="body2" textAlign="center" color="#666">
-                        © {new Date().getFullYear()} EduPlatform Ethiopia. All rights reserved. | ሁሉም መብቶች የተጠበቁ ናቸው።
+                        © {new Date().getFullYear()} GG SCHOOL NETWORK - Gerba Guracha, Kuyu. All rights reserved. | ሁሉም መብቶች የተጠበቁ ናቸው።
                     </Typography>
                 </Container>
             </Box>
