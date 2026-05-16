@@ -573,8 +573,12 @@ export const AdminProvider = ({ children }) => {
             };
             if (currentUserRole === 'Admin') {
                 newEvent.branch_id = currentUserBranchId;
-            } else if (currentUserRole === 'Super Admin' && activeBranchFilter) {
-                newEvent.branch_id = activeBranchFilter;
+            } else if (currentUserRole === 'Super Admin') {
+                if ('branch_id' in event) {
+                    newEvent.branch_id = event.branch_id || null;
+                } else if (activeBranchFilter) {
+                    newEvent.branch_id = activeBranchFilter;
+                }
             }
 
             const { data, error } = await supabase

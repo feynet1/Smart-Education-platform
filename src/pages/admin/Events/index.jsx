@@ -12,7 +12,7 @@ import { Add, Edit, Delete, Event, CalendarMonth } from '@mui/icons-material';
 import { useAdmin } from '../../../contexts/AdminContext';
 import { format } from 'date-fns';
 
-const EMPTY_FORM = { title: '', date: '', type: 'academic', target: 'all', description: '' };
+const EMPTY_FORM = { title: '', date: '', type: 'academic', target: 'all', description: '', branch_id: '' };
 
 const TYPE_COLORS = {
     academic: 'primary',
@@ -22,7 +22,7 @@ const TYPE_COLORS = {
 };
 
 const EventsManagement = () => {
-    const { events, eventsLoading, addEvent, updateEvent, deleteEvent, currentUserRole } = useAdmin();
+    const { events, eventsLoading, addEvent, updateEvent, deleteEvent, currentUserRole, branches } = useAdmin();
 
     const [dialog, setDialog] = useState({ open: false, mode: 'create', event: null });
     const [form, setForm] = useState(EMPTY_FORM);
@@ -45,6 +45,7 @@ const EventsManagement = () => {
             type: event.type,
             target: event.target,
             description: event.description || '',
+            branch_id: event.branch_id || '',
         });
         setDialog({ open: true, mode: 'edit', event });
     };
@@ -242,10 +243,23 @@ const EventsManagement = () => {
                             <Select value={form.target} label="Target Audience"
                                 onChange={(e) => setForm({ ...form, target: e.target.value })}>
                                 <MenuItem value="all">All Users</MenuItem>
+                                <MenuItem value="admin">Admin Only</MenuItem>
                                 <MenuItem value="students">Students Only</MenuItem>
                                 <MenuItem value="teachers">Teachers Only</MenuItem>
                             </Select>
                         </FormControl>
+                        {currentUserRole === 'Super Admin' && (
+                            <FormControl fullWidth>
+                                <InputLabel>Branch (Optional)</InputLabel>
+                                <Select value={form.branch_id || ''} label="Branch (Optional)"
+                                    onChange={(e) => setForm({ ...form, branch_id: e.target.value })}>
+                                    <MenuItem value=""><em>Global (All Branches)</em></MenuItem>
+                                    {branches.map(b => (
+                                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
