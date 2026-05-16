@@ -755,6 +755,9 @@ export const AdminProvider = ({ children }) => {
 
     const broadcastNotification = async (title, message, type = 'info', link = null, targetRole = 'all') => {
         try {
+            console.log('[broadcastNotification] Target Role:', targetRole);
+            console.log('[broadcastNotification] Total Users loaded in state:', users.length);
+
             let targetUsers = users;
             if (targetRole !== 'all') {
                 if (targetRole.toLowerCase() === 'admin') {
@@ -768,6 +771,8 @@ export const AdminProvider = ({ children }) => {
                 }
             }
             
+            console.log('[broadcastNotification] Matched Users count:', targetUsers.length);
+
             const inserts = targetUsers.map(u => ({
                 user_id: u.id,
                 title,
@@ -776,17 +781,27 @@ export const AdminProvider = ({ children }) => {
                 link
             }));
 
-            if (inserts.length === 0) return { success: true };
+            if (inserts.length === 0) {
+                console.log('[broadcastNotification] No users to notify, aborting insert.');
+                return { success: true };
+            }
+
+            console.log('[broadcastNotification] Inserting payloads:', inserts);
 
             const { error } = await supabase
                 .from('notifications')
                 .insert(inserts);
             
-            if (error) throw error;
+            if (error) {
+                console.error('[broadcastNotification] Supabase Insert Error:', error);
+                throw error;
+            }
+
+            console.log('[broadcastNotification] Successfully inserted notifications!');
             addLog(`Broadcasted notification: ${title} to ${targetRole}`, 'Admin');
             return { success: true };
         } catch (err) {
-            console.error('Failed to broadcast notification:', err);
+            console.error('[broadcastNotification] General Error:', err);
             return { success: false, error: err.message };
         }
     };

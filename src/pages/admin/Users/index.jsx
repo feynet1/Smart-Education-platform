@@ -47,6 +47,36 @@ const UsersManagement = () => {
     const showSuccess = (msg) => setSnackbar({ open: true, message: msg, severity: 'success' });
     const showError   = (msg) => setSnackbar({ open: true, message: msg, severity: 'error' });
 
+    // Determine allowed grades based on admin's branch name
+    const adminBranchName = branches.find(b => b.id === currentUserBranchId)?.name?.toLowerCase() || '';
+    const isPrimary = adminBranchName.includes('primary');
+    const isSecondary = adminBranchName.includes('secondary') || adminBranchName.includes('high');
+    const isPrep = adminBranchName.includes('preparatory');
+    const isUniversity = adminBranchName.includes('university') || adminBranchName.includes('college');
+    const allowAllGrades = isSuperAdmin || (!isPrimary && !isSecondary && !isPrep && !isUniversity);
+
+    const renderGradeOptions = () => {
+        const options = [ <MenuItem key="none" value=""><em>None</em></MenuItem> ];
+
+        if (allowAllGrades || isPrimary) {
+            options.push(<MenuItem key="1-8" value="1-8">Primary (1-8)</MenuItem>);
+            for (let i = 1; i <= 8; i++) options.push(<MenuItem key={i} value={String(i)}>Grade {i}</MenuItem>);
+        }
+        if (allowAllGrades || isSecondary) {
+            options.push(<MenuItem key="9-10" value="9-10">Secondary (9-10)</MenuItem>);
+            for (let i = 9; i <= 10; i++) options.push(<MenuItem key={i} value={String(i)}>Grade {i}</MenuItem>);
+        }
+        if (allowAllGrades || isPrep) {
+            options.push(<MenuItem key="11-12" value="11-12">Preparatory (11-12)</MenuItem>);
+            for (let i = 11; i <= 12; i++) options.push(<MenuItem key={i} value={String(i)}>Grade {i}</MenuItem>);
+        }
+        if (allowAllGrades || isUniversity) {
+            options.push(<MenuItem key="university" value="University">University</MenuItem>);
+        }
+        
+        return options;
+    };
+
     const filteredUsers = users.filter(u => {
         const matchesSearch =
             u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -290,7 +320,7 @@ const UsersManagement = () => {
                                 <Select value={selectedRole} label="Role"
                                     onChange={(e) => setSelectedRole(e.target.value)}>
                                     {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
-                                    <MenuItem value="Admin">Admin</MenuItem>
+                                    {isSuperAdmin && <MenuItem value="Admin">Admin</MenuItem>}
                                     <MenuItem value="Teacher">Teacher</MenuItem>
                                     <MenuItem value="Student">Student</MenuItem>
                                 </Select>
@@ -301,14 +331,7 @@ const UsersManagement = () => {
                                 <InputLabel>Grade Level (Optional)</InputLabel>
                                 <Select value={selectedGrade} label="Grade Level (Optional)"
                                     onChange={(e) => setSelectedGrade(e.target.value)}>
-                                    <MenuItem value=""><em>None</em></MenuItem>
-                                    <MenuItem value="1-8">Primary (1-8)</MenuItem>
-                                    <MenuItem value="9-10">Secondary (9-10)</MenuItem>
-                                    <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
-                                    {[...Array(12)].map((_, i) => (
-                                        <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
-                                    ))}
-                                    <MenuItem value="University">University</MenuItem>
+                                    {renderGradeOptions()}
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -364,7 +387,7 @@ const UsersManagement = () => {
                                 <Select value={addFormData.role} label="Role"
                                     onChange={(e) => setAddFormData(f => ({ ...f, role: e.target.value }))}>
                                     {isSuperAdmin && <MenuItem value="Super Admin">Super Admin</MenuItem>}
-                                    <MenuItem value="Admin">Admin</MenuItem>
+                                    {isSuperAdmin && <MenuItem value="Admin">Admin</MenuItem>}
                                     <MenuItem value="Teacher">Teacher</MenuItem>
                                     <MenuItem value="Student">Student</MenuItem>
                                 </Select>
@@ -375,14 +398,7 @@ const UsersManagement = () => {
                                 <InputLabel>Grade Level (Optional)</InputLabel>
                                 <Select value={addFormData.grade} label="Grade Level (Optional)"
                                     onChange={(e) => setAddFormData(f => ({ ...f, grade: e.target.value }))}>
-                                    <MenuItem value=""><em>None</em></MenuItem>
-                                    <MenuItem value="1-8">Primary (1-8)</MenuItem>
-                                    <MenuItem value="9-10">Secondary (9-10)</MenuItem>
-                                    <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
-                                    {[...Array(12)].map((_, i) => (
-                                        <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
-                                    ))}
-                                    <MenuItem value="University">University</MenuItem>
+                                    {renderGradeOptions()}
                                 </Select>
                             </FormControl>
                         </Grid>
