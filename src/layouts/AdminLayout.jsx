@@ -109,7 +109,7 @@ const AdminLayout = () => {
                         </Typography>
                     </Box>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                        Ethiopia's Smart Education
+                        Oromia's Smart Education
                     </Typography>
                     {!isSuperAdmin && currentUserBranchId && (
                         <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: roleColor, fontWeight: 'bold' }}>

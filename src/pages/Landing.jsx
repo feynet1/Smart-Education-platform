@@ -93,10 +93,10 @@ const stats = [
 const benefits = [
     'Centralized academic records for all students',
     'Instant notifications for events and deadlines',
-    'Multi-language support including Amharic',
-    'Accessible from any device, anywhere in Ethiopia',
-    'Compliant with Ethiopian Ministry of Education standards',
-    'Dedicated support for Ethiopian academic calendar',
+    'Multi-language support including Afaan Oromoo',
+    'Accessible from any device, anywhere in Oromia',
+    'Compliant with Oromia Education Bureau standards',
+    'Dedicated support for Oromia academic calendar',
 ];
 
 const Landing = () => {
@@ -135,7 +135,7 @@ const Landing = () => {
                         color="text.secondary"
                         sx={{ display: { xs: 'none', md: 'block' } }}
                     >
-                        Ethiopia&apos;s Smart Education Platform
+                        Oromia&apos;s Smart Education Platform
                     </Typography>
                     <Button component={RouterLink} to="/login" variant="outlined" size="small"
                         sx={{ borderColor: ETH_GREEN, color: ETH_GREEN, '&:hover': { borderColor: ETH_GREEN, bgcolor: '#f0faf0' } }}>
@@ -214,9 +214,8 @@ const Landing = () => {
                                 border: '1px solid rgba(255,255,255,0.25)',
                                 borderRadius: 10, px: 2, py: 0.8, mb: 3
                             }}>
-                                <Box sx={{ fontSize: 18, lineHeight: 1 }}>🇪🇹</Box>
                                 <Typography variant="body2" color="#fff" fontWeight={600} letterSpacing={0.5}>
-                                    Ethiopia&apos;s #1 Online Education Platform
+                                    Oromia&apos;s #1 Online Education Platform
                                 </Typography>
                             </Box>
 
@@ -239,7 +238,7 @@ const Landing = () => {
                                     color: ETH_YELLOW,
                                     textShadow: `0 0 40px rgba(252,221,9,0.5)`,
                                 }}>
-                                    Empower Ethiopia.
+                                    Empower Oromia.
                                 </Box>
                             </Typography>
 
@@ -252,7 +251,7 @@ const Landing = () => {
                                 fontStyle: 'italic',
                                 letterSpacing: 0.3,
                             }}>
-                                ትምህርትን ያስተዳድሩ። ኢትዮጵያን ያብቁ።
+                                ትምህርትን ያስተዳድሩ። ኦሮሚያን ያብቁ።
                             </Typography>
 
                             {/* Description */}
@@ -265,7 +264,7 @@ const Landing = () => {
                             }}>
                                 A unified online platform connecting <strong style={{ color: '#fff' }}>Admins</strong>,{' '}
                                 <strong style={{ color: '#fff' }}>Teachers</strong>, and{' '}
-                                <strong style={{ color: '#fff' }}>Students</strong> across Ethiopia —
+                                <strong style={{ color: '#fff' }}>Students</strong> across Oromia —
                                 track attendance, manage courses, view grades, and collaborate in real time,
                                 from any device, anywhere.
                             </Typography>
@@ -424,12 +423,11 @@ const Landing = () => {
                                     zIndex: 3,
                                     textAlign: 'center',
                                 }}>
-                                    <Typography sx={{ fontSize: 22, lineHeight: 1, mb: 0.3 }}>🇪🇹</Typography>
                                     <Typography variant="caption" fontWeight={800} color="#111" display="block">
                                         Made for
                                     </Typography>
                                     <Typography variant="caption" fontWeight={800} color="#111" display="block">
-                                        Ethiopia
+                                        Oromia
                                     </Typography>
                                 </Box>
                             </Box>
@@ -454,7 +452,7 @@ const Landing = () => {
                             Platform Stats
                         </Typography>
                         <Typography variant="h4" fontWeight="bold" mt={1}>
-                            Trusted by Ethiopian Institutions
+                            Trusted by Oromia Institutions
                         </Typography>
                         {/* Mobile swipe indicator */}
                         <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, mt: 1 }}>
@@ -620,12 +618,12 @@ const Landing = () => {
                             About the Platform
                         </Typography>
                         <Typography variant="h4" fontWeight="bold" gutterBottom mt={1}>
-                            Built for Ethiopian Schools & Universities
+                            Built for Oromia Schools & Universities
                         </Typography>
                         <Typography variant="body1" color="text.secondary" paragraph>
                             EduPlatform is a comprehensive school management system designed specifically for
-                            Ethiopian educational institutions. From course creation to grade reporting,
-                            everything is connected in real time — aligned with the Ethiopian academic calendar
+                            Oromia educational institutions. From course creation to grade reporting,
+                            everything is connected in real time — aligned with the Oromia academic calendar
                             and Ministry of Education standards.
                         </Typography>
                         <Divider sx={{ my: 2, borderColor: ETH_YELLOW, borderWidth: 2 }} />
@@ -659,7 +657,7 @@ const Landing = () => {
                             Everything Your School Needs
                         </Typography>
                         <Typography variant="body1" color="text.secondary" mt={1}>
-                            Powerful tools for every role in your Ethiopian institution
+                            Powerful tools for every role in your Oromia institution
                         </Typography>
                     </Box>
                     <Grid container spacing={3}>
