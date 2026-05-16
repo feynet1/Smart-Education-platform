@@ -118,14 +118,8 @@ const Landing = () => {
                 position: 'sticky', top: 0, bgcolor: '#fff', zIndex: 100,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
             }}>
-                <Box display="flex" alignItems="center" gap={1.5}>
-                    <Box sx={{
-                        width: 38, height: 38, borderRadius: '50%',
-                        background: `linear-gradient(135deg, ${ETH_GREEN}, ${ETH_BLUE})`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                        <SchoolIcon sx={{ color: '#fff', fontSize: 22 }} />
-                    </Box>
+                <Box component={RouterLink} to="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}>
+                    <img src="/logo.png" alt="EduPlatform Logo" style={{ height: 40, width: 'auto', borderRadius: '4px' }} />
                     <Box>
                         <Typography variant="subtitle1" fontWeight="bold" color="primary" lineHeight={1.1}>
                             EduPlatform

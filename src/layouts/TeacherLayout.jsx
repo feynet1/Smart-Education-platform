@@ -80,10 +80,8 @@ const TeacherLayout = () => {
 
     const drawer = (
         <div>
-            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
-                <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    EduPlatform
-                </Typography>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2, py: 1 }}>
+                <img src="/logo.png" alt="Logo" style={{ height: 40, width: 'auto' }} />
             </Toolbar>
             <Divider />
             <List>

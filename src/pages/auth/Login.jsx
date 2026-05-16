@@ -63,6 +63,9 @@ const Login = () => {
             sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
             <Card sx={{ p: 2 }}>
                 <CardContent>
+                    <Box display="flex" justifyContent="center" mb={2}>
+                        <img src="/logo.png" alt="Logo" style={{ height: 60, width: 'auto' }} />
+                    </Box>
                     <Typography component="h1" variant="h5" align="center" gutterBottom>
                         Welcome Back
                     </Typography>

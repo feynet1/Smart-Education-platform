@@ -98,8 +98,9 @@ const AdminLayout = () => {
 
     const drawer = (
         <div>
-            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2, py: 2 }}>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2, pt: 3, pb: 2 }}>
                 <Box textAlign="center">
+                    <img src="/logo.png" alt="Logo" style={{ height: 45, width: 'auto', marginBottom: 8 }} />
                     <Box display="flex" alignItems="center" gap={1} justifyContent="center">
                         <HeaderIcon sx={{ color: roleColor }} />
                         <Typography variant="h6" noWrap component="div"
@@ -107,8 +108,8 @@ const AdminLayout = () => {
                             {panelTitle}
                         </Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary">
-                        EduPlatform
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        Ethiopia's Smart Education
                     </Typography>
                     {!isSuperAdmin && currentUserBranchId && (
                         <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: roleColor, fontWeight: 'bold' }}>
