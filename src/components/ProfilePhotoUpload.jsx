@@ -41,16 +41,20 @@ const ProfilePhotoUpload = ({ userId, name, avatarUrl, size = 80, onSuccess, onE
         setUploading(true);
 
         try {
-            // Delete old avatar if exists
-            if (previewUrl) {
-                const oldPath = previewUrl.split('/avatars/')[1];
-                if (oldPath) {
-                    await supabase.storage.from('avatars').remove([oldPath]);
-                }
+            // ── Step 1: Delete ALL existing files in this user's folder ──────
+            // This guarantees the old photo is removed regardless of its extension,
+            // preventing stale files from accumulating in Supabase Storage.
+            const { data: existingFiles } = await supabase.storage
+                .from('avatars')
+                .list(userId);
+
+            if (existingFiles && existingFiles.length > 0) {
+                const pathsToDelete = existingFiles.map(f => `${userId}/${f.name}`);
+                await supabase.storage.from('avatars').remove(pathsToDelete);
             }
 
-            // Upload new avatar under userId/avatar.<ext>
-            const ext = file.name.split('.').pop();
+            // ── Step 2: Upload new avatar ────────────────────────────────────
+            const ext = file.name.split('.').pop().toLowerCase();
             const filePath = `${userId}/avatar.${ext}`;
 
             const { error: uploadError } = await supabase.storage
