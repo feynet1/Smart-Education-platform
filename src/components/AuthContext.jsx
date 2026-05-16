@@ -73,6 +73,11 @@ export const AuthProvider = ({ children }) => {
                 .eq('id', userId)
                 .single();
 
+            if (data && data.branch_id) {
+                const { data: bData } = await supabase.from('branches').select('name').eq('id', data.branch_id).single();
+                if (bData) data.branch_name = bData.name;
+            }
+
             if (!data && userEmail) {
                 // 2. Google user — look up by email
                 const { data: byEmail } = await supabase
@@ -82,6 +87,10 @@ export const AuthProvider = ({ children }) => {
                     .single();
 
                 if (byEmail) {
+                    if (byEmail.branch_id) {
+                        const { data: bData } = await supabase.from('branches').select('name').eq('id', byEmail.branch_id).single();
+                        if (bData) byEmail.branch_name = bData.name;
+                    }
                     // Found by email — this is an existing user signing in via Google
                     // Update the profile id to match the Google auth id
                     await supabase

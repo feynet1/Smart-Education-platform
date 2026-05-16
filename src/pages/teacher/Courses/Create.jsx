@@ -6,12 +6,12 @@ import {
     TableCell, TableHead, TableRow,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
+import useAuth from '../../../hooks/useAuth';
 import { useTeacher } from '../../../contexts/TeacherContext';
 import { DEFAULT_WEIGHTS, DEFAULT_MAX_MARKS, CATEGORY_LABELS, CATEGORIES } from '../../../utils/gradeUtils';
 
-const GRADE_LEVELS = ['1','2','3','4','5','6','7','8','9','10','11','12','University'];
-
 const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
+    const { profile } = useAuth();
     const { addCourse, saveWeights } = useTeacher();
     const [saving, setSaving] = useState(false);
     const [weights,  setWeights]  = useState({ ...DEFAULT_WEIGHTS });
@@ -21,6 +21,33 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
 
     const weightTotal = CATEGORIES.reduce((s, c) => s + (parseFloat(weights[c]) || 0), 0);
     const weightValid = Math.abs(weightTotal - 100) < 0.01;
+
+    // Determine allowed grades based on teacher's branch name
+    const teacherBranchName = profile?.branch_name?.toLowerCase() || '';
+    const isPrimary = teacherBranchName.includes('primary');
+    const isSecondary = teacherBranchName.includes('secondary') || teacherBranchName.includes('high');
+    const isPrep = teacherBranchName.includes('preparatory');
+    const isUniversity = teacherBranchName.includes('university') || teacherBranchName.includes('college');
+    const allowAllGrades = !isPrimary && !isSecondary && !isPrep && !isUniversity;
+
+    const renderGradeOptions = () => {
+        const options = [];
+
+        if (allowAllGrades || isPrimary) {
+            for (let i = 1; i <= 8; i++) options.push(<MenuItem key={i} value={String(i)}>Grade {i}</MenuItem>);
+        }
+        if (allowAllGrades || isSecondary) {
+            for (let i = 9; i <= 10; i++) options.push(<MenuItem key={i} value={String(i)}>Grade {i}</MenuItem>);
+        }
+        if (allowAllGrades || isPrep) {
+            for (let i = 11; i <= 12; i++) options.push(<MenuItem key={i} value={String(i)}>Grade {i}</MenuItem>);
+        }
+        if (allowAllGrades || isUniversity) {
+            options.push(<MenuItem key="University" value="University">University</MenuItem>);
+        }
+        
+        return options;
+    };
 
     const onSubmit = async (data) => {
         if (!weightValid) return;
@@ -62,11 +89,7 @@ const CreateCourse = ({ open, onClose, onSuccess, onError }) => {
                             <TextField select fullWidth label="Grade Level" defaultValue=""
                                 {...register('grade', { required: true })}
                                 error={!!errors.grade}>
-                                {GRADE_LEVELS.map(g => (
-                                    <MenuItem key={g} value={g}>
-                                        {g === 'University' ? 'University' : `Grade ${g}`}
-                                    </MenuItem>
-                                ))}
+                                {renderGradeOptions()}
                             </TextField>
                         </Grid>
                         <Grid item xs={12}>
