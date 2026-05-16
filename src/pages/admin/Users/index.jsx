@@ -284,7 +284,7 @@ const UsersManagement = () => {
                                 value={selectedName}
                                 onChange={(e) => setSelectedName(e.target.value)} />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={6} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Role</InputLabel>
                                 <Select value={selectedRole} label="Role"
@@ -296,7 +296,7 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={6} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Grade Level (Optional)</InputLabel>
                                 <Select value={selectedGrade} label="Grade Level (Optional)"
@@ -358,7 +358,7 @@ const UsersManagement = () => {
                                 value={addFormData.email}
                                 onChange={(e) => setAddFormData(f => ({ ...f, email: e.target.value }))} />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={6} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Role</InputLabel>
                                 <Select value={addFormData.role} label="Role"
@@ -370,7 +370,7 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={6} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Grade Level (Optional)</InputLabel>
                                 <Select value={addFormData.grade} label="Grade Level (Optional)"
