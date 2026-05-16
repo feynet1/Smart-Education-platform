@@ -80,9 +80,9 @@ const StudentLayout = () => {
         logout();
     };
 
-    const handleJoinClass = () => {
-        const result = enrollInCourse(joinCode.toUpperCase());
-        setSnackbar({ open: true, message: result.message, severity: result.success ? 'success' : 'error' });
+    const handleJoinClass = async () => {
+        const result = await enrollInCourse(joinCode.toUpperCase());
+        setSnackbar({ open: true, message: result.message || 'Error joining class', severity: result.success ? 'success' : 'error' });
         if (result.success) {
             setJoinDialogOpen(false);
             setJoinCode('');
