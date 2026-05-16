@@ -10,6 +10,7 @@ import {
     DialogContent, DialogActions, FormControl, InputLabel, Select,
     MenuItem, TextField, InputAdornment, IconButton, Snackbar,
     Alert, Avatar, Tooltip, CircularProgress, Grid,
+    useTheme, useMediaQuery,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { Search, Edit, Block, CheckCircle, PersonAdd, Delete, Refresh } from '@mui/icons-material';
@@ -25,6 +26,8 @@ const UsersManagement = () => {
 
     const { profile } = useAuth();
     const isSuperAdmin = profile?.role === 'Super Admin';
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [searchTerm, setSearchTerm]     = useState('');
     const [roleFilter, setRoleFilter]     = useState('all');
@@ -272,9 +275,9 @@ const UsersManagement = () => {
             </Paper>
 
             {/* ── Edit User Dialog ── */}
-            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })} fullWidth maxWidth="sm">
+            <Dialog open={editDialog.open} onClose={() => !saving && setEditDialog({ open: false, user: null })} fullWidth maxWidth="sm" fullScreen={isMobile}>
                 <DialogTitle>Edit User</DialogTitle>
-                <DialogContent>
+                <DialogContent dividers>
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
                         <Grid item xs={12} sm={6}>
                             <TextField label="Full Name" fullWidth required
@@ -338,9 +341,9 @@ const UsersManagement = () => {
             </Dialog>
 
             {/* ── Invite User Dialog ── */}
-            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)} fullWidth maxWidth="sm">
+            <Dialog open={addDialog} onClose={() => !inviting && setAddDialog(false)} fullWidth maxWidth="sm" fullScreen={isMobile}>
                 <DialogTitle>Invite New User</DialogTitle>
-                <DialogContent>
+                <DialogContent dividers>
                     <Typography variant="body2" color="text.secondary" mb={2}>
                         An invitation email will be sent. The user sets their own password via the link.
                     </Typography>
