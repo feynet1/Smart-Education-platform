@@ -758,13 +758,13 @@ export const AdminProvider = ({ children }) => {
             let targetUsers = users;
             if (targetRole !== 'all') {
                 if (targetRole.toLowerCase() === 'admin') {
-                    targetUsers = users.filter(u => u.role === 'Admin' || u.role === 'Super Admin');
+                    targetUsers = users.filter(u => u.role?.toLowerCase() === 'admin' || u.role?.toLowerCase() === 'super admin');
                 } else if (targetRole.toLowerCase() === 'students') {
-                    targetUsers = users.filter(u => u.role === 'Student');
+                    targetUsers = users.filter(u => u.role?.toLowerCase() === 'student');
                 } else if (targetRole.toLowerCase() === 'teachers') {
-                    targetUsers = users.filter(u => u.role === 'Teacher');
+                    targetUsers = users.filter(u => u.role?.toLowerCase() === 'teacher');
                 } else {
-                    targetUsers = users.filter(u => u.role.toLowerCase() === targetRole.toLowerCase());
+                    targetUsers = users.filter(u => u.role?.toLowerCase() === targetRole.toLowerCase());
                 }
             }
             
