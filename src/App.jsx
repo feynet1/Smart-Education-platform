@@ -4,6 +4,7 @@ import theme from './theme/theme';
 import { AuthProvider } from './components/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { TeacherProvider } from './contexts/TeacherContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Layouts
 import TeacherLayout from './layouts/TeacherLayout';
@@ -55,9 +56,10 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
+        <NotificationProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -152,6 +154,7 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

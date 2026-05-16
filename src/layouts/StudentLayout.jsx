@@ -43,6 +43,7 @@ import {
 } from '@mui/icons-material';
 import useAuth from '../hooks/useAuth';
 import { useStudent } from '../contexts/StudentContext';
+import NotificationBell from '../components/NotificationBell';
 
 const drawerWidth = 240;
 
@@ -159,9 +160,7 @@ const StudentLayout = () => {
                         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Join Class</Box>
                     </Button>
 
-                    <IconButton color="inherit">
-                        <NotificationsIcon />
-                    </IconButton>
+                    <NotificationBell />
 
                     <IconButton
                         size="large"

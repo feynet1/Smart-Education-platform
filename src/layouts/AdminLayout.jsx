@@ -40,6 +40,7 @@ import {
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import useAuth from '../hooks/useAuth';
 import { useAdmin } from '../contexts/AdminContext';
+import NotificationBell from '../components/NotificationBell';
 
 const drawerWidth = 260;
 
@@ -224,6 +225,8 @@ const AdminLayout = () => {
                             border: `1px solid ${roleColor}`,
                         }}
                     />
+
+                    <NotificationBell />
 
                     <IconButton
                         size="large"

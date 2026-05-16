@@ -34,6 +34,7 @@ import {
     Event as EventIcon,
 } from '@mui/icons-material';
 import useAuth from '../hooks/useAuth';
+import NotificationBell from '../components/NotificationBell';
 
 const drawerWidth = 240;
 
@@ -129,9 +130,7 @@ const TeacherLayout = () => {
                         Teacher Dashboard
                     </Typography>
 
-                    <IconButton color="inherit">
-                        <NotificationsIcon />
-                    </IconButton>
+                    <NotificationBell />
 
                     <IconButton
                         size="large"

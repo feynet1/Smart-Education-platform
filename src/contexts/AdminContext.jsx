@@ -730,6 +730,49 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const sendNotification = async (userId, title, message, type = 'info', link = null) => {
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .insert([{ user_id: userId, title, message, type, link }]);
+            if (error) throw error;
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to send notification:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    const broadcastNotification = async (title, message, type = 'info', link = null, targetRole = 'all') => {
+        try {
+            let targetUsers = users;
+            if (targetRole !== 'all') {
+                targetUsers = users.filter(u => u.role.toLowerCase() === targetRole.toLowerCase());
+            }
+            
+            const inserts = targetUsers.map(u => ({
+                user_id: u.id,
+                title,
+                message,
+                type,
+                link
+            }));
+
+            if (inserts.length === 0) return { success: true };
+
+            const { error } = await supabase
+                .from('notifications')
+                .insert(inserts);
+            
+            if (error) throw error;
+            addLog(`Broadcasted notification: ${title} to ${targetRole}`, 'Admin');
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to broadcast notification:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
     const value = {
         users, usersLoading, fetchUsers,
         events, eventsLoading, systemLogs, logsLoading, settings, stats,
@@ -742,7 +785,8 @@ export const AdminProvider = ({ children }) => {
         addEvent, updateEvent, deleteEvent, updateSettings, addLog, fetchLogs,
         clearAllLogs, resetAllData, exportDatabase,
         branches, branchesLoading, fetchBranches, addBranch, updateBranch, deleteBranch,
-        activeBranchFilter, setActiveBranchFilter, currentUserBranchId, currentUserRole
+        activeBranchFilter, setActiveBranchFilter, currentUserBranchId, currentUserRole,
+        sendNotification, broadcastNotification
     };
 
     return (
