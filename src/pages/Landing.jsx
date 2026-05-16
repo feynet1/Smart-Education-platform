@@ -122,10 +122,10 @@ const Landing = () => {
                     <img src="/logo.png" alt="EduPlatform Logo" style={{ height: 40, width: 'auto', borderRadius: '4px' }} />
                     <Box>
                         <Typography variant="subtitle1" fontWeight="bold" color="primary" lineHeight={1.1}>
-                            EduPlatform
+                            GG SCHOOL NETWORK
                         </Typography>
                         <Typography variant="caption" color="text.secondary" lineHeight={1}>
-                            የትምህርት አስተዳደር
+                            Gerba Guracha, Kuyu
                         </Typography>
                     </Box>
                 </Box>
@@ -135,7 +135,7 @@ const Landing = () => {
                         color="text.secondary"
                         sx={{ display: { xs: 'none', md: 'block' } }}
                     >
-                        Oromia&apos;s Smart Education Platform
+                        Gerba Guracha&apos;s Smart Education Platform
                     </Typography>
                     <Button component={RouterLink} to="/login" variant="outlined" size="small"
                         sx={{ borderColor: ETH_GREEN, color: ETH_GREEN, '&:hover': { borderColor: ETH_GREEN, bgcolor: '#f0faf0' } }}>
@@ -215,7 +215,7 @@ const Landing = () => {
                                 borderRadius: 10, px: 2, py: 0.8, mb: 3
                             }}>
                                 <Typography variant="body2" color="#fff" fontWeight={600} letterSpacing={0.5}>
-                                    Oromia&apos;s #1 Online Education Platform
+                                    #1 Education Platform in Gerba Guracha
                                 </Typography>
                             </Box>
 
@@ -238,7 +238,7 @@ const Landing = () => {
                                     color: ETH_YELLOW,
                                     textShadow: `0 0 40px rgba(252,221,9,0.5)`,
                                 }}>
-                                    Empower Oromia.
+                                    Empower Gerba Guracha.
                                 </Box>
                             </Typography>
 
@@ -251,7 +251,7 @@ const Landing = () => {
                                 fontStyle: 'italic',
                                 letterSpacing: 0.3,
                             }}>
-                                ትምህርትን ያስተዳድሩ። ኦሮሚያን ያብቁ።
+                                ትምህርትን ያስተዳድሩ። ገረባ ጉራቻን ያብቁ።
                             </Typography>
 
                             {/* Description */}
@@ -264,9 +264,8 @@ const Landing = () => {
                             }}>
                                 A unified online platform connecting <strong style={{ color: '#fff' }}>Admins</strong>,{' '}
                                 <strong style={{ color: '#fff' }}>Teachers</strong>, and{' '}
-                                <strong style={{ color: '#fff' }}>Students</strong> across Oromia —
-                                track attendance, manage courses, view grades, and collaborate in real time,
-                                from any device, anywhere.
+                                <strong style={{ color: '#fff' }}>Students</strong> across Gerba Guracha and Kuyu —
+                                track attendance, manage courses, view grades, and collaborate in real time.
                             </Typography>
 
                             {/* CTA Buttons */}
@@ -427,7 +426,7 @@ const Landing = () => {
                                         Made for
                                     </Typography>
                                     <Typography variant="caption" fontWeight={800} color="#111" display="block">
-                                        Oromia
+                                        Gerba Guracha
                                     </Typography>
                                 </Box>
                             </Box>
@@ -618,13 +617,12 @@ const Landing = () => {
                             About the Platform
                         </Typography>
                         <Typography variant="h4" fontWeight="bold" gutterBottom mt={1}>
-                            Built for Oromia Schools & Universities
+                            Built for Gerba Guracha Schools
                         </Typography>
                         <Typography variant="body1" color="text.secondary" paragraph>
-                            EduPlatform is a comprehensive school management system designed specifically for
-                            Oromia educational institutions. From course creation to grade reporting,
-                            everything is connected in real time — aligned with the Oromia academic calendar
-                            and Ministry of Education standards.
+                            GG SCHOOL NETWORK is a comprehensive school management system designed specifically for
+                            educational institutions in Gerba Guracha and the Kuyu town area.
+                            Everything is connected in real time — aligned with local standards.
                         </Typography>
                         <Divider sx={{ my: 2, borderColor: ETH_YELLOW, borderWidth: 2 }} />
                         <Stack spacing={1} mb={3}>
@@ -657,7 +655,7 @@ const Landing = () => {
                             Everything Your School Needs
                         </Typography>
                         <Typography variant="body1" color="text.secondary" mt={1}>
-                            Powerful tools for every role in your Oromia institution
+                            Powerful tools for every role in your Gerba Guracha institution
                         </Typography>
                     </Box>
                     <Grid container spacing={3}>
