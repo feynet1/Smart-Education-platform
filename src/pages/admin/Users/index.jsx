@@ -31,10 +31,11 @@ const UsersManagement = () => {
     const [editDialog, setEditDialog]     = useState({ open: false, user: null });
     const [addDialog, setAddDialog]       = useState(false);
     const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
-    const [addFormData, setAddFormData]   = useState({ name: '', email: '', role: 'Student', branch_id: '' });
+    const [addFormData, setAddFormData]   = useState({ name: '', email: '', role: 'Student', branch_id: '', grade: '' });
     const [selectedName, setSelectedName] = useState('');
     const [selectedRole, setSelectedRole] = useState('');
     const [selectedBranch, setSelectedBranch] = useState('');
+    const [selectedGrade, setSelectedGrade] = useState('');
     const [saving, setSaving]             = useState(false);
     const [deleting, setDeleting]         = useState(false);
     const [inviting, setInviting]         = useState(false);
@@ -59,7 +60,7 @@ const UsersManagement = () => {
         }
         setSaving(true);
         const newBranchId = isSuperAdmin ? (selectedBranch || null) : currentUserBranchId;
-        const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName.trim(), newBranchId);
+        const result = await updateUserRole(editDialog.user.id, selectedRole, selectedName.trim(), newBranchId, selectedGrade);
         setSaving(false);
         if (result?.success !== false) {
             showSuccess('User updated successfully');
@@ -94,7 +95,7 @@ const UsersManagement = () => {
         if (result?.success) {
             showSuccess('Invitation sent successfully');
             setAddDialog(false);
-            setAddFormData({ name: '', email: '', role: 'Student', branch_id: '' });
+            setAddFormData({ name: '', email: '', role: 'Student', branch_id: '', grade: '' });
         } else {
             showError(result.error || 'Failed to send invitation');
         }
@@ -179,6 +180,7 @@ const UsersManagement = () => {
                                     setSelectedName(params.row.name);
                                     setSelectedRole(params.row.role);
                                     setSelectedBranch(params.row.branch_id || '');
+                                    setSelectedGrade(params.row.grade && params.row.grade !== '—' ? params.row.grade : '');
                                     setEditDialog({ open: true, user: params.row });
                                 }}>
                                 <Edit fontSize="small" />
@@ -299,6 +301,20 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         )}
+                        <FormControl fullWidth>
+                            <InputLabel>Grade Level (Optional)</InputLabel>
+                            <Select value={selectedGrade} label="Grade Level (Optional)"
+                                onChange={(e) => setSelectedGrade(e.target.value)}>
+                                <MenuItem value=""><em>None</em></MenuItem>
+                                <MenuItem value="1-8">Primary (1-8)</MenuItem>
+                                <MenuItem value="9-10">Secondary (9-10)</MenuItem>
+                                <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
+                                {[...Array(12)].map((_, i) => (
+                                    <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
+                                ))}
+                                <MenuItem value="University">University</MenuItem>
+                            </Select>
+                        </FormControl>
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -348,6 +364,20 @@ const UsersManagement = () => {
                                 </Select>
                             </FormControl>
                         )}
+                        <FormControl fullWidth>
+                            <InputLabel>Grade Level (Optional)</InputLabel>
+                            <Select value={addFormData.grade} label="Grade Level (Optional)"
+                                onChange={(e) => setAddFormData(f => ({ ...f, grade: e.target.value }))}>
+                                <MenuItem value=""><em>None</em></MenuItem>
+                                <MenuItem value="1-8">Primary (1-8)</MenuItem>
+                                <MenuItem value="9-10">Secondary (9-10)</MenuItem>
+                                <MenuItem value="11-12">Preparatory (11-12)</MenuItem>
+                                {[...Array(12)].map((_, i) => (
+                                    <MenuItem key={i + 1} value={String(i + 1)}>Grade {i + 1}</MenuItem>
+                                ))}
+                                <MenuItem value="University">University</MenuItem>
+                            </Select>
+                        </FormControl>
                     </Box>
                 </DialogContent>
                 <DialogActions>

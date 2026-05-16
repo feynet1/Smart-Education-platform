@@ -424,15 +424,16 @@ export const AdminProvider = ({ children }) => {
     };
 
     // Update role, name, and branch — syncs to profiles table
-    const updateUserRole = async (userId, newRole, newName, newBranchId) => {
+    const updateUserRole = async (userId, newRole, newName, newBranchId, newGrade) => {
         const user = users.find(u => u.id === userId);
         const prevRole = user?.role;
         const prevName = user?.name;
         const prevBranchId = user?.branch_id;
+        const prevGrade = user?.grade;
 
         // Optimistic update
         setUsers(prev => prev.map(u => u.id === userId
-            ? { ...u, role: newRole, name: newName || u.name, branch_id: newBranchId !== undefined ? newBranchId : u.branch_id }
+            ? { ...u, role: newRole, name: newName || u.name, branch_id: newBranchId !== undefined ? newBranchId : u.branch_id, grade: newGrade !== undefined ? newGrade : u.grade }
             : u
         ));
         addLog(`Updated user: role=${newRole}${newName ? `, name=${newName}` : ''}`, 'Admin');
@@ -441,6 +442,7 @@ export const AdminProvider = ({ children }) => {
             const updates = { role: newRole };
             if (newName) updates.name = newName;
             if (newBranchId !== undefined) updates.branch_id = newBranchId || null;
+            if (newGrade !== undefined) updates.grade = newGrade || null;
             
             const { error } = await supabase
                 .from('profiles')
@@ -450,12 +452,12 @@ export const AdminProvider = ({ children }) => {
 
             // Also sync to auth user_metadata via edge function
             await supabase.functions.invoke('admin-user-manager', {
-                body: { action: 'update-role', payload: { userId, role: newRole, name: newName || prevName, branch_id: newBranchId !== undefined ? newBranchId || null : prevBranchId } }
+                body: { action: 'update-role', payload: { userId, role: newRole, name: newName || prevName, branch_id: newBranchId !== undefined ? newBranchId || null : prevBranchId, grade: newGrade !== undefined ? newGrade || null : prevGrade } }
             });
             return { success: true };
         } catch (err) {
             // Rollback
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: prevRole, name: prevName, branch_id: prevBranchId } : u));
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: prevRole, name: prevName, branch_id: prevBranchId, grade: prevGrade } : u));
             return { success: false, error: `Failed to update user: ${err.message}` };
         }
     };
@@ -498,7 +500,7 @@ export const AdminProvider = ({ children }) => {
             const { data, error } = await supabase.functions.invoke('admin-user-manager', {
                 body: {
                     action: 'invite',
-                    payload: { email: userData.email, name: userData.name, role: userData.role, redirectTo }
+                    payload: { email: userData.email, name: userData.name, role: userData.role, branch_id: userData.branch_id, grade: userData.grade, redirectTo }
                 }
             });
             if (error) {
@@ -516,6 +518,8 @@ export const AdminProvider = ({ children }) => {
                 name: userData.name,
                 email: userData.email,
                 role: userData.role,
+                branch_id: userData.branch_id || null,
+                grade: userData.grade || '—',
                 status: 'invited',
                 createdAt: new Date().toISOString().split('T')[0]
             };

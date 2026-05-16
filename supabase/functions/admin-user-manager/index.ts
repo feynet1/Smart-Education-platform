@@ -55,10 +55,9 @@ serve(async (req: Request) => {
         }
       }
 
-      // 2. Proceed with Supabase Invitation
-      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailToInvite, {
+    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailToInvite, {
         redirectTo: payload.redirectTo,
-        data: { name: payload.name, role: payload.role, branch_id: payload.branch_id || null }
+        data: { name: payload.name, role: payload.role, branch_id: payload.branch_id || null, grade: payload.grade || null }
       })
       if (error) throw error
       return new Response(JSON.stringify({ user: data.user }), {
@@ -83,6 +82,9 @@ serve(async (req: Request) => {
       }
       if (payload.branch_id !== undefined) {
         newMetadata.branch_id = payload.branch_id;
+      }
+      if (payload.grade !== undefined) {
+        newMetadata.grade = payload.grade;
       }
 
       const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(
