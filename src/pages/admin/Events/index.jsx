@@ -116,7 +116,7 @@ const EventsManagement = () => {
             ) : upcoming.length > 0 ? (
                 <Grid container spacing={3} mb={4}>
                     {upcoming.map((event) => {
-                        const canManage = currentUserRole === 'Super Admin' || event.branch_id !== null;
+                        const canManage = currentUserRole === 'Super Admin' || (event.branch_id !== null && event.target !== 'admin');
                         return (
                         <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={event.id}>
                             <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, height: '100%' }}>
@@ -177,7 +177,7 @@ const EventsManagement = () => {
             {past.length > 0 ? (
                 <Grid container spacing={2}>
                     {past.slice(0, 6).map((event) => {
-                        const canManage = currentUserRole === 'Super Admin' || event.branch_id !== null;
+                        const canManage = currentUserRole === 'Super Admin' || (event.branch_id !== null && event.target !== 'admin');
                         return (
                         <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={event.id}>
                             <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: '1px solid #e0e0e0', opacity: 0.7, bgcolor: '#fafafa' }}>
