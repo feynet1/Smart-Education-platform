@@ -1025,6 +1025,9 @@ const Landing = () => {
                     <Typography variant="body2" textAlign="center" color="#666">
                         © {new Date().getFullYear()} GG SCHOOL NETWORK - Gerba Guracha, Kuyu. All rights reserved. | Mirgi hundi seeraan kan eegame dha.
                     </Typography>
+                    <Typography variant="caption" textAlign="center" display="block" color="#555" mt={1}>
+                        Developer: <a href="https://feyisagirma.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: ETH_YELLOW, textDecoration: 'none', fontWeight: 'bold' }}>Feyisa G</a>
+                    </Typography>
                 </Container>
             </Box>
         </Box>
