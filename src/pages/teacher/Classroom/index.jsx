@@ -7,11 +7,12 @@ import {
 } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-    PlayArrow, Stop, Person, Refresh,
+    PlayArrow, Stop, Person, Refresh, Videocam,
 } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
 import useAuth from '../../../hooks/useAuth';
 import CourseChat from '../../../components/CourseChat/CourseChat';
+import JitsiRoom from '../../../components/JitsiRoom/JitsiRoom';
 
 const STATUS_COLORS = { Present: 'success', Absent: 'error', Late: 'warning' };
 const STATUS_CYCLE = { Present: 'Late', Late: 'Absent', Absent: 'Present' };
@@ -31,6 +32,7 @@ const ClassroomHelper = () => {
     const [ending, setEnding] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [showVideo, setShowVideo] = useState(false);
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -102,6 +104,16 @@ const ClassroomHelper = () => {
                                 </IconButton>
                             </span>
                         </Tooltip>
+                        {activeSession?.jitsi_room && (
+                            <Button
+                                variant={showVideo ? 'outlined' : 'contained'}
+                                color="warning"
+                                startIcon={<Videocam />}
+                                onClick={() => setShowVideo(v => !v)}
+                            >
+                                {showVideo ? 'Hide Video' : 'Start Video'}
+                            </Button>
+                        )}
                         <Button
                             variant="contained"
                             color="error"
@@ -206,8 +218,19 @@ const ClassroomHelper = () => {
                     )}
                 </Grid>
 
-                {/* Right — Chat */}
+                {/* Right — Jitsi Video + Chat */}
                 <Grid item xs={12} md={8}>
+                    {/* Jitsi video panel — only when session is active and teacher enables it */}
+                    {activeSession?.jitsi_room && showVideo && (
+                        <Box mb={3}>
+                            <JitsiRoom
+                                roomName={activeSession.jitsi_room}
+                                displayName={profile?.name || user?.email || 'Teacher'}
+                                role="Teacher"
+                                onLeave={() => setShowVideo(false)}
+                            />
+                        </Box>
+                    )}
                     <CourseChat courseId={courseId} currentUser={currentUser} />
                 </Grid>
             </Grid>

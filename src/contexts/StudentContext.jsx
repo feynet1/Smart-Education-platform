@@ -172,7 +172,7 @@ export const StudentProvider = ({ children }) => {
             if (error) throw error;
             // Refresh attendance history so the new record shows up
             fetchAttendanceHistory();
-            return { success: true, message: `Marked as ${status}`, status };
+            return { success: true, message: `Marked as ${status}`, status, jitsiRoom: session.jitsi_room || null };
         } catch (err) {
             return { success: false, message: err.message };
         }

@@ -5,12 +5,13 @@ import {
     ListItemText, IconButton, Chip, Button, Tabs, Tab,
     CircularProgress, Checkbox, Tooltip,
 } from '@mui/material';
-import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon, Chat as ChatIcon } from '@mui/icons-material';
+import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon, Chat as ChatIcon, Videocam } from '@mui/icons-material';
 import CourseChat from '../../../components/CourseChat/CourseChat';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 import { useStudent } from '../../../contexts/StudentContext';
 import { supabase } from '../../../supabaseClient';
 import useAuth from '../../../hooks/useAuth';
+import JitsiRoom from '../../../components/JitsiRoom/JitsiRoom';
 
 const TYPE_COLORS = { assignment: 'primary', homework: 'secondary', quiz: 'warning', project: 'success' };
 
@@ -34,6 +35,8 @@ const CourseDetails = () => {
     const [loadingAssignments, setLoadingAssignments] = useState(false);
     const [loadingNotes, setLoadingNotes] = useState(false);
     const [joinMsg, setJoinMsg] = useState(null);
+    const [showVideo, setShowVideo] = useState(false);
+    const [jitsiRoomName, setJitsiRoomName] = useState(null);
 
     const currentUser = { id: user.id, name: profile?.name || user?.email || 'Student', role: 'Student' };
 
@@ -138,6 +141,18 @@ const CourseDetails = () => {
                 <Typography variant="h4" fontWeight="bold" gutterBottom>{course.name}</Typography>
                 <Typography variant="body1">{course.description || 'No description provided.'}</Typography>
             </Paper>
+
+            {/* Full-width Jitsi video panel — shown after student joins live session */}
+            {showVideo && jitsiRoomName && (
+                <Box mb={3}>
+                    <JitsiRoom
+                        roomName={jitsiRoomName}
+                        displayName={currentUser.name}
+                        role="Student"
+                        onLeave={() => setShowVideo(false)}
+                    />
+                </Box>
+            )}
 
             <Grid container spacing={3}>
                 <Grid item xs={12} md={8}>
@@ -267,16 +282,39 @@ const CourseDetails = () => {
                                 🟢 Live Session Active
                             </Typography>
                             <Typography variant="body2" color="text.secondary" mb={2}>
-                                Your teacher has started a live session. Join now to mark your attendance.
+                                Your teacher has started a live session. Join the video call to mark your attendance.
                             </Typography>
-                            <Button
-                                fullWidth variant="contained" color="success"
-                                onClick={async () => {
-                                    const result = await joinSession(id);
-                                    setJoinMsg({ text: result.message, severity: result.success ? (result.status === 'Late' ? 'warning' : 'success') : 'error' });
-                                }}>
-                                Join Live Session
-                            </Button>
+                            {!showVideo ? (
+                                <Button
+                                    fullWidth variant="contained" color="success"
+                                    startIcon={<Videocam />}
+                                    onClick={async () => {
+                                        const result = await joinSession(id);
+                                        setJoinMsg({
+                                            text: result.message,
+                                            severity: result.success
+                                                ? (result.status === 'Late' ? 'warning' : 'success')
+                                                : 'info',
+                                        });
+                                        // Launch Jitsi room regardless of attendance status
+                                        const room = activeSessions[id]?.jitsi_room || result.jitsiRoom;
+                                        if (room) {
+                                            setJitsiRoomName(room);
+                                            setShowVideo(true);
+                                        }
+                                    }}
+                                >
+                                    Join Video Call
+                                </Button>
+                            ) : (
+                                <Button
+                                    fullWidth variant="outlined" color="success"
+                                    startIcon={<Videocam />}
+                                    onClick={() => setShowVideo(true)}
+                                >
+                                    ↑ Video Active
+                                </Button>
+                            )}
                             {joinMsg && (
                                 <Typography variant="caption" color={`${joinMsg.severity}.main`} display="block" mt={1} textAlign="center">
                                     {joinMsg.text}
