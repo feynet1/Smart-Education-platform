@@ -35,7 +35,7 @@ const StatsCards = () => {
     ];
 
     return (
-        <Grid container spacing={3} mb={4}>
+        <Grid container spacing={{ xs: 1.5, sm: 3 }} mb={4}>
             {stats.map((stat, index) => (
                 <Grid item xs={6} sm={6} md={3} key={index}>
                     <StatCard {...stat} />
