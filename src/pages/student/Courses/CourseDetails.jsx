@@ -5,7 +5,7 @@ import {
     ListItemText, IconButton, Chip, Button, Tabs, Tab,
     CircularProgress, Checkbox, Tooltip,
 } from '@mui/material';
-import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon, Chat as ChatIcon, Videocam } from '@mui/icons-material';
+import { Description, Download, CheckCircle, Cancel, AccessTime, Assignment as AssignmentIcon, Chat as ChatIcon, Videocam, Launch } from '@mui/icons-material';
 import CourseChat from '../../../components/CourseChat/CourseChat';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 import { useStudent } from '../../../contexts/StudentContext';
@@ -277,18 +277,37 @@ const CourseDetails = () => {
                 <Grid item xs={12} md={4}>
                     {/* Live session join */}
                     {activeSessions[id] && (
-                        <Paper elevation={2} sx={{ p: 3, mb: 2, border: '2px solid #2e7d32', borderRadius: 2 }}>
-                            <Typography variant="h6" fontWeight="bold" color="success.main" gutterBottom>
-                                🟢 Live Session Active
+                        <Paper 
+                            elevation={2} 
+                            sx={{ 
+                                p: 3, 
+                                mb: 2, 
+                                border: activeSessions[id].meeting_type === 'google_meet' 
+                                    ? '2px solid #1976d2' 
+                                    : '2px solid #2e7d32', 
+                                borderRadius: 2 
+                            }}
+                        >
+                            <Typography 
+                                variant="h6" 
+                                fontWeight="bold" 
+                                color={activeSessions[id].meeting_type === 'google_meet' ? 'primary.main' : 'success.main'} 
+                                gutterBottom
+                            >
+                                🟢 Live Session Active ({activeSessions[id].meeting_type === 'google_meet' ? 'Google Meet' : 'Jitsi'})
                             </Typography>
                             <Typography variant="body2" color="text.secondary" mb={2}>
-                                Your teacher has started a live session. Join the video call to mark your attendance.
+                                Your teacher has started a live session. Join the video call to mark your attendance automatically.
                             </Typography>
-                            {!showVideo ? (
+
+                            {activeSessions[id].meeting_type === 'google_meet' ? (
                                 <Button
-                                    fullWidth variant="contained" color="success"
-                                    startIcon={<Videocam />}
+                                    fullWidth 
+                                    variant="contained" 
+                                    color="primary"
+                                    startIcon={<Launch />}
                                     onClick={async () => {
+                                        // Log attendance first
                                         const result = await joinSession(id);
                                         setJoinMsg({
                                             text: result.message,
@@ -296,27 +315,52 @@ const CourseDetails = () => {
                                                 ? (result.status === 'Late' ? 'warning' : 'success')
                                                 : 'info',
                                         });
-                                        // Launch Jitsi room regardless of attendance status
-                                        const room = activeSessions[id]?.jitsi_room || result.jitsiRoom;
-                                        if (room) {
-                                            setJitsiRoomName(room);
-                                            setShowVideo(true);
+                                        // Redirect to Google Meet link in new tab
+                                        if (activeSessions[id]?.google_meet_link) {
+                                            window.open(activeSessions[id].google_meet_link, '_blank');
                                         }
                                     }}
                                 >
-                                    Join Video Call
+                                    Join class on Google Meet
                                 </Button>
                             ) : (
-                                <Button
-                                    fullWidth variant="outlined" color="success"
-                                    startIcon={<Videocam />}
-                                    onClick={() => setShowVideo(true)}
-                                >
-                                    ↑ Video Active
-                                </Button>
+                                <>
+                                    {!showVideo ? (
+                                        <Button
+                                            fullWidth variant="contained" color="success"
+                                            startIcon={<Videocam />}
+                                            onClick={async () => {
+                                                const result = await joinSession(id);
+                                                setJoinMsg({
+                                                    text: result.message,
+                                                    severity: result.success
+                                                        ? (result.status === 'Late' ? 'warning' : 'success')
+                                                        : 'info',
+                                                });
+                                                // Launch Jitsi room regardless of attendance status
+                                                const room = activeSessions[id]?.jitsi_room || result.jitsiRoom;
+                                                if (room) {
+                                                    setJitsiRoomName(room);
+                                                    setShowVideo(true);
+                                                }
+                                            }}
+                                        >
+                                            Join Video Call
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            fullWidth variant="outlined" color="success"
+                                            startIcon={<Videocam />}
+                                            onClick={() => setShowVideo(true)}
+                                        >
+                                            ↑ Video Active
+                                        </Button>
+                                    )}
+                                </>
                             )}
+                            
                             {joinMsg && (
-                                <Typography variant="caption" color={`${joinMsg.severity}.main`} display="block" mt={1} textAlign="center">
+                                <Typography variant="caption" color={`${joinMsg.severity}.main`} display="block" mt={1} textAlign="center" fontWeight="bold">
                                     {joinMsg.text}
                                 </Typography>
                             )}

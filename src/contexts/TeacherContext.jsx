@@ -292,20 +292,26 @@ export const TeacherProvider = ({ children }) => {
         }
     };
 
-    // Start a new session — auto-generates a unique Jitsi room name from the courseId
-    const startSession = async (courseId) => {
+    // Start a new session — auto-generates a unique Jitsi room name or stores a Google Meet link
+    const startSession = async (courseId, meetingType = 'jitsi', googleMeetLink = null) => {
         if (!user?.id) return { success: false, error: 'Not authenticated' };
-        // Derive a URL-safe room name: "gg-school-" + first 20 hex chars of courseId (no dashes)
-        const jitsiRoom = `gg-school-${courseId.replace(/-/g, '').slice(0, 20)}`;
+        
+        // Only generate Jitsi room if it's a jitsi session
+        const jitsiRoom = meetingType === 'jitsi'
+            ? `gg-school-${courseId.replace(/-/g, '').slice(0, 20)}`
+            : null;
+
         try {
             const { data, error } = await supabase
                 .from('class_sessions')
                 .insert({
-                    course_id:  courseId,
-                    teacher_id: user.id,
-                    date:       new Date().toISOString().split('T')[0],
-                    status:     'open',
-                    jitsi_room: jitsiRoom,
+                    course_id:        courseId,
+                    teacher_id:       user.id,
+                    date:             new Date().toISOString().split('T')[0],
+                    status:           'open',
+                    jitsi_room:       jitsiRoom,
+                    meeting_type:     meetingType,
+                    google_meet_link: googleMeetLink,
                 })
                 .select()
                 .single();
