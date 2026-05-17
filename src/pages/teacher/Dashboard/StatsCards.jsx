@@ -3,17 +3,17 @@ import { School, People, Class, Assignment } from '@mui/icons-material';
 import { useTeacher } from '../../../contexts/TeacherContext';
 
 const StatCard = ({ title, value, icon, color, loading }) => (
-    <Paper elevation={2} sx={{ p: 3, display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${color}.light`, color: `${color}.main`, mr: 2 }}>
+    <Paper elevation={2} sx={{ p: { xs: 1.5, sm: 3 }, display: 'flex', alignItems: 'center', height: '100%' }}>
+        <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${color}.light`, color: `${color}.main`, mr: { xs: 1, sm: 2 }, display: { xs: 'none', sm: 'flex' } }}>
             {icon}
         </Box>
         <Box>
             {loading ? (
                 <CircularProgress size={28} color={color} />
             ) : (
-                <Typography variant="h4" fontWeight="bold">{value}</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.3rem', sm: '1.5rem' } }}>{value}</Typography>
             )}
-            <Typography variant="body2" color="text.secondary">{title}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>{title}</Typography>
         </Box>
     </Paper>
 );
@@ -37,7 +37,7 @@ const StatsCards = () => {
     return (
         <Grid container spacing={3} mb={4}>
             {stats.map((stat, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
+                <Grid item xs={6} sm={6} md={3} key={index}>
                     <StatCard {...stat} />
                 </Grid>
             ))}
