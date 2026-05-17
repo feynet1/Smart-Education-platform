@@ -5,6 +5,7 @@ import { AuthProvider } from './components/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { TeacherProvider } from './contexts/TeacherContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import PwaInstallPrompt from './components/common/PwaInstallPrompt';
 
 // Layouts
 import TeacherLayout from './layouts/TeacherLayout';
@@ -160,6 +161,7 @@ function App() {
         </BrowserRouter>
         </NotificationProvider>
       </AuthProvider>
+      <PwaInstallPrompt />
     </ThemeProvider>
   );
 }
