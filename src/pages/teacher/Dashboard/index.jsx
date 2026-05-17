@@ -39,15 +39,13 @@ const TeacherDashboardHome = () => {
                         {activeSession ? ' 🟢 A session is currently active.' : ''}
                     </Typography>
                 </Box>
-                <Box display="flex" gap={1} alignItems="stretch" sx={{ flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
+                <Box display="flex" gap={1} alignItems="center" sx={{ width: '100%', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
                     <Button variant="outlined" size="small" onClick={handleRefresh} disabled={refreshing}
-                        startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}
-                        sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                        startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}>
                         Refresh
                     </Button>
                     <Button variant="contained" startIcon={<Add />}
-                        onClick={() => navigate('/teacher/courses')} size="small"
-                        sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                        onClick={() => navigate('/teacher/courses')} size="small">
                         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Create New Course</Box>
                         <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>New Course</Box>
                     </Button>
