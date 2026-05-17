@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Typography, Button, Grid, Paper, Chip, Card, CardContent, CircularProgress, Tooltip, IconButton } from '@mui/material';
 import { Add, Event, Refresh } from '@mui/icons-material';
 import StatsCards from './StatsCards';
-import RecentActivity from './RecentActivity';
+
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../../hooks/useAuth';
 import { useTeacher } from '../../../contexts/TeacherContext';
@@ -56,12 +56,9 @@ const TeacherDashboardHome = () => {
             <StatsCards />
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={8}>
-                    <RecentActivity />
-                </Grid>
 
                 {/* Upcoming Events from Supabase */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                             <Typography variant="h6" fontWeight="bold">Upcoming Events</Typography>
