@@ -15,7 +15,7 @@ This project is a React-based frontend authentication module for the "Education 
 - Vite
 - React Router DOM v6
 - Material UI (@mui/material)
-- React Hook Form + Zod
+- React Hook Form +    Zod
 
 ## Key Concepts
 
