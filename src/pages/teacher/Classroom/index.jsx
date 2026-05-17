@@ -19,6 +19,15 @@ import JitsiRoom from '../../../components/JitsiRoom/JitsiRoom';
 const STATUS_COLORS = { Present: 'success', Absent: 'error', Late: 'warning' };
 const STATUS_CYCLE = { Present: 'Late', Late: 'Absent', Absent: 'Present' };
 
+const formatExternalLink = (url) => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+    return `https://${trimmed}`;
+};
+
 const ClassroomHelper = () => {
     const { id: courseId } = useParams();
     const {
@@ -160,7 +169,7 @@ const ClassroomHelper = () => {
                                 variant="contained"
                                 color="warning"
                                 startIcon={<Launch />}
-                                href={activeSession.google_meet_link}
+                                href={formatExternalLink(activeSession.google_meet_link)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
@@ -312,7 +321,7 @@ const ClassroomHelper = () => {
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    href={activeSession.google_meet_link}
+                                    href={formatExternalLink(activeSession.google_meet_link)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     startIcon={<Launch />}

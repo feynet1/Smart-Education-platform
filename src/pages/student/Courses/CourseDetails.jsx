@@ -22,6 +22,15 @@ const getDueDateColor = (dueDate) => {
     return 'success';
 };
 
+const formatExternalLink = (url) => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+    return `https://${trimmed}`;
+};
+
 const CourseDetails = () => {
     const { id } = useParams();
     const { enrolledCourses, activeSessions, joinSession } = useStudent();
@@ -317,7 +326,7 @@ const CourseDetails = () => {
                                         });
                                         // Redirect to Google Meet link in new tab
                                         if (activeSessions[id]?.google_meet_link) {
-                                            window.open(activeSessions[id].google_meet_link, '_blank');
+                                            window.open(formatExternalLink(activeSessions[id].google_meet_link), '_blank');
                                         }
                                     }}
                                 >
