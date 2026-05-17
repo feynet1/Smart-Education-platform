@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Grid, Paper, Card, CardContent, CardActionArea,
     LinearProgress, Chip, Avatar, List, ListItem, ListItemAvatar,
-    ListItemText, CircularProgress, Tooltip, IconButton,
+    ListItemText, CircularProgress, Button,
 } from '@mui/material';
 import { School, PlayArrow, Assignment, Refresh } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -107,14 +107,15 @@ const StudentDashboardHome = () => {
                                 : 'Your academic journey continues!'}
                         </Typography>
                     </Box>
-                    <Tooltip title="Refresh dashboard">
-                        <IconButton
-                            onClick={handleRefresh}
-                            disabled={refreshing}
-                            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.15)', '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' } }}>
-                            {refreshing ? <CircularProgress size={20} color="inherit" /> : <Refresh />}
-                        </IconButton>
-                    </Tooltip>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        startIcon={refreshing ? <CircularProgress size={16} color="inherit" /> : <Refresh />}
+                        sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.15)' } }}>
+                        Refresh
+                    </Button>
                 </Box>
             </Paper>
 

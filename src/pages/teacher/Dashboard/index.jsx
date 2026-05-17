@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Grid, Paper, Chip, Card, CardContent, CircularProgress, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, Button, Grid, Paper, Chip, Card, CardContent, CircularProgress } from '@mui/material';
 import { Add, Event, Refresh } from '@mui/icons-material';
 import StatsCards from './StatsCards';
 
@@ -40,11 +40,10 @@ const TeacherDashboardHome = () => {
                     </Typography>
                 </Box>
                 <Box display="flex" gap={1} alignItems="center">
-                    <Tooltip title="Refresh dashboard">
-                        <IconButton onClick={handleRefresh} disabled={refreshing}>
-                            {refreshing ? <CircularProgress size={20} /> : <Refresh />}
-                        </IconButton>
-                    </Tooltip>
+                    <Button variant="outlined" size="small" onClick={handleRefresh} disabled={refreshing}
+                        startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}>
+                        Refresh
+                    </Button>
                     <Button variant="contained" startIcon={<Add />}
                         onClick={() => navigate('/teacher/courses')} size="small">
                         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Create New Course</Box>
