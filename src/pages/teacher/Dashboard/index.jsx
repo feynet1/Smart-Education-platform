@@ -31,7 +31,7 @@ const TeacherDashboardHome = () => {
                 sx={{ flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                 <Box>
                     <Typography variant="h4" fontWeight="bold" gutterBottom
-                        sx={{ fontSize: { xs: '1.4rem', sm: '2rem' } }}>
+                        sx={{ fontSize: { xs: '1.3rem', sm: '2rem' }, wordBreak: 'break-word' }}>
                         Welcome back, {profile?.name || 'Teacher'} 👋
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
@@ -39,13 +39,15 @@ const TeacherDashboardHome = () => {
                         {activeSession ? ' 🟢 A session is currently active.' : ''}
                     </Typography>
                 </Box>
-                <Box display="flex" gap={1} alignItems="center">
+                <Box display="flex" gap={1} alignItems="stretch" sx={{ flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
                     <Button variant="outlined" size="small" onClick={handleRefresh} disabled={refreshing}
-                        startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}>
+                        startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}>
                         Refresh
                     </Button>
                     <Button variant="contained" startIcon={<Add />}
-                        onClick={() => navigate('/teacher/courses')} size="small">
+                        onClick={() => navigate('/teacher/courses')} size="small"
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}>
                         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Create New Course</Box>
                         <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>New Course</Box>
                     </Button>
@@ -58,7 +60,7 @@ const TeacherDashboardHome = () => {
 
                 {/* Upcoming Events from Supabase */}
                 <Grid item xs={12}>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                    <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                             <Typography variant="h6" fontWeight="bold">Upcoming Events</Typography>
                             <Event color="primary" />
@@ -75,16 +77,17 @@ const TeacherDashboardHome = () => {
                             <Card key={event.id} variant="outlined" sx={{ mb: 1, borderRadius: 1 }}>
                                 <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                                        <Box>
-                                            <Typography variant="body2" fontWeight="medium">
+                                        <Box sx={{ pr: 1, minWidth: 0, flex: 1 }}>
+                                            <Typography variant="body2" fontWeight="medium" noWrap>
                                                 {event.title}
                                             </Typography>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" color="text.secondary" display="block">
                                                 {format(new Date(event.date + 'T00:00:00'), 'MMM dd, yyyy')}
                                             </Typography>
                                         </Box>
                                         <Chip label={event.type} size="small"
-                                            color={TYPE_COLORS[event.type] || 'default'} />
+                                            color={TYPE_COLORS[event.type] || 'default'} 
+                                            sx={{ flexShrink: 0 }} />
                                     </Box>
                                 </CardContent>
                             </Card>
